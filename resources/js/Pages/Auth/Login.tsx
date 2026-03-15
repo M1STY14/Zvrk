@@ -1,6 +1,43 @@
 import InputError from '@/Components/InputError';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect, useState } from 'react';
+
+const TYPING_LINES = ['Igraj se s ekipom.', 'Bilo kad, bilo gdje.'];
+
+function useTypewriter(lines: string[], speed = 55, pauseMs = 1200) {
+    const [displayed, setDisplayed] = useState<string[]>(lines.map(() => ''));
+    const [lineIndex, setLineIndex] = useState(0);
+    const [charIndex, setCharIndex] = useState(0);
+    const [pausing, setPausing] = useState(false);
+
+    useEffect(() => {
+        if (pausing) {
+            const t = setTimeout(() => {
+                setPausing(false);
+                setLineIndex(i => i + 1);
+            }, pauseMs);
+            return () => clearTimeout(t);
+        }
+        if (lineIndex >= lines.length) return;
+        if (charIndex < lines[lineIndex].length) {
+            const t = setTimeout(() => {
+                setDisplayed(prev => {
+                    const next = [...prev];
+                    next[lineIndex] = lines[lineIndex].slice(0, charIndex + 1);
+                    return next;
+                });
+                setCharIndex(i => i + 1);
+            }, speed);
+            return () => clearTimeout(t);
+        } else {
+            setPausing(true);
+            setCharIndex(0);
+        }
+    }, [charIndex, lineIndex, pausing, lines, speed, pauseMs]);
+
+    const done = lineIndex >= lines.length;
+    return { displayed, currentLine: lineIndex, done };
+}
 
 const floatingItems = [
     { emoji: '🎲', style: { top: '12%', left: '18%', animationDelay: '0s', animationDuration: '6s', fontSize: '2.5rem' } },
@@ -23,6 +60,7 @@ export default function Login({
     status?: string;
     canResetPassword: boolean;
 }) {
+    const { displayed, currentLine, done } = useTypewriter(TYPING_LINES);
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -78,7 +116,8 @@ export default function Login({
                     {/* Tekst — dolje desno */}
                     <div className="absolute bottom-10 left-8 z-10 text-left max-w-[512px]">
                         <h2 className="font-display text-[52px] font-extrabold text-white leading-tight mb-3">
-                            Igraj se s ekipom.<br />Bilo kad,bilo gdje.
+                            {displayed[0]}{!done && currentLine === 0 && <span className="animate-pulse">|</span>}<br />
+                            {displayed[1]}{!done && currentLine >= 1 && <span className="animate-pulse">|</span>}
                         </h2>
                         <p className="text-sky-200 text-[16px] leading-relaxed">
                             Klasične društvene igre u browseru.<br />Bez instalacije, bez plaćanja.
