@@ -37,7 +37,7 @@ export default function Welcome({
                     <div className="flex items-center gap-8">
                         <a href="#igre" className="text-[15px] font-medium text-stone-500 hover:text-stone-900 transition">Igre</a>
                         <a href="#kako-igrati" className="text-[15px] font-medium text-stone-500 hover:text-stone-900 transition">Kako igrati</a>
-                        <a href="#o-nama" className="text-[15px] font-medium text-stone-500 hover:text-stone-900 transition">O nama</a>
+                        <Link href={route('about')} className="text-[15px] font-medium text-stone-500 hover:text-stone-900 transition">O nama</Link>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -217,7 +217,7 @@ export default function Welcome({
                             </div>
                             <div className="flex flex-col gap-2.5">
                                 <span className="text-[13px] font-semibold text-stone-600">Platforma</span>
-                                <span className="text-[13px] text-stone-400">O nama</span>
+                                <Link href={route('about')}className="text-[13px] text-stone-400">O nama</Link>
                                 <span className="text-[13px] text-stone-400">Ljestvica</span>
                                 <span className="text-[13px] text-stone-400">GitHub</span>
                             </div>

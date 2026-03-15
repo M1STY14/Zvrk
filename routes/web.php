@@ -9,7 +9,11 @@ Route::get('/', function () {
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
     ]);
-});
+})->name('welcome');
+
+Route::get('/o-nama', function () {
+    return Inertia::render('AboutUs');
+})->name('about');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
