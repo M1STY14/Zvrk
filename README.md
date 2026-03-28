@@ -1,4 +1,4 @@
-# RiGames
+# Zvrk
 
 A web app where users sign up and play tabletop games with other players in real-time.
 
@@ -23,7 +23,7 @@ That's it. Everything else runs inside Docker.
 ```bash
 # 1. Clone the repo and enter the directory
 git clone <repo-url>
-cd RiGames
+cd Zvrk
 
 # 2. Copy the environment file
 cp .env.example .env
