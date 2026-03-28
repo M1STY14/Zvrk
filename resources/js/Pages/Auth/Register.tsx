@@ -77,7 +77,7 @@ export default function Register() {
                             <div className="w-8 h-8 bg-[#0C4A6E] rounded-[8px] flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
                             </div>
-                            <span className="font-display text-[20px] font-extrabold text-stone-900">RiGames</span>
+                            <span className="font-display text-[20px] font-extrabold text-stone-900">Zvrk</span>
                         </Link>
                     </nav>
 
@@ -189,7 +189,7 @@ export default function Register() {
                             <div className="w-10 h-10 bg-white/10 rounded-[10px] flex items-center justify-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
                             </div>
-                            <span className="font-display text-[24px] font-extrabold text-white">RiGames</span>
+                            <span className="font-display text-[24px] font-extrabold text-white">Zvrk</span>
                         </Link>
                     </div>
 

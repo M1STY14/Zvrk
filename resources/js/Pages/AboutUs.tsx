@@ -29,7 +29,7 @@ export default function AboutUs() {
                         <div className="w-9 h-9 bg-[#0C4A6E] rounded-[10px] flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
                         </div>
-                        <span className="font-display text-[22px] font-extrabold text-stone-900">RiGames</span>
+                        <span className="font-display text-[22px] font-extrabold text-stone-900">Zvrk</span>
                     </Link>
 
                     <div className="flex items-center gap-8">
@@ -64,7 +64,7 @@ export default function AboutUs() {
                         O nama
                     </h1>
                     <p className="text-lg text-stone-500 leading-relaxed">
-                        RiGames je studentski projekt Tehničkog fakulteta u Rijeci (RITEH). Cilj nam je omogućiti igračima da igraju klasične društvene igre online,
+                        Zvrk je studentski projekt Tehničkog fakulteta u Rijeci (RITEH). Cilj nam je omogućiti igračima da igraju klasične društvene igre online,
                         s prijateljima, u stvarnom vremenu — bez instalacije i bez plaćanja.
                     </p>
                 </section>
@@ -133,7 +133,7 @@ export default function AboutUs() {
                                 <div className="w-7 h-7 bg-[#0C4A6E] rounded-lg flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
                                 </div>
-                                <span className="font-display text-lg font-extrabold text-stone-900">RiGames</span>
+                                <span className="font-display text-lg font-extrabold text-stone-900">Zvrk</span>
                             </div>
                             <p className="text-[13px] text-stone-400">Studentski projekt @ RITEH, Rijeka</p>
                         </div>
@@ -163,7 +163,7 @@ export default function AboutUs() {
                     </div>
 
                     <div className="border-t border-stone-200 pt-6 flex justify-center">
-                        <span className="text-xs text-stone-400">{'\u00A9'} 2026 RiGames. Sva prava pridrzana.</span>
+                        <span className="text-xs text-stone-400">{'\u00A9'} 2026 Zvrk. Sva prava pridrzana.</span>
                     </div>
                 </footer>
             </div>
