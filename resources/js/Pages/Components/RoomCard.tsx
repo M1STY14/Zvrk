@@ -1,5 +1,8 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 
+// The RoomCardProps interface defines the expected props for the RoomCard component,
+// which includes a room object with details about theroom and an onJoin function to handle 
+// joining the room.
 interface RoomCardProps {
     room: {
         id: number;
@@ -11,6 +14,7 @@ interface RoomCardProps {
     onJoin: (roomId: number) => void;
 }
 
+//Main RoomCard function is to display the details of a game room in a card format
 export default function RoomCard({ room, onJoin }: RoomCardProps) {
     const isFull = room.current_players >= room.max_players;
 

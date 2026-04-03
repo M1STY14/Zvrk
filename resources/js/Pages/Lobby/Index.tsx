@@ -57,15 +57,16 @@ export default function Index() {
         //TO BACK. DEVS.: Implement the logic to create a new room using the provided data
         console.log('Creating room with data:', data);
         
+        // TO BACK. DEVS.:
         const newRoom: Room = {
-            id: rooms.length + 1, // TO BACK. DEVS.: This is just a mock ID, replace it with real ID from backend
+            id: rooms.length + 1,// Mock ID, replace it with real ID from backend
             name: data.name,
             host_name: 'Ja', // Replace with actual current user's name
             current_players: 1, // The host is the first player in the room
             max_players: data.max_players,
         };
         setRooms([...rooms, newRoom]);
-        setShowModal(false); // Close the modal after creating the room
+        setShowModal(false); // Closeing the modal after creating the room
     }
 
     return (
