@@ -67,6 +67,27 @@ export default function CreateRoomModal({
                     <InputError message={errors.name} className="mt-1" />
                 </div>
 
+                <div className="mt-4">
+                    <InputLabel htmlFor="max_players" value="Maksimalno igrača" />
+                    <TextInput
+                        id="max_players"
+                        type="number"
+                        className="mt-1 block w-full"
+                        value={maxPlayersValue}
+                        min={minPlayers}
+                        max={maxPlayers}
+                        onChange={(e) => setMaxPlayersValue(Number(e.target.value))}
+                    />
+                    <InputError message={errors.max_players} className="mt-1" />
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                    <SecondaryButton type="button" onClick={onClose}>
+                        Odustani 😔
+                    </SecondaryButton>
+                    <PrimaryButton type="submit">Kreiraj 🎉</PrimaryButton>
+                </div>
+
             </form>
         </Modal>
     );
