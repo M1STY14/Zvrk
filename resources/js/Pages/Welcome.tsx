@@ -132,21 +132,15 @@ export default function Welcome({ auth }: PageProps) {
                                     <Link href={route('login')}
                                         className="px-6 py-2 rounded-full text-sm font-bold transition-all"
                                         style={{ color: '#005bc2' }}
-                                        onMouseOver={e => { e.currentTarget.style.color = '#F5C842'; e.currentTarget.style.filter = 'drop-shadow(0 0 8px #F5C84288)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.color = '#005bc2'; e.currentTarget.style.filter = 'none'; }}>
+                                        onMouseOver={e => { e.currentTarget.style.color = '#003f8a'; }}
+                                        onMouseOut={e => { e.currentTarget.style.color = '#005bc2'; }}>
                                         Prijava
                                     </Link>
                                     <Link href={route('register')}
-                                        className="btn-glow px-6 py-2 rounded-full text-sm font-bold text-white transition-all"
+                                        className="px-6 py-2 rounded-full text-sm font-bold text-white transition-all"
                                         style={{ background: '#18181b', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
-                                        onMouseMove={e => {
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            const x = e.clientX - rect.left;
-                                            const y = e.clientY - rect.top;
-                                            e.currentTarget.style.backgroundImage = `radial-gradient(circle at ${x}px ${y}px, rgba(245,200,66,0.35), transparent 60%)`;
-                                            e.currentTarget.style.backgroundColor = '#18181b';
-                                        }}
-                                        onMouseLeave={e => { e.currentTarget.style.backgroundImage = 'none'; e.currentTarget.style.backgroundColor = '#18181b'; }}>
+                                        onMouseOver={e => { e.currentTarget.style.background = '#005bc2'; }}
+                                        onMouseOut={e => { e.currentTarget.style.background = '#18181b'; }}>
                                         Registracija
                                     </Link>
                                 </>
@@ -156,7 +150,8 @@ export default function Welcome({ auth }: PageProps) {
                 </header>
 
                 {/* Hero */}
-                <section className="pt-40 pb-24 overflow-hidden relative">
+                {/* style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} */}
+                <section className="pt-40 pb-60 overflow-hidden relative" style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
                     <div className="max-w-screen-xl mx-auto px-0 grid grid-cols-1 lg:grid-cols-2 items-center gap-16">
 
                         {/* 3D Model */}
@@ -190,29 +185,17 @@ export default function Welcome({ auth }: PageProps) {
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <Link
                                     href={auth.user ? route('dashboard') : route('register')}
-                                    className="btn-glow flex items-center justify-center gap-2 px-10 py-4 rounded-full font-bold text-lg text-white transition-all"
-                                    style={{ background: '#18181b', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
-                                    onMouseMove={e => {
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        const x = e.clientX - rect.left;
-                                        const y = e.clientY - rect.top;
-                                        e.currentTarget.style.backgroundImage = `radial-gradient(circle at ${x}px ${y}px, rgba(245,200,66,0.35), transparent 60%)`;
-                                        e.currentTarget.style.backgroundColor = '#18181b';
-                                    }}
-                                    onMouseLeave={e => { e.currentTarget.style.backgroundImage = 'none'; e.currentTarget.style.backgroundColor = '#18181b'; }}>
+                                    className="flex items-center justify-center gap-2 px-10 py-4 rounded-full font-bold text-lg text-white transition-all"
+                                    style={{ background: '#18181b' }}
+                                    onMouseOver={e => { e.currentTarget.style.background = '#005bc2'; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = '#18181b'; }}>
                                     Počni igrati
                                 </Link>
                                 <a href="#igre"
-                                    className="btn-glow flex items-center justify-center px-10 py-4 rounded-full font-bold text-lg transition-all"
+                                    className="flex items-center justify-center px-10 py-4 rounded-full font-bold text-lg transition-all"
                                     style={{ backgroundColor: '#eceef1', color: '#2f3336' }}
-                                    onMouseMove={e => {
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        const x = e.clientX - rect.left;
-                                        const y = e.clientY - rect.top;
-                                        e.currentTarget.style.backgroundImage = `radial-gradient(circle at ${x}px ${y}px, rgba(245,200,66,0.4), transparent 60%)`;
-                                        e.currentTarget.style.backgroundColor = '#eceef1';
-                                    }}
-                                    onMouseLeave={e => { e.currentTarget.style.backgroundImage = 'none'; }}>
+                                    onMouseOver={e => { e.currentTarget.style.backgroundColor = '#005bc2'; e.currentTarget.style.color = 'white'; }}
+                                    onMouseOut={e => { e.currentTarget.style.backgroundColor = '#eceef1'; e.currentTarget.style.color = '#2f3336'; }}>
                                     Pregledaj igre
                                 </a>
                             </div>
@@ -238,7 +221,7 @@ export default function Welcome({ auth }: PageProps) {
                     <div className="relative w-full overflow-hidden py-4">
                         <div className="carousel-track gap-6 px-8">
                             {[...games, ...games].map((game, i) => (
-                                <div key={i} className="relative flex-shrink-0 w-[380px] h-[260px] overflow-hidden cursor-pointer group"
+                                <div key={i} className="relative flex-shrink-0 w-[480px] h-[360px] overflow-hidden cursor-pointer group"
                                     style={{ backgroundColor: game.bg, borderRadius: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
                                     <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
                                         <span style={{ fontSize: '8rem' }}>{game.emoji}</span>
@@ -285,10 +268,7 @@ export default function Welcome({ auth }: PageProps) {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4 mt-8">
-                                    <div className="flex items-center gap-2 bg-amber-100 rounded-full px-4 py-2">
-                                        <span className="text-sm">⚓</span>
-                                        <span className="text-sm font-semibold text-amber-800">RITEH, Rijeka</span>
-                                    </div>
+                                        <div> <img src="/images/byritehstudents.png" alt="Zvrk" className="h-2 w-auto" /></div>
                                 </div>
                                 <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:opacity-10 transition-all text-[16rem] pointer-events-none">
                                     🎲
@@ -299,7 +279,7 @@ export default function Welcome({ auth }: PageProps) {
                             <div className="flex flex-col gap-4">
                                 {steps.map((step) => (
                                     <div key={step.num} className="rounded-2xl p-6 flex items-start gap-4 transition-transform hover:-translate-y-0.5"
-                                        style={{ backgroundColor: step.num === '1' ? '#005bc2' : step.num === '2' ? '#a63c18' : '#8e2fbd', color: 'white' }}>
+                                        style={{ backgroundColor: step.num === '1' ? '#009bc2' : step.num === '2' ? '#a63d25' : '#4e2fbd', color: 'white' }}>
                                         <span className="font-black text-2xl opacity-40" style={{ fontFamily: 'Manrope, sans-serif' }}>
                                             {step.num}
                                         </span>
@@ -318,7 +298,7 @@ export default function Welcome({ auth }: PageProps) {
                 <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
                     <div className="flex flex-col md:flex-row justify-between items-center px-12 py-12 max-w-screen-xl mx-auto">
                         <div className="mb-8 md:mb-0">
-                            <div className="text-2xl font-black mb-2" style={{ fontFamily: 'Manrope, sans-serif', color: '#18181b' }}>Zvrk</div>
+                            <div> <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" /></div>
                             <p className="text-sm max-w-xs" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
                             <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
                         </div>
