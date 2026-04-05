@@ -2,7 +2,7 @@ import { PageProps } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 const games = [
     { name: 'Tic-Tac-Toe', desc: 'Brza partija, 2 igrača', players: '2P', emoji: '❌⭕', bg: '#18181b' },
@@ -28,9 +28,94 @@ function ZvrkModel() {
 
 export default function Welcome({ auth }: PageProps) {
 
+    const [loading, setLoading] = useState(true);
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+        let p = 0;
+        const iv = setInterval(() => {
+            p += Math.random() * 18;
+            if (p >= 100) {
+                p = 100;
+                clearInterval(iv);
+                setTimeout(() => setLoading(false), 300);
+            }
+            setProgress(Math.min(p, 100));
+        }, 80);
+        return () => clearInterval(iv);
+    }, []);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) entry.target.classList.add('scroll-visible');
+                });
+            },
+            { threshold: 0.12 }
+        );
+        document.querySelectorAll('.scroll-hidden').forEach((el) => observer.observe(el));
+
+        // Side nav — sekcije
+        const sideLinks = document.querySelectorAll<HTMLElement>('.side-nav-link');
+        const sections = ['#hero-section', '#igre', '#kako-igrati'].map(s => document.querySelector(s));
+        const igredLabel = document.getElementById('side-igre-label');
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const idx = sections.indexOf(entry.target);
+                    sideLinks.forEach(a => { a.style.color = '#999'; a.style.fontWeight = '400'; });
+                    if (idx >= 0 && sideLinks[idx]) { sideLinks[idx].style.color = '#2f3336'; sideLinks[idx].style.fontWeight = '700'; }
+                    // Reset game label kad napustimo igre sekciju
+                    if (idx !== 1 && igredLabel) igredLabel.textContent = 'IGRE';
+                }
+            });
+        }, { threshold: 0.3 });
+        sections.forEach(s => s && sectionObserver.observe(s));
+
+        // Side nav — pojedine igre unutar sekcije
+        const gameTiles = document.querySelectorAll<HTMLElement>('.game-tile');
+        const gameObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && igredLabel) {
+                    igredLabel.textContent = entry.target.getAttribute('data-game') || 'IGRE';
+                }
+            });
+        }, { threshold: 0.6 });
+        gameTiles.forEach(t => gameObserver.observe(t));
+
+        return () => { observer.disconnect(); sectionObserver.disconnect(); gameObserver.disconnect(); };
+    }, []);
+
     return (
         <>
             <Head title="Početna" />
+
+            {/* Loading screen */}
+            {loading && (
+                <div className="loading-hue" style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: '1.5rem',
+                    transition: 'opacity 0.4s',
+                    opacity: progress >= 100 ? 0 : 1,
+                }}>
+                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '6rem', color: '#2f3336', lineHeight: 1, position: 'relative', display: 'inline-block' }}>
+                        <span className="zvrk-spin" style={{ position: 'relative', display: 'inline-block' }}>
+                            <span style={{ position: 'absolute', top: '-0.1em', left: '50%', transform: 'translateX(-50%)', fontSize: '0.5em', lineHeight: 1.1, color: '#2f3336' }}>|</span>
+                            v
+                        </span>
+                    </span>
+                    <div style={{ width: 240, height: 3, backgroundColor: '#eceef1', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{
+                            height: '100%', width: `${progress}%`,
+                            background: `linear-gradient(90deg, #005bc2 ${progress < 40 ? 0 : progress - 40}%, #FA532F ${progress < 60 ? 50 : progress - 10}%, #72D660 100%)`,
+                            transition: 'width 0.08s linear',
+                            borderRadius: 99,
+                        }} />
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap');
@@ -85,16 +170,51 @@ export default function Welcome({ auth }: PageProps) {
                 @keyframes reveal {
                     to { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes hue-bg {
+                    0%   { background: #e8f0ff; }
+                    25%  { background: #ffe8e8; }
+                    50%  { background: #e8ffe8; }
+                    75%  { background: #fff3e0; }
+                    100% { background: #e8f0ff; }
+                }
+                .loading-hue { animation: hue-bg 3s ease-in-out infinite; }
+
                 @keyframes ghost-float {
                     0%, 100% { transform: translateY(0px); }
                     50%      { transform: translateY(-6px); }
                 }
+
+                .scroll-hidden {
+                    opacity: 0;
+                    transform: translateY(48px);
+                    transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+                }
+                .scroll-hidden.scroll-visible {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                .scroll-hidden.delay-1 { transition-delay: 0.1s; }
+                .scroll-hidden.delay-2 { transition-delay: 0.2s; }
+                .scroll-hidden.delay-3 { transition-delay: 0.35s; }
+                .scroll-hidden.delay-4 { transition-delay: 0.5s; }
+
+                html { scroll-behavior: smooth; }
             `}</style>
 
+            {/* Side nav */}
+            <div style={{ position: 'fixed', right: 24, top: '50%', transform: 'translateY(-50%)', zIndex: 400, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <a href="#hero-section" className="side-nav-link" style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', writingMode: 'vertical-rl', transition: 'color 0.2s, font-weight 0.2s' }}>POZDRAV</a>
+                <a href="#igre" className="side-nav-link" style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', writingMode: 'vertical-rl', transition: 'color 0.2s, font-weight 0.2s' }}>
+                    <span id="side-igre-label">IGRE</span>
+                </a>
+                <a href="#kako-igrati" className="side-nav-link" style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', writingMode: 'vertical-rl', transition: 'color 0.2s, font-weight 0.2s' }}>PRAVILA</a>
+            </div>
+
+            <div id="gsap-scroller">
             <div className="min-h-screen" style={{ backgroundColor: '#f9f9fb', color: '#2f3336' }}>
 
                 {/* Navbar */}
-                <header className="fixed top-0 w-full z-50 border-b" style={{ backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', borderColor: '#eceef1' }}>
+                <header id="main-nav" className="fixed top-0 w-full z-50 border-b" style={{ backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', borderColor: '#eceef1' }}>
                     <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
                         <div>
                             <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
@@ -128,15 +248,14 @@ export default function Welcome({ auth }: PageProps) {
                                 <>
                                     <Link href={route('login')}
                                         className="px-6 py-2 rounded-full text-base font-bold transition-all"
-                                        style={{ color: '#005bc2' }}
-                                        onMouseOver={e => { e.currentTarget.style.color = '#003f8a'; }}
-                                        onMouseOut={e => { e.currentTarget.style.color = '#005bc2'; }}>
+                                        style={{ color: '#FA532F' }}
+                                        onMouseOut={e => { e.currentTarget.style.color = '#FA532F'; }}>
                                         Prijava
                                     </Link>
                                     <Link href={route('register')}
                                         className="px-6 py-2 rounded-full text-base font-bold text-white transition-all"
                                         style={{ background: '#18181b', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}
-                                        onMouseOver={e => { e.currentTarget.style.background = '#005bc2'; }}
+                                        onMouseOver={e => { e.currentTarget.style.background = '#FA532F'; }}
                                         onMouseOut={e => { e.currentTarget.style.background = '#18181b'; }}>
                                         Registracija
                                     </Link>
@@ -148,11 +267,12 @@ export default function Welcome({ auth }: PageProps) {
 
                 {/* Hero */}
                 {/* style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} */}
-                <section className="pt-14 pb-40 overflow-hidden relative">
-                    <div className="max-w-screen-xl mx-auto px-0 grid grid-cols-1 lg:grid-cols-2 items-center gap-16">
+                <section id="hero-section" className="pt-14 pb-40 overflow-hidden relative">
+                    <div className="hero-hue-overlay" />
+                    <div className="max-w-screen-xl mx-auto px-0 grid grid-cols-1 lg:grid-cols-2 items-center gap-16" style={{ position: 'relative', zIndex: 1 }}>
 
                         {/* 3D Model */}
-                        <div className="flex justify-center items-center h-[750px] w-[750px]">
+                        <div id="hero-model" className="flex justify-center items-center h-[750px] w-[750px]">
                             <Canvas camera={{ position: [19, 3, 3], fov: 45 }} style={{ background: 'transparent' }}>
                                 <Suspense fallback={null}>
                                     <Stage environment="sunset" intensity={0.6}>
@@ -164,7 +284,7 @@ export default function Welcome({ auth }: PageProps) {
                         </div>
 
                         {/* Text */}
-                        <div className="title-reveal pl-24">
+                        <div id="hero-text" className="title-reveal pl-24">
                             <h1 className="font-black tracking-tighter leading-none mb-4"
                                 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 'clamp(5rem, 10vw, 8rem)', color: '#2f3336' }}>
                                 Z<span className="zvrk-spin" style={{ position: 'relative', display: 'inline-block' }}>
@@ -174,8 +294,11 @@ export default function Welcome({ auth }: PageProps) {
                             </h1>
                             <h2 className="font-bold tracking-tight mb-6"
                                 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '1.75rem', color: '#005bc2' }}>
-                                Igraj se s ekipom. Bilo kad, bilo gdje.
+                                Igraj se s ekipom. 
+                                <span style={{ color: '#FA532F' }}> Bilo kad, </span> 
+                                <span style={{ color: '#72D660' }}>bilo gdje.</span>
                             </h2>
+                            
                             <p className="text-lg leading-relaxed max-w-md mb-10" style={{ color: '#5c5f63' }}>
                                 Klasične društvene igre u browseru. Pozovi prijatelje, uđi u sobu i igraj uživo — bez instalacije.
                             </p>
@@ -201,47 +324,46 @@ export default function Welcome({ auth }: PageProps) {
                     </div>
                 </section>
 
-                {/* Game Carousel */}
-                <section id="igre" className="py-20 overflow-hidden" style={{ backgroundColor: '#f9f9fb' }}>
-                    <div className="max-w-screen-xl mx-auto px-8 mb-12 flex items-center justify-between">
-                        <div>
-                            <h2 className="font-extrabold tracking-tight" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '2.25rem', color: '#2f3336' }}>
-                                Dostupne igre
-                            </h2>
-                            <p className="mt-1" style={{ color: '#5c5f63' }}>8 klasičnih igara za svaku prigodu</p>
-                        </div>
-                        <span className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest animate-pulse" style={{ color: '#005bc2' }}>
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#005bc2' }} />
-                            Uskoro uživo
-                        </span>
-                    </div>
-
-                    <div className="relative w-full overflow-hidden py-4">
-                        <div className="carousel-track gap-6 px-8">
-                            {[...games, ...games].map((game, i) => (
-                                <div key={i} className="relative flex-shrink-0 w-[480px] h-[360px] overflow-hidden cursor-pointer group"
-                                    style={{ backgroundColor: game.bg, borderRadius: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
-                                        <span style={{ fontSize: '8rem' }}>{game.emoji}</span>
-                                    </div>
-                                    <div className="absolute inset-0 flex flex-col justify-between p-8"
-                                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }}>
-                                        <div>
-                                            <span className="text-xs font-semibold px-3 py-1 rounded-full"
-                                                style={{ backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', color: 'white' }}>
-                                                {game.players}
-                                            </span>
+                {/* Game Roadmap - vertical snake */}
+                <section id="igre" className="py-24" style={{ backgroundColor: '#f9f9fb', position: 'relative' }}>
+                    <img src="/images/un.svg" alt="" style={{
+                        position: 'absolute', top: 0, left: 0,
+                        width: '100%', height: 'auto',
+                        pointerEvents: 'none', userSelect: 'none',
+                    }} />
+                    <div className="max-w-screen-xl mx-auto px-8" style={{ position: 'relative', zIndex: 1 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                            {games.map((game, i) => {
+                                const accents = ['#005bc2','#FA532F','#72D660','#9333ea','#f59e0b','#ec4899','#14b8a6','#ef4444'];
+                                const accent = accents[i];
+                                const isLeft = i % 2 === 0;
+                                return (
+                                    <div key={game.name} className="scroll-hidden game-tile" data-game={game.name.toUpperCase()} style={{
+                                        display: 'flex',
+                                        justifyContent: isLeft ? 'flex-end' : 'flex-start',
+                                        transitionDelay: `${i * 0.08}s`,
+                                    }}>
+                                        <div style={{
+                                            width: '42%',
+                                            background: 'rgba(255,255,255,0.88)',
+                                            backdropFilter: 'blur(8px)',
+                                            borderRadius: '1.25rem',
+                                            padding: '2rem',
+                                            border: `2px solid ${accent}33`,
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s, border-color 0.2s',
+                                            boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
+                                        }}
+                                            onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLDivElement).style.borderColor = accent; }}
+                                            onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; (e.currentTarget as HTMLDivElement).style.borderColor = accent + '33'; }}>
+                                            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>{game.emoji}</div>
+                                            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '1.5rem', color: '#2f3336', marginBottom: '0.4rem' }}>{game.name}</h3>
+                                            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>{game.desc}</p>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 99, backgroundColor: accent + '22', color: accent }}>{game.players}</span>
                                         </div>
-                                        <div>
-                                            <h3 className="font-extrabold tracking-tight leading-none mb-1"
-                                                style={{ fontFamily: 'Manrope, sans-serif', fontSize: '2rem', color: 'white' }}>
-                                                {game.name}
-                                            </h3>
-                                            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{game.desc}</p>
-                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </section>
@@ -249,14 +371,14 @@ export default function Welcome({ auth }: PageProps) {
                 {/* Bento - Kako igrati */}
                 <section id="kako-igrati" className="py-20 bg-white">
                     <div className="max-w-screen-xl mx-auto px-8">
-                        <h2 className="font-extrabold tracking-tight mb-12" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '2.25rem', color: '#2f3336' }}>
+                        <h2 className="scroll-hidden font-extrabold tracking-tight mb-12" style={{ fontFamily: 'Manrope, sans-serif', fontSize: '2.25rem', color: '#2f3336' }}>
                             Kako igrati
                         </h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6" style={{ minHeight: '360px' }}>
                             {/* Velika kartica */}
-                            <div className="md:col-span-2 rounded-2xl p-10 relative overflow-hidden group flex flex-col justify-between"
-                                style={{ backgroundColor: '#f3f3f6', minHeight: '380px' }}>
+                            <div className="scroll-hidden md:col-span-2 rounded-2xl p-10 relative overflow-hidden group flex flex-col justify-between"
+                                style={{ backgroundColor: '#f3f3f6', minHeight: '380px', transitionDelay: '0.1s' }}>
 
                                 <p className="font-black leading-tight"
                                     style={{ fontFamily: 'Manrope, sans-serif', fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', color: '#2f3336' }}>
@@ -312,9 +434,9 @@ export default function Welcome({ auth }: PageProps) {
 
                             {/* Koraci */}
                             <div className="flex flex-col gap-4">
-                                {steps.map((step) => (
-                                    <div key={step.num} className="rounded-2xl p-6 flex items-start gap-4 transition-transform hover:-translate-y-0.5"
-                                        style={{ backgroundColor: step.num === '1' ? '#FA532F' : step.num === '2' ? '#E8AC80' : '#72D660', color: 'white' }}>
+                                {steps.map((step, si) => (
+                                    <div key={step.num} className="scroll-hidden rounded-2xl p-6 flex items-start gap-4 transition-transform hover:-translate-y-0.5"
+                                        style={{ backgroundColor: step.num === '1' ? '#FA532F' : step.num === '2' ? '#E8AC80' : '#72D660', color: 'white', transitionDelay: `${0.2 + si * 0.12}s` }}>
                                         <span className="font-black text-2xl opacity-40" style={{ fontFamily: 'Manrope, sans-serif' }}>
                                             {step.num}
                                         </span>
@@ -352,6 +474,7 @@ export default function Welcome({ auth }: PageProps) {
                     </div>
                 </footer>
             </div>
+            </div>{/* /gsap-scroller */}
         </>
     );
 }
