@@ -22,8 +22,8 @@ const steps = [
 ];
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/untitled4.glb');
-    return <primitive object={scene} scale={5} rotation={[0, 0, 0]} />;
+    const { scene } = useGLTF('/models/new_un_lower2.glb');
+    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
 export default function Welcome({ auth }: PageProps) {
@@ -269,16 +269,23 @@ export default function Welcome({ auth }: PageProps) {
                 {/* style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} */}
                 <section id="hero-section" className="pt-14 pb-40 overflow-hidden relative">
                     <div className="hero-hue-overlay" />
+                    <img src="/images/test.svg" alt="" style={{
+                        position: 'absolute', top: 0, left: 0,
+                        width: '100%', height: '100%',
+                        objectFit: 'fill',
+                        pointerEvents: 'none', userSelect: 'none',
+                        zIndex: 0,
+                    }} />
                     <div className="max-w-screen-xl mx-auto px-0 grid grid-cols-1 lg:grid-cols-2 items-center gap-16" style={{ position: 'relative', zIndex: 1 }}>
 
                         {/* 3D Model */}
                         <div id="hero-model" className="flex justify-center items-center h-[750px] w-[750px]">
-                            <Canvas camera={{ position: [19, 3, 3], fov: 45 }} style={{ background: 'transparent' }}>
+                            <Canvas camera={{ position: [19, 19, -90], fov: 45 }} style={{ background: 'transparent' }}>
                                 <Suspense fallback={null}>
                                     <Stage environment="sunset" intensity={0.6}>
                                         <ZvrkModel />
                                     </Stage>
-                                    <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1.5} />
+                                    <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
                                 </Suspense>
                             </Canvas>
                         </div>
