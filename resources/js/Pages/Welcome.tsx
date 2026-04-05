@@ -1,14 +1,12 @@
 import { PageProps } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, Stage } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense } from 'react';
 
 const games = [
     { name: 'Tic-Tac-Toe', desc: 'Brza partija, 2 igrača', players: '2P', emoji: '❌⭕', bg: '#18181b' },
-    { name: 'Čovjče ne ljuti se', desc: 'Utrka do cilja', players: '2-4P', emoji: '🎲', bg: '#27272a' },
+    { name: 'Čovječe ne ljuti se', desc: 'Utrka do cilja', players: '2-4P', emoji: '🎲', bg: '#27272a' },
     { name: 'Dama', desc: 'Preskoči i osvoji', players: '2P', emoji: '⛀', bg: '#1c1c1e' },
     { name: '4 u nizu', desc: 'Spusti i pobijedi', players: '2P', emoji: '🔴🟡', bg: '#18181b' },
     { name: 'Potapanje brodova', desc: 'Potopi protivničku flotu', players: '2P', emoji: '🚢', bg: '#27272a' },
@@ -25,11 +23,7 @@ const steps = [
 
 function ZvrkModel() {
     const { scene } = useGLTF('/models/untitled4.glb');
-    const ref = useRef<any>(null);
-    useFrame((_, delta) => {
-        if (ref.current) ref.current.rotation.y += delta * 0.3;
-    });
-    return <primitive ref={ref} object={scene} scale={5} rotation={[0, 0, 0]} />;
+    return <primitive object={scene} scale={5} rotation={[0, 0, 0]} />;
 }
 
 export default function Welcome({ auth }: PageProps) {
@@ -62,7 +56,7 @@ export default function Welcome({ auth }: PageProps) {
                     opacity: 1;
                 }
 
-.carousel-track {
+                .carousel-track {
                     display: flex;
                     width: max-content;
                     animation: scroll 50s linear infinite;
@@ -91,54 +85,57 @@ export default function Welcome({ auth }: PageProps) {
                 @keyframes reveal {
                     to { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes ghost-float {
+                    0%, 100% { transform: translateY(0px); }
+                    50%      { transform: translateY(-6px); }
+                }
             `}</style>
 
             <div className="min-h-screen" style={{ backgroundColor: '#f9f9fb', color: '#2f3336' }}>
 
                 {/* Navbar */}
                 <header className="fixed top-0 w-full z-50 border-b" style={{ backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', borderColor: '#eceef1' }}>
-                    <nav className="flex justify-between items-center px-8 py-4 max-w-screen-xl mx-auto">
+                    <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
                         <div>
                             <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
                         </div>
 
-                        <div className="hidden md:flex items-center gap-10">
-                            <a href="#igre" className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}
+                        <div className="hidden md:flex items-center justify-center gap-10">
+                            <a href="#igre" className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
                                 onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
                                 onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
                                 Igre
                             </a>
-                            <a href="#kako-igrati" className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}
+                            <a href="#kako-igrati" className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
                                 onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
                                 onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
                                 Kako igrati
                             </a>
-                            <Link href={route('about')} className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}
+                            <Link href={route('about')} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
                                 onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
                                 onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
                                 O nama
                             </Link>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-end gap-3">
                             {auth.user ? (
                                 <Link href={route('dashboard')}
-                                    className="px-6 py-2 rounded-full text-sm font-bold transition-colors"
+                                    className="px-6 py-2 rounded-full text-base font-bold transition-colors"
                                     style={{ color: '#005bc2' }}>
                                     Dashboard
-                                </Link>
-                            ) : (
+                                </Link>) : (
                                 <>
                                     <Link href={route('login')}
-                                        className="px-6 py-2 rounded-full text-sm font-bold transition-all"
+                                        className="px-6 py-2 rounded-full text-base font-bold transition-all"
                                         style={{ color: '#005bc2' }}
                                         onMouseOver={e => { e.currentTarget.style.color = '#003f8a'; }}
                                         onMouseOut={e => { e.currentTarget.style.color = '#005bc2'; }}>
                                         Prijava
                                     </Link>
                                     <Link href={route('register')}
-                                        className="px-6 py-2 rounded-full text-sm font-bold text-white transition-all"
-                                        style={{ background: '#18181b', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+                                        className="px-6 py-2 rounded-full text-base font-bold text-white transition-all"
+                                        style={{ background: '#18181b', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}
                                         onMouseOver={e => { e.currentTarget.style.background = '#005bc2'; }}
                                         onMouseOut={e => { e.currentTarget.style.background = '#18181b'; }}>
                                         Registracija
@@ -151,22 +148,23 @@ export default function Welcome({ auth }: PageProps) {
 
                 {/* Hero */}
                 {/* style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} */}
-                <section className="pt-40 pb-60 overflow-hidden relative" style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                <section className="pt-14 pb-40 overflow-hidden relative">
                     <div className="max-w-screen-xl mx-auto px-0 grid grid-cols-1 lg:grid-cols-2 items-center gap-16">
 
                         {/* 3D Model */}
-                        <div className="flex justify-center items-center h-[550px] w-[550px]" style={{ pointerEvents: 'none' }}>
-                            <Canvas camera={{ position: [0, 2, 8], fov: 45 }} style={{ background: 'transparent' }}>
+                        <div className="flex justify-center items-center h-[750px] w-[750px]">
+                            <Canvas camera={{ position: [19, 3, 3], fov: 45 }} style={{ background: 'transparent' }}>
                                 <Suspense fallback={null}>
                                     <Stage environment="sunset" intensity={0.6}>
                                         <ZvrkModel />
                                     </Stage>
+                                    <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1.5} />
                                 </Suspense>
                             </Canvas>
                         </div>
 
                         {/* Text */}
-                        <div className="title-reveal">
+                        <div className="title-reveal pl-24">
                             <h1 className="font-black tracking-tighter leading-none mb-4"
                                 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 'clamp(5rem, 10vw, 8rem)', color: '#2f3336' }}>
                                 Z<span className="zvrk-spin" style={{ position: 'relative', display: 'inline-block' }}>
@@ -258,20 +256,57 @@ export default function Welcome({ auth }: PageProps) {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6" style={{ minHeight: '360px' }}>
                             {/* Velika kartica */}
                             <div className="md:col-span-2 rounded-2xl p-10 relative overflow-hidden group flex flex-col justify-between"
-                                style={{ backgroundColor: '#f3f3f6' }}>
-                                <div>
-                                    <h3 className="font-extrabold text-3xl mb-4" style={{ fontFamily: 'Manrope, sans-serif', color: '#2f3336' }}>
-                                        Napravljeno za zajednicu
-                                    </h3>
-                                    <p className="text-lg max-w-sm" style={{ color: '#5c5f63' }}>
-                                        Studentski projekt RITEH-a iz Rijeke. Besplatno, bez reklama, samo čista zabava s ekipom.
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-4 mt-8">
-                                        <div> <img src="/images/byritehstudents.png" alt="Zvrk" className="h-2 w-auto" /></div>
-                                </div>
-                                <div className="absolute -bottom-10 -right-10 opacity-5 group-hover:opacity-10 transition-all text-[16rem] pointer-events-none">
-                                    🎲
+                                style={{ backgroundColor: '#f3f3f6', minHeight: '380px' }}>
+
+                                <p className="font-black leading-tight"
+                                    style={{ fontFamily: 'Manrope, sans-serif', fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', color: '#2f3336' }}>
+
+                                    {/* Pac-Man na početku */}
+                                    <svg width="1em" height="1em" viewBox="0 0 100 100"
+                                        style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.15em' }}>
+                                        <path fill="#FFD700">
+                                            <animate attributeName="d"
+                                                values="M50,50 L95,15 A48,48,0,1,0,95,85 Z;M50,50 L95,49 A48,48,0,1,0,95,51 Z;M50,50 L95,15 A48,48,0,1,0,95,85 Z"
+                                                dur="0.4s" repeatCount="indefinite" />
+                                        </path>
+                                    </svg>
+
+                                    {' '}Studentski projekt{' '}
+
+                                    {/* Duh 1 - plavi */}
+                                    <svg width="0.7em" height="0.8em" viewBox="0 0 36 42"
+                                        style={{ display: 'inline-block', verticalAlign: 'middle', animation: 'ghost-float 2s ease-in-out 0s infinite' }}>
+                                        <path d="M18 2C9.16 2 2 9.16 2 18V40L8 34L14 40L18 34L22 40L28 34L34 40V18C34 9.16 26.84 2 18 2Z" fill="#6ea4ff"/>
+                                        <circle cx="13" cy="17" r="4" fill="white"/><circle cx="23" cy="17" r="4" fill="white"/>
+                                        <circle cx="14" cy="18" r="2" fill="#1a1a2e"/><circle cx="24" cy="18" r="2" fill="#1a1a2e"/>
+                                    </svg>
+
+                                    {' '}<span style={{ color: '#005bc2' }}>RITEH-a</span>{' '}
+                                    iz Rijeke.{' '}
+
+                                    {/* Duh 2 - crveni */}
+                                    <svg width="0.7em" height="0.8em" viewBox="0 0 36 42"
+                                        style={{ display: 'inline-block', verticalAlign: 'middle', animation: 'ghost-float 2s ease-in-out 0.5s infinite' }}>
+                                        <path d="M18 2C9.16 2 2 9.16 2 18V40L8 34L14 40L18 34L22 40L28 34L34 40V18C34 9.16 26.84 2 18 2Z" fill="#ff6b6b"/>
+                                        <circle cx="13" cy="17" r="4" fill="white"/><circle cx="23" cy="17" r="4" fill="white"/>
+                                        <circle cx="14" cy="18" r="2" fill="#1a1a2e"/><circle cx="24" cy="18" r="2" fill="#1a1a2e"/>
+                                    </svg>
+
+                                    {' '}Besplatno, bez reklama,{' '}
+
+                                    {/* Duh 3 - tirkizni */}
+                                    <svg width="0.7em" height="0.8em" viewBox="0 0 36 42"
+                                        style={{ display: 'inline-block', verticalAlign: 'middle', animation: 'ghost-float 2s ease-in-out 1s infinite' }}>
+                                        <path d="M18 2C9.16 2 2 9.16 2 18V40L8 34L14 40L18 34L22 40L28 34L34 40V18C34 9.16 26.84 2 18 2Z" fill="#5eead4"/>
+                                        <circle cx="13" cy="17" r="4" fill="white"/><circle cx="23" cy="17" r="4" fill="white"/>
+                                        <circle cx="14" cy="18" r="2" fill="#1a1a2e"/><circle cx="24" cy="18" r="2" fill="#1a1a2e"/>
+                                    </svg>
+
+                                    {' '}samo čista zabava s ekipom.
+                                </p>
+
+                                <div className="absolute bottom-4 right-6 opacity-10 group-hover:opacity-20 transition-all text-[5rem] pointer-events-none select-none">
+                                    🍒
                                 </div>
                             </div>
 
@@ -279,7 +314,7 @@ export default function Welcome({ auth }: PageProps) {
                             <div className="flex flex-col gap-4">
                                 {steps.map((step) => (
                                     <div key={step.num} className="rounded-2xl p-6 flex items-start gap-4 transition-transform hover:-translate-y-0.5"
-                                        style={{ backgroundColor: step.num === '1' ? '#009bc2' : step.num === '2' ? '#a63d25' : '#4e2fbd', color: 'white' }}>
+                                        style={{ backgroundColor: step.num === '1' ? '#FA532F' : step.num === '2' ? '#E8AC80' : '#72D660', color: 'white' }}>
                                         <span className="font-black text-2xl opacity-40" style={{ fontFamily: 'Manrope, sans-serif' }}>
                                             {step.num}
                                         </span>
@@ -304,7 +339,7 @@ export default function Welcome({ auth }: PageProps) {
                         </div>
 
                         <div className="flex flex-wrap justify-center gap-x-12 gap-y-4">
-                            {['Tic-Tac-Toe', 'Čovjče ne ljuti se', 'Dama', '4 u nizu'].map(g => (
+                            {['Tic-Tac-Toe', 'Čovječe ne ljuti se', 'Dama', '4 u nizu'].map(g => (
                                 <span key={g} className="text-sm font-medium" style={{ color: '#64748b' }}>{g}</span>
                             ))}
                         </div>
