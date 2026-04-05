@@ -325,7 +325,11 @@ export default function Welcome({ auth }: PageProps) {
                 </section>
 
                 {/* Game Roadmap - vertical snake */}
-                <section id="igre" className="py-24" style={{ backgroundColor: '#f9f9fb', position: 'relative' }}>
+                <section id="igre" className="py-24" style={{
+                    backgroundColor: '#f9f9fb',
+                    position: 'relative',
+                    minHeight: 'calc(100vw * 5988.5 / 1920)',
+                }}>
                     <img src="/images/un.svg" alt="" style={{
                         position: 'absolute', top: 0, left: 0,
                         width: '100%', height: 'auto',
