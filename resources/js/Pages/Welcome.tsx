@@ -550,13 +550,17 @@ export default function Welcome({ auth }: PageProps) {
                             <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
                         </div>
 
-                        <div className="flex flex-wrap justify-center gap-x-12 gap-y-4">
-                            {['Tic-Tac-Toe', 'Čovječe ne ljuti se', 'Dama', '4 u nizu'].map(g => (
-                                <span key={g} className="text-sm font-medium" style={{ color: '#64748b' }}>{g}</span>
+                        <div className="grid grid-cols-2 gap-x-12 gap-y-2">
+                            {[games.slice(0, 4), games.slice(4, 8)].map((column, ci) => (
+                                <div key={ci} className="flex flex-col gap-2">
+                                    {column.map((g) => (
+                                        <span key={g.name} className="text-sm font-medium" style={{ color: '#64748b' }}>{g.name}</span>
+                                    ))}
+                                </div>
                             ))}
                         </div>
 
-                        <div className="mt-8 md:mt-0 flex gap-4">
+                        <div className="mt-8 md:mt-0 flex flex-col gap-2">
                             <Link href={route('about')} className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}>O nama</Link>
                             <Link href={route('login')} className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}>Prijava</Link>
                             <Link href={route('register')} className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}>Registracija</Link>
