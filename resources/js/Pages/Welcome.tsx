@@ -5,25 +5,25 @@ import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense, useEffect, useState } from 'react';
 
 const games = [
-    { name: 'Tic-Tac-Toe', desc: 'Brza partija, 2 igrača', players: '2P', emoji: '❌⭕', bg: '#18181b' },
-    { name: 'Čovječe ne ljuti se', desc: 'Utrka do cilja', players: '2-4P', emoji: '🎲', bg: '#27272a' },
-    { name: 'Dama', desc: 'Preskoči i osvoji', players: '2P', emoji: '⛀', bg: '#1c1c1e' },
-    { name: '4 u nizu', desc: 'Spusti i pobijedi', players: '2P', emoji: '🔴🟡', bg: '#18181b' },
-    { name: 'Potapanje brodova', desc: 'Potopi protivničku flotu', players: '2P', emoji: '🚢', bg: '#27272a' },
-    { name: 'Uno', desc: 'Boje, brojevi, kaos!', players: '2-6P', emoji: '🃏', bg: '#1c1c1e' },
-    { name: 'Bela', desc: 'Hrvatski klasik', players: '4P', emoji: '♠♥', bg: '#18181b' },
-    { name: 'Snaps', desc: 'Tko je brži?', players: '2-4P', emoji: '⚡', bg: '#27272a' },
+    { name: 'Tic-Tac-Toe', desc: 'Brza partija, 2 igrača', players: '2P', emoji: '❌⭕', bg: '#18181b', thumbnail: '/images/homepage_games_thumbnails/tic_tac_toe_right_side.svg' },
+    { name: 'Čovječe ne ljuti se', desc: 'Utrka do cilja', players: '2-4P', emoji: '🎲', bg: '#27272a', thumbnail: '/images/homepage_games_thumbnails/covjece_ne_ljuti_se_left_side.svg' },
+    { name: 'Dama', desc: 'Preskoči i osvoji', players: '2P', emoji: '⛀', bg: '#1c1c1e', thumbnail: '/images/homepage_games_thumbnails/dama_right_side.svg' },
+    { name: '4 u nizu', desc: 'Spusti i pobijedi', players: '2P', emoji: '🔴🟡', bg: '#18181b', thumbnail: '/images/homepage_games_thumbnails/4_u_nizu_left_side.svg' },
+    { name: 'Potapanje brodova', desc: 'Potopi protivničku flotu', players: '2P', emoji: '🚢', bg: '#27272a', thumbnail: '/images/homepage_games_thumbnails/potapanje_brodova_right_side.svg' },
+    { name: 'Uno', desc: 'Boje, brojevi, kaos!', players: '2-6P', emoji: '🃏', bg: '#1c1c1e', thumbnail: '/images/homepage_games_thumbnails/uno_left_side.svg' },
+    { name: 'Bela', desc: 'Hrvatski klasik', players: '4P', emoji: '♠♥', bg: '#18181b', thumbnail: '/images/homepage_games_thumbnails/bels_right_side.svg' },
+    { name: 'Snaps', desc: 'Tko je brži?', players: '2-4P', emoji: '⚡', bg: '#27272a', thumbnail: '/images/homepage_games_thumbnails/snaps_left_side.svg' },
 ];
 
 const gameCardPositions = [
-    { top: '14%', side: 'right' },
-    { top: '21%', side: 'left' },
-    { top: '32%', side: 'right' },
-    { top: '39%', side: 'left' },
-    { top: '50%', side: 'right' },
-    { top: '57%', side: 'left' },
-    { top: '76%', side: 'right' },
-    { top: '82%', side: 'left' },
+    { top: '15%', side: 'right' },
+    { top: '22%', side: 'left' },
+    { top: '34%', side: 'right' },
+    { top: '40%', side: 'left' },
+    { top: '52%', side: 'right' },
+    { top: '58%', side: 'left' },
+    { top: '77%', side: 'right' },
+    { top: '83%', side: 'left' },
 ] as const;
 
 const steps = [
@@ -224,6 +224,31 @@ export default function Welcome({ auth }: PageProps) {
                     left: 6%;
                 }
 
+                @media (max-width: 1200px) {
+                    #hero-model {
+                        width: min(60vw, 640px);
+                        height: min(66vw, 760px);
+                    }
+                    #hero-text {
+                        padding-left: 3rem;
+                    }
+                }
+
+                @media (max-width: 1024px) {
+                    .side-nav-link {
+                        display: none;
+                    }
+                    #hero-model {
+                        width: min(88vw, 560px);
+                        height: min(88vw, 560px);
+                    }
+                    #hero-text {
+                        padding-left: 0;
+                        padding-right: 1.25rem;
+                        text-align: center;
+                    }
+                }
+
                 @media (max-width: 900px) {
                     .game-roadmap-layer {
                         min-height: auto;
@@ -238,6 +263,16 @@ export default function Welcome({ auth }: PageProps) {
                         right: auto !important;
                         width: 100%;
                     }
+                    .game-roadmap-tile > div {
+                        padding: 1.25rem !important;
+                    }
+                    .game-roadmap-tile h3 {
+                        font-size: 1.28rem !important;
+                    }
+                    .game-roadmap-tile p {
+                        font-size: 0.84rem !important;
+                        margin-bottom: 0.8rem !important;
+                    }
                 }
 
                 html { scroll-behavior: smooth; }
@@ -245,7 +280,7 @@ export default function Welcome({ auth }: PageProps) {
 
             {/* Side nav */}
             <div style={{ position: 'fixed', right: 24, top: '50%', transform: 'translateY(-50%)', zIndex: 400, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <a href="#hero-section" className="side-nav-link" style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', writingMode: 'vertical-rl', transition: 'color 0.2s, font-weight 0.2s' }}>POZDRAV</a>
+                <a href="#hero-section" className="side-nav-link" style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', writingMode: 'vertical-rl', transition: 'color 0.2s, font-weight 0.2s' }}>WELCOMEEEE</a>
                 <a href="#igre" className="side-nav-link" style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#999', textDecoration: 'none', writingMode: 'vertical-rl', transition: 'color 0.2s, font-weight 0.2s' }}>
                     <span id="side-igre-label">IGRE</span>
                 </a>
@@ -309,7 +344,7 @@ export default function Welcome({ auth }: PageProps) {
 
                 {/* Hero */}
                 {/* style={{ backgroundImage: 'url(/images/hero-bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }} */}
-                <section id="hero-section" className="pt-14 pb-40 overflow-hidden relative">
+                <section id="hero-section" className="pt-14 pb-14 overflow-hidden relative">
                     <div className="hero-hue-overlay" />
                     <img src="/images/test.svg" alt="" style={{
                         position: 'absolute', top: 0, left: 0,
@@ -321,10 +356,10 @@ export default function Welcome({ auth }: PageProps) {
                     <div className="max-w-screen-xl mx-auto px-0 grid grid-cols-1 lg:grid-cols-2 items-center gap-16" style={{ position: 'relative', zIndex: 1 }}>
 
                         {/* 3D Model */}
-                        <div id="hero-model" className="flex justify-center items-center h-[750px] w-[750px]">
-                            <Canvas camera={{ position: [19, 19, -90], fov: 45 }} style={{ background: 'transparent' }}>
+                        <div id="hero-model" className="flex justify-center items-center h-[950px] w-[750px]">
+                            <Canvas shadows={false} camera={{ position: [19, 19, -90], fov: 45 }} style={{ background: 'transparent' }}>
                                 <Suspense fallback={null}>
-                                    <Stage environment="sunset" intensity={0.6}>
+                                    <Stage environment="sunset" intensity={0.6} shadows={false}>
                                         <ZvrkModel />
                                     </Stage>
                                     <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
@@ -373,8 +408,8 @@ export default function Welcome({ auth }: PageProps) {
                     </div>
                 </section>
 
-                {/* Game Roadmap - vertical snake */}
-                <section id="igre" className="py-24" style={{
+                {/* Game Roadmap - vertical */}
+                <section id="igre" className="pt-3" style={{
                     backgroundColor: '#f9f9fb',
                     position: 'relative',
                 }}>
@@ -388,7 +423,11 @@ export default function Welcome({ auth }: PageProps) {
                             {games.map((game, i) => {
                                 const accents = ['#005bc2','#FA532F','#72D660','#9333ea','#f59e0b','#ec4899','#14b8a6','#ef4444'];
                                 const accent = accents[i];
+                                const isBela = game.name === 'Bela';
+                                const isDama = game.name === 'Dama';
+                                const shiftContentRight = isBela || isDama;
                                 const pos = gameCardPositions[i] ?? { top: `${8 + i * 10}%`, side: i % 2 ? 'left' : 'right' };
+                                const cardBackground = `url(${game.thumbnail}) center / cover no-repeat`;
                                 return (
                                     <div key={game.name} className={`scroll-hidden game-tile game-roadmap-tile ${pos.side === 'left' ? 'side-left' : 'side-right'}`} data-game={game.name.toUpperCase()} style={{
                                         top: pos.top,
@@ -396,21 +435,21 @@ export default function Welcome({ auth }: PageProps) {
                                     }}>
                                         <div style={{
                                             width: '100%',
-                                            background: 'rgba(255,255,255,0.88)',
+                                            background: cardBackground,
                                             backdropFilter: 'blur(8px)',
                                             borderRadius: '1.25rem',
                                             padding: '2rem',
-                                            border: `2px solid ${accent}33`,
+                                            border: 'none',
                                             cursor: 'pointer',
-                                            transition: 'transform 0.2s, border-color 0.2s',
-                                            boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
+                                            transition: 'transform 0.2s',
+                                            boxShadow: 'none',
                                         }}
-                                            onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLDivElement).style.borderColor = accent; }}
-                                            onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; (e.currentTarget as HTMLDivElement).style.borderColor = accent + '33'; }}>
-                                            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>{game.emoji}</div>
-                                            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '1.5rem', color: '#2f3336', marginBottom: '0.4rem' }}>{game.name}</h3>
-                                            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>{game.desc}</p>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 99, backgroundColor: accent + '22', color: accent }}>{game.players}</span>
+                                            onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; }}
+                                            onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; }}>
+                                            <div style={{ fontSize: '3rem', marginBottom: '0.75rem', marginLeft: shiftContentRight ? '0.6rem' : 0, visibility: isDama ? 'hidden' : 'visible' }}>{game.emoji}</div>
+                                            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '1.5rem', color: '#2f3336', marginBottom: '0.4rem', marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.name}</h3>
+                                            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem', marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.desc}</p>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 99, backgroundColor: accent + '22', color: accent, marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.players}</span>
                                         </div>
                                     </div>
                                 );
