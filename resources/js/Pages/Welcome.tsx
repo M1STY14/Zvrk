@@ -15,6 +15,17 @@ const games = [
     { name: 'Snaps', desc: 'Tko je brži?', players: '2-4P', emoji: '⚡', bg: '#27272a' },
 ];
 
+const gameCardPositions = [
+    { top: '14%', side: 'right' },
+    { top: '21%', side: 'left' },
+    { top: '32%', side: 'right' },
+    { top: '39%', side: 'left' },
+    { top: '50%', side: 'right' },
+    { top: '57%', side: 'left' },
+    { top: '76%', side: 'right' },
+    { top: '82%', side: 'left' },
+] as const;
+
 const steps = [
     { num: '1', title: 'Napravi račun', desc: 'Registriraj se u par sekundi. Samo email i lozinka — gotovo.' },
     { num: '2', title: 'Uđi u sobu', desc: 'Kreiraj novu sobu ili se pridruži postojećoj. Pozovi ekipu.' },
@@ -198,6 +209,37 @@ export default function Welcome({ auth }: PageProps) {
                 .scroll-hidden.delay-3 { transition-delay: 0.35s; }
                 .scroll-hidden.delay-4 { transition-delay: 0.5s; }
 
+                .game-roadmap-layer {
+                    position: relative;
+                    min-height: calc(100vw * 5988.5 / 1920);
+                }
+                .game-roadmap-tile {
+                    position: absolute;
+                    width: 42%;
+                }
+                .game-roadmap-tile.side-right {
+                    right: 6%;
+                }
+                .game-roadmap-tile.side-left {
+                    left: 6%;
+                }
+
+                @media (max-width: 900px) {
+                    .game-roadmap-layer {
+                        min-height: auto;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1.1rem;
+                    }
+                    .game-roadmap-tile {
+                        position: relative;
+                        top: auto !important;
+                        left: auto !important;
+                        right: auto !important;
+                        width: 100%;
+                    }
+                }
+
                 html { scroll-behavior: smooth; }
             `}</style>
 
@@ -335,7 +377,6 @@ export default function Welcome({ auth }: PageProps) {
                 <section id="igre" className="py-24" style={{
                     backgroundColor: '#f9f9fb',
                     position: 'relative',
-                    minHeight: 'calc(100vw * 5988.5 / 1920)',
                 }}>
                     <img src="/images/un.svg" alt="" style={{
                         position: 'absolute', top: 0, left: 0,
@@ -343,19 +384,18 @@ export default function Welcome({ auth }: PageProps) {
                         pointerEvents: 'none', userSelect: 'none',
                     }} />
                     <div className="max-w-screen-xl mx-auto px-8" style={{ position: 'relative', zIndex: 1 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                        <div className="game-roadmap-layer">
                             {games.map((game, i) => {
                                 const accents = ['#005bc2','#FA532F','#72D660','#9333ea','#f59e0b','#ec4899','#14b8a6','#ef4444'];
                                 const accent = accents[i];
-                                const isLeft = i % 2 === 0;
+                                const pos = gameCardPositions[i] ?? { top: `${8 + i * 10}%`, side: i % 2 ? 'left' : 'right' };
                                 return (
-                                    <div key={game.name} className="scroll-hidden game-tile" data-game={game.name.toUpperCase()} style={{
-                                        display: 'flex',
-                                        justifyContent: isLeft ? 'flex-end' : 'flex-start',
+                                    <div key={game.name} className={`scroll-hidden game-tile game-roadmap-tile ${pos.side === 'left' ? 'side-left' : 'side-right'}`} data-game={game.name.toUpperCase()} style={{
+                                        top: pos.top,
                                         transitionDelay: `${i * 0.08}s`,
                                     }}>
                                         <div style={{
-                                            width: '42%',
+                                            width: '100%',
                                             background: 'rgba(255,255,255,0.88)',
                                             backdropFilter: 'blur(8px)',
                                             borderRadius: '1.25rem',
