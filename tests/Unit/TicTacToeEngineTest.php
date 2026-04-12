@@ -20,6 +20,10 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 0],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $currentTurn = $engine->getCurrentTurn($state);
@@ -38,6 +42,10 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 0],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $move = new TicTacToeMoveData(
@@ -61,6 +69,10 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 0],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $move = new TicTacToeMoveData(
@@ -84,6 +96,10 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 0],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $move = new TicTacToeMoveData(
@@ -108,12 +124,16 @@ class TicTacToeEngineTest extends TestCase
                 [2, 0, 0],
             ],
             currentTurn: 2,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(1, $result->winner);
+        $this->assertSame('player-1-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -128,12 +148,16 @@ class TicTacToeEngineTest extends TestCase
                 [1, 0, 0],
             ],
             currentTurn: 2,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(1, $result->winner);
+        $this->assertSame('player-1-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -148,12 +172,16 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 1],
             ],
             currentTurn: 2,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(1, $result->winner);
+        $this->assertSame('player-1-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -168,12 +196,16 @@ class TicTacToeEngineTest extends TestCase
                 [1, 0, 0],
             ],
             currentTurn: 2,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(1, $result->winner);
+        $this->assertSame('player-1-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -188,12 +220,16 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 0],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(2, $result->winner);
+        $this->assertSame('player-2-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -208,12 +244,16 @@ class TicTacToeEngineTest extends TestCase
                 [0, 2, 1],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(2, $result->winner);
+        $this->assertSame('player-2-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -228,12 +268,16 @@ class TicTacToeEngineTest extends TestCase
                 [1, 0, 2],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(2, $result->winner);
+        $this->assertSame('player-2-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -248,12 +292,16 @@ class TicTacToeEngineTest extends TestCase
                 [2, 1, 0],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(2, $result->winner);
+        $this->assertSame('player-2-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 
@@ -268,6 +316,10 @@ class TicTacToeEngineTest extends TestCase
                 [2, 1, 1],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
@@ -288,6 +340,10 @@ class TicTacToeEngineTest extends TestCase
                 [0, 0, 2],
             ],
             currentTurn: 1,
+            players: collect([
+                1 => 'player-1-ulid',
+                2 => 'player-2-ulid',
+            ])
         );
 
         $result = $engine->checkGameOver($state);
@@ -324,7 +380,7 @@ class TicTacToeEngineTest extends TestCase
         $result = $engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame(1, $result->winner);
+        $this->assertSame('player-1-ulid', $result->winner);
         $this->assertFalse($result->draw);
     }
 }

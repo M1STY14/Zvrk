@@ -9,6 +9,7 @@ use App\Data\TicTacToeState;
 use App\Data\TicTacToeMoveData;
 use App\Data\MoveData;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 class TicTacToeEngine implements GameContract
 {
@@ -22,12 +23,24 @@ class TicTacToeEngine implements GameContract
                 [0,0,0],
                 [0,0,0],
             ],
-            currentTurn: 1
+            currentTurn: 1,
+            players: collect([
+                1 => $players->values()->get(0) ?? 'player-1-ulid',
+                2 => $players->values()->get(1) ?? 'player-2-ulid',
+            ])
         );
     }
 
     public function validateMove(GameState $state, int $playerNumber, MoveData $moveData): bool
     {
+        if (! $state instanceof TicTacToeState) {
+            throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeState.');
+        }
+
+        if (! $moveData instanceof TicTacToeMoveData) {
+            throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeMoveData.');
+        }
+        
         // rejects: out-of-bounds, occupied cells, wrong player's turn
         $row = $moveData->row;
         $col = $moveData->col;
@@ -50,8 +63,16 @@ class TicTacToeEngine implements GameContract
         return true;
     }
 
-    public function applyMove(Gamestate $state, int $playerNumber, MoveData $moveData): GameState
+    public function applyMove(GameState $state, int $playerNumber, MoveData $moveData): GameState
     {
+        if (! $state instanceof TicTacToeState) {
+            throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeState.');
+        }
+
+        if (! $moveData instanceof TicTacToeMoveData) {
+            throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeMoveData.');
+        }
+
         //places the mark and advances the turn
         $board = $state->board;
 
@@ -59,59 +80,50 @@ class TicTacToeEngine implements GameContract
 
         return new TicTacToeState(
             board: $board,
-            currentTurn: $playerNumber === 1 ? 2 : 1
+            currentTurn: $playerNumber === 1 ? 2 : 1,
+            players: $state->players,
         );
     }
 
     public function checkGameOver(GameState $state): ?GameResult
     {
-        //detects: row win, column win, diagonal win, draw (full board), and returns null if game is ongoing
-        $board=$state->board;
+        if (! $state instanceof TicTacToeState) {
+            throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeState.');
+        }
 
-        //row win
-        for ($row=0;$row<3;$row++){
-            if($board[$row][0] !== 0 && $board[$row][0] === $board[$row][1] && $board[$row][1] === $board[$row][2])
-            {
+        $board = $state->board;
+
+        //all possible winning states
+        $lines = [
+            //rows
+            [$board[0][0], $board[0][1], $board[0][2]],
+            [$board[1][0], $board[1][1], $board[1][2]],
+            [$board[2][0], $board[2][1], $board[2][2]],
+
+            //columns
+            [$board[0][0], $board[1][0], $board[2][0]],
+            [$board[0][1], $board[1][1], $board[2][1]],
+            [$board[0][2], $board[1][2], $board[2][2]],
+
+            //diagonals
+            [$board[0][0], $board[1][1], $board[2][2]],
+            [$board[0][2], $board[1][1], $board[2][0]],
+        ];
+
+        //checks for row, column or diagonal win
+        foreach ($lines as [$a, $b, $c]) {
+            if ($a !== 0 && $a === $b && $b === $c) {
                 return new GameResult(
-                    winner: $board[$row][0],
-                    draw: false
+                    winner: $state->players->get($a),
+                    draw: false,
                 );
             }
         }
 
-        //column win
-        for ($col=0;$col<3;$col++){
-            if($board[0][$col] !== 0 && $board[0][$col] === $board[1][$col] && $board[1][$col] === $board[2][$col])
-            {
-                return new GameResult(
-                    winner: $board[0][$col],
-                    draw: false
-                );
-            }
-        }
-
-        //diagonal win \
-        if ($board[0][0] === $board[1][1] && $board[1][1] === $board[2][2]){
-            return new GameResult(
-                winner: $board[0][0],
-                draw: false
-            );
-        }
-
-        //diagonal win /
-        if ($board[0][2] === $board[1][1] && $board[1][1] === $board[2][0]){
-            return new GameResult(
-                winner: $board[0][2],
-                draw: false
-            );
-        }
-
-        //game is still ongoing
-        for($row=0;$row<3;$row++){
-            for($col=0;$col<3;$col++){
-                if($board[$row][$col] === 0){
-                    return null;
-                }
+        //checks if game is still ongoing
+        foreach ($board as $row) {
+            if (in_array(0, $row, true)) {
+                return null;
             }
         }
 
@@ -120,11 +132,13 @@ class TicTacToeEngine implements GameContract
             winner: null,
             draw: true,
         );
-
     }
 
     public function getCurrentTurn(GameState $state): int
     {
+        if (! $state instanceof TicTacToeState) {
+            throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeState.');
+        }
         return $state->currentTurn;
     }
 }
