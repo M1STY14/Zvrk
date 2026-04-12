@@ -4,7 +4,7 @@ namespace App\Data;
 
 use Illuminate\Support\Collection;
 
-class TicTacToeState extends GameState
+final class TicTacToeState extends GameState
 {
     public function __construct(
         public array $board,

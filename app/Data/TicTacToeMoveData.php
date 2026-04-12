@@ -2,7 +2,7 @@
 
 namespace App\Data;
 
-class TicTacToeMoveData extends MoveData
+final class TicTacToeMoveData extends MoveData
 {
     public function __construct(
         public int $row,

@@ -16,6 +16,9 @@ class TicTacToeEngine implements GameContract
 
     public function initialState(Collection $players): GameState
     {
+        if ($players->count() < 2) {
+            throw new InvalidArgumentException('TicTacToe requires exactly two players.');
+        }
         //returns a 3x3 empty board with player 1's turn
         return new TicTacToeState(
             board: [
@@ -25,8 +28,8 @@ class TicTacToeEngine implements GameContract
             ],
             currentTurn: 1,
             players: collect([
-                1 => $players->values()->get(0) ?? 'player-1-ulid',
-                2 => $players->values()->get(1) ?? 'player-2-ulid',
+                1 => $players->get(0),
+                2 => $players->get(1),
             ])
         );
     }
@@ -40,7 +43,7 @@ class TicTacToeEngine implements GameContract
         if (! $moveData instanceof TicTacToeMoveData) {
             throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeMoveData.');
         }
-        
+
         // rejects: out-of-bounds, occupied cells, wrong player's turn
         $row = $moveData->row;
         $col = $moveData->col;
@@ -121,10 +124,8 @@ class TicTacToeEngine implements GameContract
         }
 
         //checks if game is still ongoing
-        foreach ($board as $row) {
-            if (in_array(0, $row, true)) {
-                return null;
-            }
+        if (in_array(0, array_merge(...$board), true)) {
+            return null;
         }
 
         //draw
