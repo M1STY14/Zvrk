@@ -7,7 +7,7 @@ use Spatie\LaravelData\Data;
 final class GameResult extends Data
 {
     public function __construct(
-        public ?int $winner,
+        public ?string $winner,
         public bool $draw,
     ) {}
 }
