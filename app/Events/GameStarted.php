@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class GameStarted implements ShouldBroadcast
+final readonly class GameStarted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,11 +19,9 @@ class GameStarted implements ShouldBroadcast
     ) {
     }
 
-    public function broadcastOn(): Channel
+    public function broadcastOn(): PresenceChannel
     {
-        return [
-            new PresenceChannel("game.{$this->sessionId}"),
-        ];
+        return new PresenceChannel("game.{$this->sessionId}");
     }
 
     public function broadcastAs(): string

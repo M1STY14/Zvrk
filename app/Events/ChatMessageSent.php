@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ChatMessageSent implements ShouldBroadcast
+final class ChatMessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -20,11 +20,9 @@ class ChatMessageSent implements ShouldBroadcast
     ) {
     }
 
-    public function broadcastOn(): Channel
+    public function broadcastOn(): PrivateChannel
     {
-        return [
-            new PrivateChannel("game.{$this->sessionId}.chat"),
-        ];
+        return new PrivateChannel("game.{$this->sessionId}.chat");
     }
 
     public function broadcastAs(): string

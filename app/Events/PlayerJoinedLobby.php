@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PlayerJoinedLobby implements ShouldBroadcast
+final class PlayerJoinedLobby implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,11 +19,9 @@ class PlayerJoinedLobby implements ShouldBroadcast
     ) {
     }
 
-    public function broadcastOn(): Channel
+    public function broadcastOn(): PresenceChannel
     {
-        return [
-            new PresenceChannel("lobby.{$this->gameSlug}"),
-        ];
+        return new PresenceChannel("lobby.{$this->gameSlug}");
     }
 
     public function broadcastAs(): string

@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MoveMade implements ShouldBroadcast
+final class MoveMade implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -19,16 +19,12 @@ class MoveMade implements ShouldBroadcast
         public int $column,
         public array $board,
         public ?string $nextPlayerId = null,
-        public ?string $winner = null,
-        public bool $draw = false,
     ) {
     }
 
-    public function broadcastOn(): Channel
+    public function broadcastOn(): PresenceChannel
     {
-        return [
-            new PresenceChannel("game.{$this->sessionId}"),
-        ];
+        return new PresenceChannel("game.{$this->sessionId}");
     }
 
     public function broadcastAs(): string
@@ -45,8 +41,6 @@ class MoveMade implements ShouldBroadcast
             'column' => $this->column,
             'board' => $this->board,
             'nextPlayerId' => $this->nextPlayerId,
-            'winner' => $this->winner,
-            'draw' => $this->draw,
         ];
     }
 }
