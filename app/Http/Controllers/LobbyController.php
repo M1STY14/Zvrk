@@ -10,24 +10,18 @@ use App\Models\GameSession;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final class LobbyController extends Controller
 {
-    public function index(Game $game): Response
+    public function index(Game $game, #[CurrentUser] User $user): Response
     {
-        $rooms = $game->gameSessions()
-            ->where('status', GameStatus::Waiting)
-            ->where('is_private', false)
-            ->withCount('players')
-            ->with('host:id,name')
-            ->latest()
-            ->get();
-
         return Inertia::render('Lobby/Index', [
             'game' => $game,
-            'rooms' => $rooms,
+            'rooms' => $game->waitingRooms(),
+            'userRoomId' => $game->userRoomId($user),
         ]);
     }
 
@@ -46,19 +40,27 @@ final class LobbyController extends Controller
 
     public function store(CreateLobbyRequest $request, Game $game, #[CurrentUser] User $user): RedirectResponse
     {
-        $session = GameSession::query()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $user->id,
-            'name' => $request->validated('name'),
-            'status' => GameStatus::Waiting,
-            'max_players' => $request->validated('max_players'),
-        ]);
+        if ($game->userRoomId($user) !== null) {
+            return back()->withErrors(['room' => 'You are already in a room.']);
+        }
 
-        $session->players()->create([
-            'user_id' => $user->id,
-            'player_number' => 1,
-            'joined_at' => now(),
-        ]);
+        $session = DB::transaction(function () use ($game, $request, $user) {
+            $session = GameSession::query()->create([
+                'game_id' => $game->id,
+                'host_user_id' => $user->id,
+                'name' => $request->validated('name'),
+                'status' => GameStatus::Waiting,
+                'max_players' => $request->validated('max_players'),
+            ]);
+
+            $session->players()->create([
+                'user_id' => $user->id,
+                'player_number' => 1,
+                'joined_at' => now(),
+            ]);
+
+            return $session;
+        });
 
         PlayerJoinedLobby::dispatch($game->slug, $user->id, $user->name);
 

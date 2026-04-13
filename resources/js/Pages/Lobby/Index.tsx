@@ -23,12 +23,19 @@ interface Game {
 interface Props {
     game: Game;
     rooms: Room[];
+    userRoomId?: string | null;
 }
 
-export default function Index({ game, rooms }: Props) {
+export default function Index({ game, rooms, userRoomId = null }: Props) {
     const [showModal, setShowModal] = useState(false);
+    const [joinError, setJoinError] = useState<string | null>(null);
 
     const handleJoin = (roomId: string) => {
+        if (userRoomId !== null && userRoomId !== roomId) {
+            setJoinError('Cannot join a room you\'re already in.');
+            return;
+        }
+        setJoinError(null);
         router.visit(route('lobby.show', [game.slug, roomId]));
     };
 
@@ -45,7 +52,10 @@ export default function Index({ game, rooms }: Props) {
                     <h2 className="text-xl font-semibold leading-tight text-gray-800">
                         {game.name} — Lobby
                     </h2>
-                    <PrimaryButton onClick={() => setShowModal(true)}>
+                    <PrimaryButton
+                        onClick={() => setShowModal(true)}
+                        disabled={userRoomId !== null}
+                    >
                         Kreiraj sobu
                     </PrimaryButton>
                 </div>
@@ -55,6 +65,11 @@ export default function Index({ game, rooms }: Props) {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    {joinError && (
+                        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-600">
+                            {joinError}
+                        </div>
+                    )}
                     {rooms.length === 0 ? (
                         <div className="rounded-lg bg-white p-8 text-center shadow-sm">
                             <p className="text-gray-500">
@@ -68,6 +83,7 @@ export default function Index({ game, rooms }: Props) {
                                     key={room.id}
                                     room={room}
                                     onJoin={handleJoin}
+                                    isUserRoom={userRoomId === room.id}
                                 />
                             ))}
                         </div>

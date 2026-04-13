@@ -9,9 +9,10 @@ interface RoomCardProps {
         max_players: number;
     };
     onJoin: (roomId: string) => void;
+    isUserRoom?: boolean;
 }
 
-export default function RoomCard({ room, onJoin }: RoomCardProps) {
+export default function RoomCard({ room, onJoin, isUserRoom = false }: RoomCardProps) {
     const isFull = room.players_count >= room.max_players;
 
     return (
@@ -26,8 +27,8 @@ export default function RoomCard({ room, onJoin }: RoomCardProps) {
                 </p>
             </div>
 
-            <PrimaryButton onClick={() => onJoin(room.id)} disabled={isFull}>
-                {isFull ? 'Puno' : 'Pridruži se'}
+            <PrimaryButton onClick={() => onJoin(room.id)} disabled={!isUserRoom && isFull}>
+                {isUserRoom ? 'Otvori' : isFull ? 'Puno' : 'Pridruži se'}
             </PrimaryButton>
         </div>
     );
