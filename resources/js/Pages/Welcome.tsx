@@ -33,7 +33,7 @@ const steps = [
 ];
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/new_un_lower2.glb');
+    const { scene } = useGLTF('/models/new_un_lower2_62MB.glb');
     return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
