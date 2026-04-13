@@ -24,7 +24,7 @@ class MoveMade implements ShouldBroadcast
     ) {
     }
 
-    public function broadcastOn(): array
+    public function broadcastOn(): Channel
     {
         return [
             new PresenceChannel("game.{$this->sessionId}"),
