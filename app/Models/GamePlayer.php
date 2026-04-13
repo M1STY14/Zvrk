@@ -5,7 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property-read string $id
@@ -19,9 +19,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property-read GameSession $gameSession
  * @property-read User $user
  */
-final class GamePlayer extends Pivot
+final class GamePlayer extends Model
 {
     use HasUlids;
+
+    public $timestamps = false;
 
     protected $fillable = [
         'game_session_id',

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use App\Enums\GameStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -55,5 +56,24 @@ final class Game extends Model
     public function playerStats(): HasMany
     {
         return $this->hasMany(PlayerStat::class);
+    }
+
+    public function waitingRooms(): Collection
+    {
+        return $this->gameSessions()
+            ->where('status', GameStatus::Waiting)
+            ->where('is_private', false)
+            ->withCount('players')
+            ->with('host:id,name')
+            ->latest()
+            ->get();
+    }
+
+    public function userRoomId(User $user): ?string
+    {
+        return $this->gameSessions()
+            ->where('status', GameStatus::Waiting)
+            ->whereHas('players', fn ($query) => $query->where('user_id', $user->id))
+            ->value('id');
     }
 }
