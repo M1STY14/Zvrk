@@ -5,9 +5,9 @@ namespace App\Games;
 use App\Contracts\GameContract;
 use App\Data\GameResult;
 use App\Data\GameState;
-use App\Data\TicTacToeState;
-use App\Data\TicTacToeMoveData;
 use App\Data\MoveData;
+use App\Data\TicTacToeMoveData;
+use App\Data\TicTacToeState;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 

@@ -80,7 +80,7 @@ final class GameSession extends Model
         return $this->belongsTo(User::class, 'winner_user_id');
     }
 
-    public function gamePlayers(): HasMany
+    public function players(): HasMany
     {
         return $this->hasMany(GamePlayer::class);
     }
