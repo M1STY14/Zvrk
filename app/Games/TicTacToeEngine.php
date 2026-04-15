@@ -13,6 +13,22 @@ use InvalidArgumentException;
 
 class TicTacToeEngine implements GameContract
 {
+    public function makeState(array $data): GameState
+    {
+        return new TicTacToeState(
+            board: $data['board'],
+            currentTurn: $data['currentTurn'],
+            players: collect($data['players']),
+        );
+    }
+
+    public function makeMoveData(array $data): MoveData
+    {
+        return new TicTacToeMoveData(
+            row: $data['row'],
+            col: $data['col'],
+        );
+    }
 
     public function initialState(Collection $players): GameState
     {

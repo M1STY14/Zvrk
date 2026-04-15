@@ -11,6 +11,10 @@ interface GameContract
 {
     public function initialState(Collection $players): GameState;
 
+    public function makeState(array $data): GameState;
+
+    public function makeMoveData(array $data): MoveData;
+
     public function validateMove(GameState $state, int $playerNumber, MoveData $moveData): bool;
 
     public function applyMove(GameState $state, int $playerNumber, MoveData $moveData): GameState;

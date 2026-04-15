@@ -49,7 +49,7 @@ final class LobbyController extends Controller
                 'game_id' => $game->id,
                 'host_user_id' => $user->id,
                 'name' => $request->validated('name'),
-                'status' => GameStatus::Waiting,
+                'status' => GameStatus::Pending,
                 'max_players' => $request->validated('max_players'),
             ]);
 

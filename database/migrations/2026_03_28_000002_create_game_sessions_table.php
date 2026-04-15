@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignUlid('game_id')->constrained('games');
             $table->foreignUlid('host_user_id')->constrained('users');
             $table->string('name');
-            $table->string('status')->default(GameStatus::Waiting->value);
+            $table->string('status')->default(GameStatus::Pending->value);
             $table->json('state')->nullable();
             $table->foreignUlid('winner_user_id')->nullable()->constrained('users');
             $table->unsignedTinyInteger('max_players');

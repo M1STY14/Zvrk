@@ -2,77 +2,40 @@
 
 namespace App\Policies;
 
+use App\Enums\GameStatus;
 use App\Models\GameSession;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
 final readonly class GameSessionPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    public function join(User $user, GameSession $gameSession): Response
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, GameSession $gameSession): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, GameSession $gameSession): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, GameSession $gameSession): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, GameSession $gameSession): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, GameSession $gameSession): bool
-    {
-        return false;
-    }
-
-    public function join(User $user, GameSession $gameSession): bool
-    {
-        $isHost = $gameSession->host_user_id === $user->id;
-        $isPlayer = $gameSession->players()->where('user_id', $user->id)->exists();
-
-        if (! $isHost && ! $isPlayer) {
-            return false;
+        if ($gameSession->status->isNot(GameStatus::Pending)) {
+            return Response::deny('This game session is no longer accepting players.');
         }
 
-        return true;
+        if ($gameSession->players()->count() >= $gameSession->max_players) {
+            return Response::deny('This game session is full.');
+        }
+
+        return Response::allow();
+    }
+
+    public function start(User $user, GameSession $gameSession): Response
+    {
+        if ($gameSession->host_user_id !== $user->id) {
+            return Response::deny('Only the host can start the game.');
+        }
+
+        if ($gameSession->status->isNot(GameStatus::Pending)) {
+            return Response::deny('This game session cannot be started.');
+        }
+
+        if ($gameSession->players()->count() < $gameSession->game->min_players) {
+            return Response::deny('Not enough players to start the game.');
+        }
+
+        return Response::allow();
     }
 }
