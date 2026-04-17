@@ -36,7 +36,7 @@ export default function Dashboard({ games, userStats }: Props) {
         >
             <Head title="Dashboard" />
 
-            <div className="py-12">
+            <div className="py-4">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     {/* User Stats Section */}
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-8">
@@ -68,31 +68,35 @@ export default function Dashboard({ games, userStats }: Props) {
                             {/* Tic-Tac-Toe */}
                             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-indigo-200 relative overflow-hidden">
                                 {/* Card corner decoration */}
-                                <div className="absolute bottom-2 right-2 text-3xl">🎮</div>
+                                <div className="absolute bottom-2 right-2 text-3xl">❌⭕</div>
                                 
                                 <h4 className="text-xl font-bold text-indigo-900 mb-2">Tic-Tac-Toe</h4>
                                 <div className="h-1 w-12 bg-indigo-400 rounded mb-3"></div>
                                 <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-                                    Take turns placing Xs and Os on a 3x3 grid. Get three in a row to win!
+                                    Naizmjenično postavi X i O na mrežu 3x3. Poredaj tri u niz i pobijedi!
                                 </p>
                                 <div className="border-t border-indigo-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-indigo-800">👥 Players: 2v2</p>
-                                    <p className="text-green-600 font-bold mt-2 text-center">🎮 PLAY NOW</p>
                                 </div>
                             </div>
 
                             {/* Ludo */}
-                            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-yellow-200 relative overflow-hidden">
+                            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-yellow-200 relative overflow-hidden opacity-70">
                                 {/* Card corner decoration */}
                                 <div className="absolute bottom-2 right-2 text-3xl">🎲</div>
                                 
                                 <h4 className="text-xl font-bold text-yellow-900 mb-2">Ludo</h4>
                                 <div className="h-1 w-12 bg-yellow-400 rounded mb-3"></div>
                                 <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-                                    Roll the dice and race your four tokens from start to finish. Block and capture opponents!
+                                   Baci kockicu i utrči se sa svoja četiri žetona od starta do cilja. Blokiraj i zarobi protivnike!
                                 </p>
                                 <div className="border-t border-yellow-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-yellow-800">👥 Players: 2-4</p>
+                                </div>
+                                 <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
+                                        COMING SOON
+                                    </span>
                                 </div>
                             </div>
 
@@ -104,7 +108,7 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <h4 className="text-xl font-bold text-gray-800 mb-2">Checkers</h4>
                                 <div className="h-1 w-12 bg-gray-400 rounded mb-3"></div>
                                 <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-                                    Move your pieces diagonally and jump over opponents to capture them. King your pieces!
+                                    Pomakni figure dijagonalno i preskaći protivnike kako bi ih zarobili. Postani kralj ili kraljica!
                                 </p>
                                 <div className="border-t border-gray-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-gray-700">👥 Players: 2v2</p>
@@ -124,7 +128,7 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <h4 className="text-xl font-bold text-red-900 mb-2">4 in a Row</h4>
                                 <div className="h-1 w-12 bg-red-400 rounded mb-3"></div>
                                 <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-                                    Drop your colored pieces into a vertical grid. Connect four in a row to win!
+                                    Spusti obojene žetone u vertikalnu mrežu i budi pametniji od protivnika. Spoji četiri u niz i pobijedi!
                                 </p>
                                 <div className="border-t border-red-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-red-800">👥 Players: 2v2</p>
