@@ -38,6 +38,14 @@ class GameSeeder extends Seeder
                 'max_players' => 2,
                 'is_active' => false, // TODO: need to implement game engine
             ],
+            [
+                'slug' => GameType::FourInARow->value,
+                'name' => '4 in a Row',
+                'description' => 'Drop your colored pieces into a vertical grid. Connect four in a row horizontally, vertically, or diagonally to win!',
+                'min_players' => 2,
+                'max_players' => 2,
+                'is_active' => false, // TODO: need to implement game engine
+            ],
         ];
 
         foreach ($games as $game) {
