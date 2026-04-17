@@ -65,9 +65,14 @@ export default function Authenticated({
 
                                     <Dropdown.Content>
                                         <Dropdown.Link
+                                            href={route('profile.show')}
+                                        >
+                                            View Profile
+                                        </Dropdown.Link>
+                                        <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Profile
+                                            Edit Profile
                                         </Dropdown.Link>
                                         <Dropdown.Link
                                             href={route('logout')}
@@ -150,8 +155,11 @@ export default function Authenticated({
                         </div>
 
                         <div className="mt-3 space-y-1">
+                            <ResponsiveNavLink href={route('profile.show')}>
+                                View Profile
+                            </ResponsiveNavLink>
                             <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
+                                Edit Profile
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 method="post"

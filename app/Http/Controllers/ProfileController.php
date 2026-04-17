@@ -14,6 +14,39 @@ use Inertia\Response;
 class ProfileController extends Controller
 {
     /**
+     * Display the user's profile with stats.
+     */
+    public function show(Request $request): Response
+    {
+        $user = $request->user()->load(['playerStats.game']);
+
+        $stats = $user->playerStats->map(function ($stat) {
+            return [
+                'game' => $stat->game->name,
+                'gamesPlayed' => $stat->games_played,
+                'wins' => $stat->wins,
+                'losses' => $stat->losses,
+                'draws' => $stat->draws,
+                'winRate' => $stat->games_played > 0 ? round(($stat->wins / $stat->games_played) * 100, 1) : 0,
+            ];
+        });
+
+        $totalStats = [
+            'gamesPlayed' => $user->playerStats->sum('games_played'),
+            'wins' => $user->playerStats->sum('wins'),
+            'losses' => $user->playerStats->sum('losses'),
+            'draws' => $user->playerStats->sum('draws'),
+        ];
+        $totalStats['winRate'] = $totalStats['gamesPlayed'] > 0 ? round(($totalStats['wins'] / $totalStats['gamesPlayed']) * 100, 1) : 0;
+
+        return Inertia::render('Profile/Show', [
+            'user' => $user->only(['id', 'name', 'email', 'avatar', 'created_at']),
+            'stats' => $stats,
+            'totalStats' => $totalStats,
+        ]);
+    }
+
+    /**
      * Display the user's profile form.
      */
     public function edit(Request $request): Response
