@@ -18,6 +18,8 @@ class GameSeeder extends Seeder
                 'slug' => GameType::TicTacToe->value,
                 'name' => 'Tic-Tac-Toe',
                 'description' => 'Take turns placing Xs and Os on a 3x3 grid. Get three in a row to win!',
+                //JUST FOR DEMO TO SEE PICTURE OF GAME ON DASHBOARD
+                'image' => '/images/homepage_games_thumbnails/tic_tac_toe_right_side.svg',
                 'min_players' => 2,
                 'max_players' => 2,
                 'is_active' => true,

@@ -29,9 +29,7 @@ export default function Dashboard({ games, userStats }: Props) {
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Game Catalog
-                </h2>
+                <img src="/images/game_stats_logo_for_dashboard.svg" alt="Game Stats" className="h-16 w-auto" />
             }
         >
             <Head title="Dashboard" />
@@ -39,24 +37,22 @@ export default function Dashboard({ games, userStats }: Props) {
             <div className="py-4">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     {/* User Stats Section */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-8">
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg rounded-lg p-6 text-white">
-                            <div className="flex items-center justify-between">
+                    <div className="rounded-lg p-10 text-white relative overflow-hidden mb-8"
+                        style={{ backgroundImage: 'url(/images/user_stats_backcard.svg)', backgroundSize: 'cover', backgroundPosition: 'center', aspectRatio: '918 / 140' }}>
+                        <div className="grid grid-cols-2 gap-16">
+                            <div className="flex items-center gap-96 mb-">
                                 <div>
-                                    <p className="text-blue-100 text-sm font-medium">Total Games Played</p>
-                                    <p className="text-4xl font-bold mt-2">{userStats.totalGamesPlayed}</p>
+                                    <p className="text-blue-500 text-sm font-medium">Total Games Played</p>
+                                    <p className="text-black text-4xl font-bold mt-2">{userStats.totalGamesPlayed}</p>
                                 </div>
-                                <div className="text-5xl opacity-75">⚡</div>
+                                <div className="text-5xl opacity-75 mt-2 sm:block">⚡</div>
                             </div>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-green-500 to-green-600 shadow-lg rounded-lg p-6 text-white">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-96 mb-">
                                 <div>
-                                    <p className="text-green-100 text-sm font-medium">Win Rate</p>
-                                    <p className="text-4xl font-bold mt-2">{userStats.overallWinRate}%</p>
+                                    <p className="text-green-500 text-sm font-medium">Win Rate</p>
+                                    <p className="text-black text-4xl font-bold mt-2">{userStats.overallWinRate}%</p>
                                 </div>
-                                <div className="text-5xl opacity-75">🏆</div>
+                                <div className="text-3xl opacity-75 mt-2 sm:block">🏆</div>
                             </div>
                         </div>
                     </div>
@@ -101,7 +97,7 @@ export default function Dashboard({ games, userStats }: Props) {
                             </div>
 
                             {/* Checkers */}
-                            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-300 relative overflow-hidden opacity-70">
+                            <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-300 relative overflow-hidden opacity-70">
                                 {/* Card corner decoration */}
                                 <div className="absolute bottom-2 right-2 text-3xl">♟️</div>
                                 
@@ -150,19 +146,20 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <Link
                                     key={game.id}
                                     href={game.is_active ? route('lobby.index', { game: game.slug }) : '#'}
-                                    className={`group overflow-hidden bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex flex-col ${
+                                    className={`group overflow-hidden bg-white rounded-lg transition-all duration-300 flex flex-col ${
                                         game.is_active ? 'cursor-pointer' : 'cursor-not-allowed'
                                     } ${!game.is_active ? 'opacity-60' : ''}`}
+                                    style={{ boxShadow: '0 2px 2px -1px rgba(0,0,0,0.1)' }}
                                     as={game.is_active ? 'a' : 'div'}
                                 >
                                     {/* Game Image */}
-                                    <div className="relative overflow-hidden bg-gray-200 h-48">
+                                    <div className="relative overflow-hidden bg-gray-50 h-48">
                                         {game.image ? (
                                             <img
                                                 src={game.image}
                                                 alt={game.name}
-                                                className={`w-full h-full object-cover transition-transform duration-300 ${
-                                                    game.is_active ? 'group-hover:scale-105' : ''
+                                                className={`w-full h-full ${
+                                                    game.is_active 
                                                 }`}
                                             />
                                         ) : (
@@ -218,7 +215,7 @@ export default function Dashboard({ games, userStats }: Props) {
 
                                         {/* Play Button */}
                                         {game.is_active && (
-                                            <button className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200">
+                                            <button className="mt-4 w-full bg-black hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-3xl transition-colors duration-200">
                                                 Play Now
                                             </button>
                                         )}

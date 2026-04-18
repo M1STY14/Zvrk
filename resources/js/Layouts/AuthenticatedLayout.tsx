@@ -23,7 +23,7 @@ export default function Authenticated({
                     </div>
 
                     {/* Center links */}
-                    <div className="hidden md:flex items-center justify-start gap-10">
+                    <div className="hidden md:flex items-center justify-center gap-10">
                         <Link href={route('dashboard')} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
                             onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
                             onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
@@ -49,7 +49,7 @@ export default function Authenticated({
                                 </button>
                             </Dropdown.Trigger>
 
-                            <Dropdown.Content>
+                            <Dropdown.Content width="full">
                                 <Dropdown.Link href={route('profile.edit')}>
                                     Profile
                                 </Dropdown.Link>
