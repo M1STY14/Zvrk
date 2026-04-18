@@ -226,6 +226,39 @@ export default function Dashboard({ games, userStats }: Props) {
                     </div>
                 </div>
             </div>
+
+            {/* fun logo */}
+            <div className="flex justify-center py-8 px-8">
+                <img src="/images/dashboard_message.svg" alt="Zvrk" className="h-60 w-auto" />
+            </div>
+
+            {/* Footer */}
+            <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
+                <div className="flex flex-col md:flex-row justify-between items-center md:items-start px-12 py-12 max-w-screen-xl mx-auto">
+                    <div className="mb-8 md:mb-0">
+                        <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                        <p className="text-sm max-w-xs mt-2" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
+                        <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <h4 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#2f3336' }}>Igre</h4>
+                        <div className="flex flex-col gap-2">
+                            {games.map((g) => (
+                                <span key={g.id} className="text-sm font-medium" style={{ color: '#64748b' }}>{g.name}</span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mt-8 md:mt-0 flex flex-col gap-2">
+                        <h4 className="text-sm font-bold uppercase tracking-wide mb-1" style={{ color: '#2f3336' }}>Platforme</h4>
+                        <Link href={route('about')} className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}>O nama</Link>
+                        <a href="#" className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}>Ljestvica</a>
+                        <a href="https://github.com" target="_blank" rel="noreferrer" className="text-sm font-medium transition-colors" style={{ color: '#64748b' }}>GitHub</a>
+                    </div>
+                </div>
+            </footer>
+
         </AuthenticatedLayout>
     );
 }
