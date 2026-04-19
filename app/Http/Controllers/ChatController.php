@@ -6,41 +6,35 @@ use App\Data\StoreChatMessageData;
 use App\Events\ChatMessageSent;
 use App\Models\ChatMessage;
 use App\Models\GameSession;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 
-class ChatController extends Controller
+ class ChatController extends Controller
 {
-    public function store(GameSession $gameSession, StoreChatMessageData $data): JsonResponse
+    /**
+     * @throws AuthorizationException
+     */
+    public function store(GameSession $gameSession, StoreChatMessageData $data, #[CurrentUser] User $user): JsonResponse
     {
         $this->authorize('chat', $gameSession);
-
-        $sanitizedMessage = strip_tags($data->message);
-        $messageText = trim($sanitizedMessage);
-
-        if ($messageText === '') {
-            return response()->json([
-                'message' => 'Message cannot be empty.',
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
 
         $chatMessage = ChatMessage::query()->create([
             'game_session_id' => $gameSession->id,
             'user_id' => $user->id,
-            'message' => $messageText,
+            'message' => trim($data->message),
         ]);
 
         $chatMessage->load('user');
 
         broadcast(new ChatMessageSent(
-            sessionId: (string) $gameSession->id,
-            messageId: (string) $chatMessage->id,
+            sessionId: $gameSession->id,
+            messageId: $chatMessage->id,
             message: $chatMessage->message,
-            senderId: (string) $chatMessage->user->id,
+            senderId: $chatMessage->user->id,
             senderName: $chatMessage->user->name,
-            createdAt: $chatMessage->created_at?->toISOString() ?? now()->toISOString(),
+            createdAt: $chatMessage->created_at->toISOString(),
         ))->toOthers();
 
         return response()->json([
@@ -50,7 +44,7 @@ class ChatController extends Controller
                 'id' => $chatMessage->user->id,
                 'name' => $chatMessage->user->name,
             ],
-            'created_at' => $chatMessage->created_at?->toISOString(),
+            'created_at' => $chatMessage->created_at->toISOString(),
         ]);
     }
 }

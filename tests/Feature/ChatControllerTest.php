@@ -146,8 +146,8 @@ class ChatControllerTest extends TestCase
 
         $response
             ->assertStatus(422)
-            ->assertJson([
-                'message' => 'The message field is required.',
+            ->assertJsonValidationErrors([
+                'message' => 'Message is required.',
             ]);
 
         $this->assertDatabaseEmpty('chat_messages');
@@ -155,7 +155,7 @@ class ChatControllerTest extends TestCase
         Event::assertNotDispatched(ChatMessageSent::class);
     }
 
-    public function test_message_with_only_html_tags_cannot_be_sent(): void
+    public function test_message_html_is_stored_verbatim(): void
     {
         Event::fake();
 
@@ -167,41 +167,16 @@ class ChatControllerTest extends TestCase
             'host_user_id' => $host->id,
         ]);
 
-        $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
-            'message' => '<b></b><script></script>',
-        ]);
-
-        $response
-            ->assertStatus(422)
-            ->assertJson([
-                'message' => 'Message cannot be empty.',
-            ]);
-
-        $this->assertDatabaseEmpty('chat_messages');
-
-        Event::assertNotDispatched(ChatMessageSent::class);
-    }
-
-    public function test_message_html_is_sanitized(): void
-    {
-        Event::fake();
-
-        $host = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $raw = '<script>alert(1)</script><b>Hello</b>';
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
-            'message' => '<script>alert(1)</script><b>Hello</b>',
+            'message' => $raw,
         ]);
 
         $response
             ->assertOk()
             ->assertJson([
-                'message' => 'alert(1)Hello',
+                'message' => $raw,
                 'sender' => [
                     'id' => $host->id,
                     'name' => $host->name,
@@ -211,7 +186,7 @@ class ChatControllerTest extends TestCase
         $this->assertDatabaseHas('chat_messages', [
             'game_session_id' => $session->id,
             'user_id' => $host->id,
-            'message' => 'alert(1)Hello',
+            'message' => $raw,
         ]);
 
         Event::assertDispatched(ChatMessageSent::class);
@@ -282,7 +257,7 @@ class ChatControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
-            'message' => str_repeat('a', 1001),
+            'message' => str_repeat('a', 251),
         ]);
 
         $response
