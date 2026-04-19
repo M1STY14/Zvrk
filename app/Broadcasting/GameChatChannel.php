@@ -16,7 +16,7 @@ final class GameChatChannel
      */
     public function join(User $user, GameSession $gameSession): bool
     {
-        $this->authorize('join', $gameSession);
+        $this->authorize('listen', $gameSession);
 
         return true;
     }

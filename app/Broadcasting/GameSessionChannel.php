@@ -16,7 +16,7 @@ final class GameSessionChannel
      */
     public function join(User $user, GameSession $gameSession): array|false
     {
-        $this->authorize('join', $gameSession);
+        $this->authorize('listen', $gameSession);
 
         return [
             'id' => $user->id,

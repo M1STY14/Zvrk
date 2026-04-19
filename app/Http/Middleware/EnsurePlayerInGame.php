@@ -10,7 +10,7 @@ final class EnsurePlayerInGame
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $session = $request->route('session');
+        $session = $request->route('gameSession');
 
         $isPlayer = $session->players()
             ->where('user_id', $request->user()->id)
