@@ -13,13 +13,15 @@ function ZvrkModel() {
 const TYPING_LINES = ['Kreiraj račun.', 'Počni igrati.'];
 
 const floatingItems = [
-    { emoji: '🎲', style: { top: '15%', left: '18%', animationDelay: '0s', animationDuration: '6s', fontSize: '2.5rem' } },
+    { emoji: '🎲', style: { top: '20%', left: '20%', animationDelay: '0s', animationDuration: '6s', fontSize: '2.5rem' } },
     { emoji: '♟️', style: { top: '25%', left: '72%', animationDelay: '1.2s', animationDuration: '7s', fontSize: '2rem' } },
     { emoji: '🃏', style: { top: '55%', left: '25%', animationDelay: '0.5s', animationDuration: '8s', fontSize: '2.2rem' } },
-    { emoji: '🎯', style: { top: '70%', left: '65%', animationDelay: '2s', animationDuration: '6.5s', fontSize: '2rem' } },
+    { emoji: '🎯', style: { top: '75%', left: '75%', animationDelay: '2s', animationDuration: '6.5s', fontSize: '2rem' } },
     { emoji: '🚢', style: { top: '40%', left: '60%', animationDelay: '0.8s', animationDuration: '7.5s', fontSize: '1.8rem' } },
     { emoji: '🔴', style: { top: '80%', left: '35%', animationDelay: '1.5s', animationDuration: '9s', fontSize: '1.5rem' } },
     { emoji: '🟡', style: { top: '18%', left: '40%', animationDelay: '3s', animationDuration: '7s', fontSize: '1.5rem' } },
+    { emoji: '🔴', style: { top: '70%', left: '90%', animationDelay: '1.5s', animationDuration: '9s', fontSize: '1.5rem' } },
+    { emoji: '🟡', style: { top: '30%', left: '90%', animationDelay: '3s', animationDuration: '7s', fontSize: '1.5rem' } },
     { emoji: '♠️', style: { top: '5%', left: '55%', animationDelay: '0.3s', animationDuration: '8.5s', fontSize: '2rem' } },
     { emoji: '🎮', style: { top: '35%', left: '10%', animationDelay: '2.5s', animationDuration: '7s', fontSize: '1.8rem' } },
     { emoji: '⭐', style: { top: '48%', left: '78%', animationDelay: '1.8s', animationDuration: '5.5s', fontSize: '1.4rem' } },
