@@ -28,9 +28,30 @@ final class GameSessionController extends Controller
     {
         $gameSession->load(['players.user:id,name,avatar', 'game']);
 
-        // TODO: implement show pages for games
-        return Inertia::render('Show', [
-            'session' => $gameSession,
+        return Inertia::render('Game/Play', [
+            'session' => [
+                'id' => $gameSession->id,
+                'name' => $gameSession->name,
+                'status' => $gameSession->status->value,
+                'state' => $gameSession->state,
+                'winner_user_id' => $gameSession->winner_user_id,
+                'game' => [
+                    'slug' => $gameSession->game->slug,
+                    'name' => $gameSession->game->name,
+                ],
+                'players' => $gameSession->players
+                    ->sortBy('player_number')
+                    ->values()
+                    ->map(fn ($player) => [
+                        'id' => $player->id,
+                        'user_id' => $player->user_id,
+                        'player_number' => $player->player_number,
+                        'user' => [
+                            'id' => $player->user->id,
+                            'name' => $player->user->name,
+                        ],
+                    ]),
+            ],
         ]);
     }
 

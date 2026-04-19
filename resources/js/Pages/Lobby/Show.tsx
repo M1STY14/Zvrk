@@ -1,7 +1,8 @@
 import GameLayout from '@/Components/Layout/GameLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
+import { useEffect } from 'react';
 
 interface Player {
     id: string;
@@ -38,8 +39,41 @@ export default function Show({ game, session }: Props) {
     const isHost = auth.user.id === session.host_user_id;
     const canStartGame = session.players.length >= game.min_players;
 
+    useEffect(() => {
+        const lobbyChannel = `lobby.${game.slug}`;
+        const gameChannel = `game.${session.id}`;
+
+        console.log('[lobby] subscribing to', lobbyChannel, gameChannel);
+
+        window.Echo.join(lobbyChannel)
+            .here((users: unknown) => console.log('[lobby] presence here', users))
+            .joining((user: unknown) => console.log('[lobby] presence joining', user))
+            .leaving((user: unknown) => console.log('[lobby] presence leaving', user))
+            .listen('.player.joined.lobby', (event: unknown) => {
+                console.log('[lobby] player.joined.lobby', event);
+                router.reload({ only: ['session'] });
+            })
+            .listen('.player.left.lobby', (event: unknown) => {
+                console.log('[lobby] player.left.lobby', event);
+                router.reload({ only: ['session'] });
+            })
+            .error((err: unknown) => console.error('[lobby] channel error', err));
+
+        window.Echo.join(gameChannel)
+            .listen('.game.started', (event: unknown) => {
+                console.log('[lobby] game.started', event);
+                router.visit(route('game.show', session.id));
+            })
+            .error((err: unknown) => console.error('[game] channel error', err));
+
+        return () => {
+            window.Echo.leave(lobbyChannel);
+            window.Echo.leave(gameChannel);
+        };
+    }, [game.slug, session.id]);
+
     const handleStart = () => {
-        console.log('Pokretanje igre...');
+        router.post(route('game.start', session.id));
     };
 
     return (

@@ -36,7 +36,13 @@ export default function Index({ game, rooms, userRoomId = null }: Props) {
             return;
         }
         setJoinError(null);
-        router.visit(route('lobby.show', [game.slug, roomId]));
+
+        if (userRoomId === roomId) {
+            router.visit(route('lobby.show', [game.slug, roomId]));
+            return;
+        }
+
+        router.post(route('game.join', roomId));
     };
 
     const handleCreate = (data: { name: string; max_players: number }) => {

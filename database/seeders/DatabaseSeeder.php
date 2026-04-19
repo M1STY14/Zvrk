@@ -23,6 +23,13 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        User::query()->create([
+            'name' => 'Test User 2',
+            'email' => 'test2@example.com',
+            'password' => Hash::make('testUserPassword'),
+            'email_verified_at' => now(),
+        ]);
+
         $this->command->info('Test user created.');
 
         $this->call([

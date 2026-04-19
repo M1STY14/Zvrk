@@ -22,6 +22,19 @@ final readonly class GameSessionPolicy
         return Response::allow();
     }
 
+    public function listen(User $user, GameSession $gameSession): Response
+    {
+        $isPlayer = $gameSession->players()
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (! $isPlayer) {
+            return Response::deny('You are not a player in this game session.');
+        }
+
+        return Response::allow();
+    }
+
     public function start(User $user, GameSession $gameSession): Response
     {
         if ($gameSession->host_user_id !== $user->id) {
