@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class UpdatePlayerStatsTest extends TestCase
+final class UpdatePlayerStatsTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -21,27 +21,7 @@ class UpdatePlayerStatsTest extends TestCase
         $winner = User::factory()->create();
         $loser = User::factory()->create();
 
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $winner->id,
-            'winner_user_id' => $winner->id,
-        ]);
-
-        GamePlayer::query()->create([
-            'game_session_id' => $session->id,
-            'user_id' => $winner->id,
-            'player_number' => 1,
-            'is_connected' => true,
-            'joined_at' => now(),
-        ]);
-
-        GamePlayer::query()->create([
-            'game_session_id' => $session->id,
-            'user_id' => $loser->id,
-            'player_number' => 2,
-            'is_connected' => true,
-            'joined_at' => now(),
-        ]);
+        $session = $this->createSessionWithPlayers($game, $winner, $loser, winner: $winner);
 
         (new UpdatePlayerStats())->handle(new GameEnded(
             sessionId: $session->id,
@@ -75,27 +55,7 @@ class UpdatePlayerStatsTest extends TestCase
         $playerOne = User::factory()->create();
         $playerTwo = User::factory()->create();
 
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $playerOne->id,
-            'winner_user_id' => null,
-        ]);
-
-        GamePlayer::query()->create([
-            'game_session_id' => $session->id,
-            'user_id' => $playerOne->id,
-            'player_number' => 1,
-            'is_connected' => true,
-            'joined_at' => now(),
-        ]);
-
-        GamePlayer::query()->create([
-            'game_session_id' => $session->id,
-            'user_id' => $playerTwo->id,
-            'player_number' => 2,
-            'is_connected' => true,
-            'joined_at' => now(),
-        ]);
+        $session = $this->createSessionWithPlayers($game, $playerOne, $playerTwo, winner: null);
 
         (new UpdatePlayerStats())->handle(new GameEnded(
             sessionId: $session->id,
@@ -104,23 +64,16 @@ class UpdatePlayerStatsTest extends TestCase
             board: [],
         ));
 
-        $this->assertDatabaseHas('player_stats', [
-            'user_id' => $playerOne->id,
-            'game_id' => $game->id,
-            'games_played' => 1,
-            'wins' => 0,
-            'losses' => 0,
-            'draws' => 1,
-        ]);
-
-        $this->assertDatabaseHas('player_stats', [
-            'user_id' => $playerTwo->id,
-            'game_id' => $game->id,
-            'games_played' => 1,
-            'wins' => 0,
-            'losses' => 0,
-            'draws' => 1,
-        ]);
+        foreach ([$playerOne, $playerTwo] as $player) {
+            $this->assertDatabaseHas('player_stats', [
+                'user_id' => $player->id,
+                'game_id' => $game->id,
+                'games_played' => 1,
+                'wins' => 0,
+                'losses' => 0,
+                'draws' => 1,
+            ]);
+        }
     }
 
     public function test_first_game_creates_player_stat_records(): void
@@ -129,29 +82,7 @@ class UpdatePlayerStatsTest extends TestCase
         $winner = User::factory()->create();
         $loser = User::factory()->create();
 
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $winner->id,
-            'winner_user_id' => $winner->id,
-        ]);
-
-        GamePlayer::query()->create([
-            'game_session_id' => $session->id,
-            'user_id' => $winner->id,
-            'player_number' => 1,
-            'is_connected' => true,
-            'joined_at' => now(),
-        ]);
-
-        GamePlayer::query()->create([
-            'game_session_id' => $session->id,
-            'user_id' => $loser->id,
-            'player_number' => 2,
-            'is_connected' => true,
-            'joined_at' => now(),
-        ]);
-
-        $this->assertDatabaseEmpty('player_stats');
+        $session = $this->createSessionWithPlayers($game, $winner, $loser, winner: $winner);
 
         (new UpdatePlayerStats())->handle(new GameEnded(
             sessionId: $session->id,
@@ -171,28 +102,8 @@ class UpdatePlayerStatsTest extends TestCase
 
         $listener = new UpdatePlayerStats();
 
-        foreach ([1, 2] as $_) {
-            $session = GameSession::factory()->create([
-                'game_id' => $game->id,
-                'host_user_id' => $winner->id,
-                'winner_user_id' => $winner->id,
-            ]);
-
-            GamePlayer::query()->create([
-                'game_session_id' => $session->id,
-                'user_id' => $winner->id,
-                'player_number' => 1,
-                'is_connected' => true,
-                'joined_at' => now(),
-            ]);
-
-            GamePlayer::query()->create([
-                'game_session_id' => $session->id,
-                'user_id' => $loser->id,
-                'player_number' => 2,
-                'is_connected' => true,
-                'joined_at' => now(),
-            ]);
+        for ($i = 0; $i < 2; $i++) {
+            $session = $this->createSessionWithPlayers($game, $winner, $loser, winner: $winner);
 
             $listener->handle(new GameEnded(
                 sessionId: $session->id,
@@ -219,5 +130,27 @@ class UpdatePlayerStatsTest extends TestCase
             'losses' => 2,
             'draws' => 0,
         ]);
+    }
+
+    private function createSessionWithPlayers(Game $game, User $playerOne, User $playerTwo, ?User $winner): GameSession
+    {
+        $session = GameSession::factory()->create([
+            'game_id' => $game->id,
+            'host_user_id' => $playerOne->id,
+            'winner_user_id' => $winner?->id,
+        ]);
+
+        $playerNumber = 1;
+        foreach ([$playerOne, $playerTwo] as $user) {
+            GamePlayer::query()->create([
+                'game_session_id' => $session->id,
+                'user_id' => $user->id,
+                'player_number' => $playerNumber++,
+                'is_connected' => true,
+                'joined_at' => now(),
+            ]);
+        }
+
+        return $session;
     }
 }

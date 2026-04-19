@@ -7,6 +7,7 @@ use App\Models\GameSession;
 use App\Models\PlayerStat;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\DB;
 
 final class UpdatePlayerStats implements ShouldQueue
 {
@@ -18,32 +19,30 @@ final class UpdatePlayerStats implements ShouldQueue
             ->with('players')
             ->findOrFail($event->sessionId);
 
-        foreach ($session->players as $player) {
-            $stat = PlayerStat::query()->firstOrCreate(
-                [
-                    'user_id' => $player->user_id,
-                    'game_id' => $session->game_id,
-                ],
-                [
-                    'games_played' => 0,
-                    'wins' => 0,
-                    'losses' => 0,
-                    'draws' => 0,
-                ],
-            );
+        DB::transaction(function () use ($session, $event) {
+            foreach ($session->players as $player) {
+                $isWinner = ! $event->draw && $player->user_id === $event->winner;
 
-            $stat->increment('games_played');
+                $stat = PlayerStat::query()->firstOrCreate(
+                    [
+                        'user_id' => $player->user_id,
+                        'game_id' => $session->game_id,
+                    ],
+                    [
+                        'games_played' => 0,
+                        'wins' => 0,
+                        'losses' => 0,
+                        'draws' => 0,
+                    ],
+                );
 
-            if ($event->draw) {
-                $stat->increment('draws');
-                continue;
+                $stat->update([
+                    'games_played' => DB::raw('games_played + 1'),
+                    'wins' => DB::raw('wins + ' . ($isWinner ? 1 : 0)),
+                    'losses' => DB::raw('losses + ' . (! $event->draw && ! $isWinner ? 1 : 0)),
+                    'draws' => DB::raw('draws + ' . ($event->draw ? 1 : 0)),
+                ]);
             }
-
-            if ($player->user_id === $event->winner) {
-                $stat->increment('wins');
-            } else {
-                $stat->increment('losses');
-            }
-        }
+        });
     }
 }
