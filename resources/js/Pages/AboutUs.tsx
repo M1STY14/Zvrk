@@ -103,10 +103,7 @@ export default function AboutUs({ auth }: PageProps) {
                                     <img src="/images/about_us_small_bg.svg" alt="" className="absolute inset-0 w-full h-full" style={{ objectFit: 'fill' }} />
                                     <span className="relative">♠️  Napravljeno na RITEH-u, Rijeka</span>
                                 </div>
-                                <h1 className="font-black tracking-tight leading-none mb-5"
-                                    style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', color: '#2f3336' }}>
-                                    O nama
-                                </h1>
+                                <img src="/images/about_us_title.svg" alt="O nama" className="mb-5" style={{ height: 'clamp(3rem, 6vw, 5rem)', width: 'auto' }} />
                                 <p className="text-lg leading-relaxed max-w-2xl" style={{ color: '#5c5f63' }}>
                                     Zvrk je studentski projekt Tehničkog fakulteta u Rijeci (RITEH). Cilj nam je omogućiti igračima da igraju klasične društvene igre online,
                                     s prijateljima, u stvarnom vremenu — bez instalacije i bez plaćanja.
@@ -167,16 +164,16 @@ export default function AboutUs({ auth }: PageProps) {
 
                     {/* CTA */}
                     <section className="max-w-screen-xl mx-auto px-8 py-12">
-                        <div className="rounded-3xl px-16 py-14 flex items-center justify-between"
-                            style={{ backgroundColor: '#18181b' }}>
-                            <div className="max-w-lg">
-                                <h2 className="font-black text-3xl text-white mb-4">Spreman za igru?</h2>
+                        <div className="rounded-3xl px-16 py-14 flex items-center justify-between relative overflow-hidden"
+                            style={{ backgroundImage: 'url(/images/ready_to_play_banner.svg)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' }}>
+                            <div className="max-w-lg relative z-10">
+                                <h2 className="font-black text-3xl text-black mb-4">Spremni za igru?</h2>
                                 <p className="text-base leading-relaxed" style={{ color: '#94a3b8' }}>
                                     Besplatno, bez reklama, samo čista zabava s ekipom.
                                 </p>
                             </div>
                             <Link href={auth.user ? route('dashboard') : route('register')}
-                                className="px-8 py-4 rounded-full font-bold text-white text-base transition-all shrink-0"
+                                className="px-8 py-4 rounded-full font-bold text-white text-base transition-all shrink-0 relative z-10"
                                 style={{ backgroundColor: '#FA532F' }}
                                 onMouseOver={e => { e.currentTarget.style.backgroundColor = '#005bc2'; }}
                                 onMouseOut={e => { e.currentTarget.style.backgroundColor = '#FA532F'; }}>
