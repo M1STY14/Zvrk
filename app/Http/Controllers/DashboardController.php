@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Data\AllGamesDashboardData;
 use App\Models\Game;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(#[CurrentUser] User $user): Response
     {
-        $user = $request->user()->load('playerStats');
+        $user->load('playerStats');
 
         $games = Game::query()
             ->orderByDesc('is_active')
