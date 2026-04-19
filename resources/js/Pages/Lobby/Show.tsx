@@ -1,4 +1,4 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import GameLayout from '@/Components/Layout/GameLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { Head, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
@@ -43,7 +43,7 @@ export default function Show({ game, session }: Props) {
     };
 
     return (
-        <AuthenticatedLayout
+        <GameLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
                     {game.name} — {session.name}
@@ -95,6 +95,6 @@ export default function Show({ game, session }: Props) {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </GameLayout>
     );
 }
