@@ -171,6 +171,7 @@ export default function Play({ auth, session }: Props) {
     };
 
     const handleLeave = () => {
+        setShowGameOver(false);
         router.post(route('game.leave', session.id));
     };
 
@@ -236,7 +237,6 @@ export default function Play({ auth, session }: Props) {
                 show={showGameOver}
                 winnerName={state.winner}
                 draw={state.draw}
-                onClose={() => setShowGameOver(false)}
                 onLeave={handleLeave}
             />
         </>

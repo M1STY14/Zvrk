@@ -477,6 +477,10 @@ class GameSessionServiceTest extends TestCase
 
         $this->assertTrue($session->status->is(GameStatus::Abandoned));
         $this->assertNotNull($session->finished_at);
+        $this->assertDatabaseMissing('game_players', [
+            'game_session_id' => $session->id,
+            'user_id' => $host->id,
+        ]);
     }
 
     public function test_remove_player_from_playing_session_broadcasts_game_ended(): void
@@ -509,6 +513,32 @@ class GameSessionServiceTest extends TestCase
         $this->assertDatabaseMissing('game_players', [
             'game_session_id' => $session->id,
             'user_id' => $player2->id,
+        ]);
+        $this->assertDatabaseMissing('game_players', [
+            'game_session_id' => $session->id,
+            'user_id' => $host->id,
+        ]);
+    }
+
+    public function test_remove_player_from_finished_session_deletes_all_players(): void
+    {
+        [$session, $host, $player2] = $this->createTwoPlayerSession();
+
+        $session->update([
+            'status' => GameStatus::Finished,
+            'winner_user_id' => $host->id,
+            'finished_at' => now(),
+        ]);
+
+        $this->service->removePlayer($session, $player2);
+
+        $this->assertDatabaseMissing('game_players', [
+            'game_session_id' => $session->id,
+            'user_id' => $player2->id,
+        ]);
+        $this->assertDatabaseMissing('game_players', [
+            'game_session_id' => $session->id,
+            'user_id' => $host->id,
         ]);
     }
 }

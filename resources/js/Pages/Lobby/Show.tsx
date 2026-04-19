@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import { Head, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import { useEffect } from 'react';
@@ -38,30 +39,27 @@ export default function Show({ game, session }: Props) {
     const { auth } = usePage<Props>().props;
     const isHost = auth.user.id === session.host_user_id;
     const canStartGame = session.players.length >= game.min_players;
+    const canStartAi = isHost && session.players.length === 1;
+    const canCloseRoom = isHost && session.players.length === 1;
 
     useEffect(() => {
         const lobbyChannel = `lobby.${game.slug}`;
         const gameChannel = `game.${session.id}`;
 
-        console.log('[lobby] subscribing to', lobbyChannel, gameChannel);
-
         window.Echo.join(lobbyChannel)
-            .here((users: unknown) => console.log('[lobby] presence here', users))
-            .joining((user: unknown) => console.log('[lobby] presence joining', user))
-            .leaving((user: unknown) => console.log('[lobby] presence leaving', user))
-            .listen('.player.joined.lobby', (event: unknown) => {
-                console.log('[lobby] player.joined.lobby', event);
+            .here(() => {})
+            .joining(() => {})
+            .leaving(() => {})
+            .listen('.player.joined.lobby', () => {
                 router.reload({ only: ['session'] });
             })
-            .listen('.player.left.lobby', (event: unknown) => {
-                console.log('[lobby] player.left.lobby', event);
+            .listen('.player.left.lobby', () => {
                 router.reload({ only: ['session'] });
             })
             .error((err: unknown) => console.error('[lobby] channel error', err));
 
         window.Echo.join(gameChannel)
-            .listen('.game.started', (event: unknown) => {
-                console.log('[lobby] game.started', event);
+            .listen('.game.started', () => {
                 router.visit(route('game.show', session.id));
             })
             .error((err: unknown) => console.error('[game] channel error', err));
@@ -74,6 +72,14 @@ export default function Show({ game, session }: Props) {
 
     const handleStart = () => {
         router.post(route('game.start', session.id));
+    };
+
+    const handleStartAi = () => {
+        router.post(route('game.start-vs-ai', session.id));
+    };
+
+    const handleCloseRoom = () => {
+        router.post(route('game.close-room', session.id));
     };
 
     return (
@@ -119,10 +125,18 @@ export default function Show({ game, session }: Props) {
                             )}
 
                             {isHost && (
-                                <div className="mt-6">
+                                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
                                     <PrimaryButton onClick={handleStart} disabled={!canStartGame}>
                                         Pokreni igru
                                     </PrimaryButton>
+                                    <PrimaryButton onClick={handleStartAi} disabled={!canStartAi}>
+                                        Igraj protiv AI
+                                    </PrimaryButton>
+                                    {canCloseRoom && (
+                                        <SecondaryButton onClick={handleCloseRoom}>
+                                            Zatvori sobu
+                                        </SecondaryButton>
+                                    )}
                                 </div>
                             )}
                         </div>

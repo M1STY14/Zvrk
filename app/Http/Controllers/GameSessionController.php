@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
 use App\Enums\GameStatus;
+use App\Events\PlayerLeftLobby;
 use App\Models\GameSession;
 use App\Models\User;
 use App\Services\GameSessionService;
@@ -85,6 +86,38 @@ final class GameSessionController extends Controller
         $this->gameSessionService->startGame($gameSession);
 
         return to_route('game.show', $gameSession->id);
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function startWithAi(GameSession $gameSession, #[CurrentUser] User $user): RedirectResponse
+    {
+        $gameSession->load('game');
+
+        $this->authorize('startVsAi', $gameSession);
+
+        $this->gameSessionService->startGameWithAi($gameSession);
+
+        return to_route('game.show', $gameSession->id);
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function closeRoom(GameSession $gameSession, #[CurrentUser] User $user): RedirectResponse
+    {
+        $gameSession->load('game');
+
+        $this->authorize('closeRoom', $gameSession);
+
+        $gameSession->update(['status' => GameStatus::Abandoned]);
+
+        $gameSession->players()->where('user_id', $user->id)->delete();
+
+        PlayerLeftLobby::dispatch($gameSession->game->slug, $user->id, $user->name);
+
+        return to_route('lobby.index', $gameSession->game->slug);
     }
 
     /**
