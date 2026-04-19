@@ -9,28 +9,26 @@ use Tests\TestCase;
 
 class ChatMessageSentTest extends TestCase
 {
-    public function test_it_implements_should_broadcast(): void
+    private function makeEvent(): ChatMessageSent
     {
-        $event = new ChatMessageSent(
+        return new ChatMessageSent(
             sessionId: 'session-1',
+            messageId: 'message-1',
             message: 'Hello!',
             senderId: 'player-1',
             senderName: 'Alice',
+            createdAt: '2026-04-19T12:00:00.000000Z',
         );
+    }
 
-        $this->assertInstanceOf(ShouldBroadcast::class, $event);
+    public function test_it_implements_should_broadcast(): void
+    {
+        $this->assertInstanceOf(ShouldBroadcast::class, $this->makeEvent());
     }
 
     public function test_it_broadcasts_on_game_chat_private_channel(): void
     {
-        $event = new ChatMessageSent(
-            sessionId: 'session-1',
-            message: 'Hello!',
-            senderId: 'player-1',
-            senderName: 'Alice',
-        );
-
-        $channel = $event->broadcastOn();
+        $channel = $this->makeEvent()->broadcastOn();
 
         $this->assertInstanceOf(PrivateChannel::class, $channel);
         $this->assertSame('private-game.session-1.chat', $channel->name);
@@ -38,32 +36,20 @@ class ChatMessageSentTest extends TestCase
 
     public function test_it_broadcasts_as_chat_message_sent(): void
     {
-        $event = new ChatMessageSent(
-            sessionId: 'session-1',
-            message: 'Hello!',
-            senderId: 'player-1',
-            senderName: 'Alice',
-        );
-
-        $this->assertSame('chat.message.sent', $event->broadcastAs());
+        $this->assertSame('chat.message.sent', $this->makeEvent()->broadcastAs());
     }
 
     public function test_it_broadcasts_correct_payload(): void
     {
-        $event = new ChatMessageSent(
-            sessionId: 'session-1',
-            message: 'Hello!',
-            senderId: 'player-1',
-            senderName: 'Alice',
-        );
-
         $this->assertSame([
+            'id' => 'message-1',
             'sessionId' => 'session-1',
             'message' => 'Hello!',
             'sender' => [
                 'id' => 'player-1',
                 'name' => 'Alice',
             ],
-        ], $event->broadcastWith());
+            'created_at' => '2026-04-19T12:00:00.000000Z',
+        ], $this->makeEvent()->broadcastWith());
     }
 }

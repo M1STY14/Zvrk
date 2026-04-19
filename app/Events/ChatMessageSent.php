@@ -14,15 +14,17 @@ final class ChatMessageSent implements ShouldBroadcast
 
     public function __construct(
         public string $sessionId,
+        public string $messageId,
         public string $message,
         public string $senderId,
         public string $senderName,
+        public string $createdAt,
     ) {
     }
 
     public function broadcastOn(): PrivateChannel
     {
-        return new PrivateChannel("game.{$this->sessionId}.chat");
+        return new PrivateChannel("game.$this->sessionId.chat");
     }
 
     public function broadcastAs(): string
@@ -33,12 +35,14 @@ final class ChatMessageSent implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
+            'id' => $this->messageId,
             'sessionId' => $this->sessionId,
             'message' => $this->message,
             'sender' => [
                 'id' => $this->senderId,
                 'name' => $this->senderName,
             ],
+            'created_at' => $this->createdAt,
         ];
     }
 }
