@@ -38,12 +38,4 @@ final readonly class GameSessionPolicy
 
         return Response::allow();
     }
-
-    public function chat(User $user, GameSession $gameSession): bool
-    {
-        $isHost = $gameSession->host_user_id === $user->id;
-        $isPlayer = $gameSession->players()->where('user_id', $user->id)->exists();
-
-        return $isHost || $isPlayer;
-    }
 }

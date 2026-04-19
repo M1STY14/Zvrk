@@ -7,21 +7,15 @@ use App\Events\ChatMessageSent;
 use App\Models\ChatMessage;
 use App\Models\GameSession;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 
  class ChatController extends Controller
 {
-    /**
-     * @throws AuthorizationException
-     */
-    public function store(GameSession $gameSession, StoreChatMessageData $data, #[CurrentUser] User $user): JsonResponse
+    public function __invoke(GameSession $session, StoreChatMessageData $data, #[CurrentUser] User $user): JsonResponse
     {
-        $this->authorize('chat', $gameSession);
-
         $chatMessage = ChatMessage::query()->create([
-            'game_session_id' => $gameSession->id,
+            'game_session_id' => $session->id,
             'user_id' => $user->id,
             'message' => trim($data->message),
         ]);
@@ -29,7 +23,7 @@ use Illuminate\Http\JsonResponse;
         $chatMessage->load('user');
 
         broadcast(new ChatMessageSent(
-            sessionId: $gameSession->id,
+            sessionId: $session->id,
             messageId: $chatMessage->id,
             message: $chatMessage->message,
             senderId: $chatMessage->user->id,

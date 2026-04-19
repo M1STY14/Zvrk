@@ -15,18 +15,33 @@ class ChatControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_host_can_send_chat_message(): void
+    private function makeSessionWithPlayer(User $host): GameSession
     {
-        $this->withoutExceptionHandling();
-        Event::fake();
-
-        $host = User::factory()->create();
         $game = Game::factory()->create();
 
         $session = GameSession::factory()->create([
             'game_id' => $game->id,
             'host_user_id' => $host->id,
         ]);
+
+        GamePlayer::query()->create([
+            'game_session_id' => $session->id,
+            'user_id' => $host->id,
+            'player_number' => 1,
+            'is_connected' => true,
+            'joined_at' => now(),
+        ]);
+
+        return $session;
+    }
+
+    public function test_host_can_send_chat_message(): void
+    {
+        $this->withoutExceptionHandling();
+        Event::fake();
+
+        $host = User::factory()->create();
+        $session = $this->makeSessionWithPlayer($host);
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
             'message' => 'hello world',
@@ -66,12 +81,7 @@ class ChatControllerTest extends TestCase
 
         $host = User::factory()->create();
         $player = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         GamePlayer::query()->create([
             'game_session_id' => $session->id,
@@ -110,12 +120,7 @@ class ChatControllerTest extends TestCase
 
         $host = User::factory()->create();
         $intruder = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         $response = $this->actingAs($intruder)->postJson("/session/$session->id/chat", [
             'message' => 'let me in',
@@ -133,12 +138,7 @@ class ChatControllerTest extends TestCase
         Event::fake();
 
         $host = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
             'message' => '   ',
@@ -160,12 +160,7 @@ class ChatControllerTest extends TestCase
         Event::fake();
 
         $host = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         $raw = '<script>alert(1)</script><b>Hello</b>';
 
@@ -197,12 +192,7 @@ class ChatControllerTest extends TestCase
         Event::fake();
 
         $host = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", []);
 
@@ -222,12 +212,7 @@ class ChatControllerTest extends TestCase
         Event::fake();
 
         $host = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
             'message' => ['not', 'a', 'string'],
@@ -249,12 +234,7 @@ class ChatControllerTest extends TestCase
         Event::fake();
 
         $host = User::factory()->create();
-        $game = Game::factory()->create();
-
-        $session = GameSession::factory()->create([
-            'game_id' => $game->id,
-            'host_user_id' => $host->id,
-        ]);
+        $session = $this->makeSessionWithPlayer($host);
 
         $response = $this->actingAs($host)->postJson("/session/$session->id/chat", [
             'message' => str_repeat('a', 251),

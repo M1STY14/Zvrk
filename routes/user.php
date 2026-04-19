@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\LobbyController;
@@ -24,5 +25,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/session/{session}/start', [GameSessionController::class, 'start'])->name('game.start');
         Route::post('/session/{session}/move', [GameSessionController::class, 'move'])->name('game.move');
         Route::post('/session/{session}/leave', [GameSessionController::class, 'leave'])->name('game.leave');
+        Route::post('/session/{session}/chat', ChatController::class);
     });
 });
