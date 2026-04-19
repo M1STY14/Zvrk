@@ -1,6 +1,14 @@
 import InputError from '@/Components/InputError';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
+import { Suspense } from 'react';
+
+function ZvrkModel() {
+    const { scene } = useGLTF('/models/register_model_game_strategy_X_and_rook.glb');
+    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
+}
 
 const TYPING_LINES = ['Kreiraj račun.', 'Počni igrati.'];
 
@@ -120,9 +128,24 @@ export default function Register() {
                     </nav>
                 </header>
 
-                {/* Form */}
-                <div className="pt-28 flex items-center justify-center min-h-screen relative z-10">
-                    <div className="w-full max-w-md mx-auto px-8 py-12">
+                {/* Content */}
+                <div className="pt-28 min-h-screen flex items-center justify-center relative z-10">
+
+                    {/* Lijeva strana — 3D model */}
+                    <div className="hidden lg:flex items-center justify-center" style={{ width: '420px', flexShrink: 0 }}>
+                        <Canvas shadows={false} camera={{ position: [19, 19, -90], fov: 45 }} style={{ width: '420px', height: '420px' }}>
+                            <Suspense fallback={null}>
+                                <Stage environment="sunset" intensity={0.6} shadows={false}>
+                                    <ZvrkModel />
+                                </Stage>
+                                <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1} />
+                            </Suspense>
+                        </Canvas>
+                    </div>
+
+                    {/* Desna strana — forma */}
+                    <div className="w-full lg:w-auto flex items-center justify-center px-8 py-12">
+                    <div className="w-full max-w-md">
 
                         <div className="mb-8">
                             <h1 className="font-black tracking-tight leading-none mb-2"
@@ -230,6 +253,7 @@ export default function Register() {
                                 Prijavi se
                             </Link>
                         </p>
+                    </div>
                     </div>
                 </div>
             </div>

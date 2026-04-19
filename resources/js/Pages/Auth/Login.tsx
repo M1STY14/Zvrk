@@ -6,7 +6,7 @@ import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense } from 'react';
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/new_un_lower2_62MB.glb');
+    const { scene } = useGLTF('/models/login_model_game_strategy_O_and_knight.glb');
     return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
