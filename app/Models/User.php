@@ -91,6 +91,16 @@ class User extends Authenticatable
         return (int) $this->playerStats->sum('wins');
     }
 
+    public function totalLosses(): int
+    {
+        return (int) $this->playerStats->sum('losses');
+    }
+
+    public function totalDraws(): int
+    {
+        return (int) $this->playerStats->sum('draws');
+    }
+
     public function overallWinRate(): float
     {
         $played = $this->totalGamesPlayed();

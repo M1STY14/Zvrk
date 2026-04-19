@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Data\PlayerStatData;
+use App\Http\Requests\ProfileDeleteRequest;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\PlayerStat;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
@@ -13,44 +17,50 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): Response
+    public function show(#[CurrentUser] User $user): Response
+    {
+        $user->load(['playerStats.game']);
+
+        $stats = $user->playerStats->map(fn (PlayerStat $stat) => PlayerStatData::fromModel($stat));
+
+        return Inertia::render('Profile/Show', [
+            'user' => $user->only(['id', 'name', 'email', 'avatar', 'created_at']),
+            'stats' => $stats,
+            'totalStats' => [
+                'gamesPlayed' => $user->totalGamesPlayed(),
+                'wins' => $user->totalWins(),
+                'losses' => $user->totalLosses(),
+                'draws' => $user->totalDraws(),
+                'winRate' => $user->overallWinRate(),
+            ],
+        ]);
+    }
+
+    public function edit(#[CurrentUser] User $user): Response
     {
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
         ]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, #[CurrentUser] User $user): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->update([
+                'email_verified_at' => null,
+            ]);
         }
 
-        $request->user()->save();
+        $user->save();
 
         return Redirect::route('profile.edit');
     }
 
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, #[CurrentUser] User $user): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
         Auth::logout();
 
         $user->delete();

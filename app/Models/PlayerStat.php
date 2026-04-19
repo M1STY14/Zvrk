@@ -45,4 +45,11 @@ final class PlayerStat extends Model
     {
         return $this->belongsTo(Game::class);
     }
+
+    public function winRate(): float
+    {
+        return $this->games_played > 0
+            ? round(($this->wins / $this->games_played) * 100, 1)
+            : 0.0;
+    }
 }
