@@ -2,35 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Data\StoreChatMessageData;
 use App\Events\ChatMessageSent;
 use App\Models\ChatMessage;
 use App\Models\GameSession;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class ChatController extends Controller
 {
-    public function store(Request $request, GameSession $gameSession): JsonResponse
+    public function store(GameSession $gameSession, StoreChatMessageData $data): JsonResponse
     {
-        $user = $request->user();
+        $this->authorize('chat', $gameSession);
 
-        $isHost = $gameSession->host_user_id == $user->id;
-        $isPlayer = $gameSession->players()->where('user_id', $user->id)->exists();
+        $sanitizedMessage = strip_tags($data->message);
+        $messageText = trim($sanitizedMessage);
 
-        abort_unless($isHost || $isPlayer, Response::HTTP_FORBIDDEN);
-
-        $validated = $request->validate([
-            'message' => 'required|string|max:1000',
-        ]);
-
-        $messageText = trim(strip_tags($validated['message']));
-
-        if($messageText === '') {
-            return response()->json(['message' => 'Message cannot be empty.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        if ($messageText === '') {
+            return response()->json([
+                'message' => 'Message cannot be empty.',
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $chatMessage = ChatMessage::create([
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        $chatMessage = ChatMessage::query()->create([
             'game_session_id' => $gameSession->id,
             'user_id' => $user->id,
             'message' => $messageText,
@@ -39,7 +35,7 @@ class ChatController extends Controller
         $chatMessage->load('user');
 
         broadcast(new ChatMessageSent(
-            sessionId: $gameSession->id,
+            sessionId: (string) $gameSession->id,
             messageId: (string) $chatMessage->id,
             message: $chatMessage->message,
             senderId: (string) $chatMessage->user->id,
