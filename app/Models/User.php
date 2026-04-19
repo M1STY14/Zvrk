@@ -80,4 +80,21 @@ class User extends Authenticatable
             ->using(GamePlayer::class)
             ->withPivot('player_number', 'is_connected', 'joined_at');
     }
+
+    public function totalGamesPlayed(): int
+    {
+        return (int) $this->stats->sum('games_played');
+    }
+
+    public function totalWins(): int
+    {
+        return (int) $this->stats->sum('wins');
+    }
+
+    public function overallWinRate(): float
+    {
+        $played = $this->totalGamesPlayed();
+
+        return $played > 0 ? round(($this->totalWins() / $played) * 100, 1) : 0.0;
+    }
 }
