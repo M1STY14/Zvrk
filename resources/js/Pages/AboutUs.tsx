@@ -1,4 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
+import { PageProps } from '@/types';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
+import { Suspense } from 'react';
+
+function ZvrkModel() {
+    const { scene } = useGLTF('/models/new_un_lower2_62MB.glb');
+    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
+}
 
 const team = [
     { name: 'Antonio Filipović', role: 'nan' },
@@ -18,154 +27,199 @@ const tech = [
     { name: 'TypeScript', desc: 'Tipiziran JavaScript' },
 ];
 
-export default function AboutUs() {
+const footerGames = ['Tic-Tac-Toe', 'Čovječe ne ljuti se', 'Dama', '4 u nizu', 'Potapanje brodova', 'Uno', 'Bela', 'Snaps'];
+
+export default function AboutUs({ auth }: PageProps) {
     return (
         <>
             <Head title="O nama" />
-            <div className="min-h-screen bg-[#FFFBF5]">
+
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap');
+            `}</style>
+
+            <div className="min-h-screen" style={{ backgroundColor: '#f9f9fb', color: '#2f3336', fontFamily: 'Manrope, sans-serif' }}>
+
                 {/* Navbar */}
-                <nav className="flex items-center justify-between px-20 h-[72px]">
-                    <Link href={route('welcome')} className="flex items-center gap-2">
-                        <div className="w-9 h-9 bg-[#0C4A6E] rounded-[10px] flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
+                <header className="fixed top-0 w-full z-50 border-b" style={{ backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', borderColor: '#eceef1' }}>
+                    <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
+                        <div>
+                            <Link href={route('welcome')}>
+                                <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                            </Link>
                         </div>
-                        <span className="font-display text-[22px] font-extrabold text-stone-900">Zvrk</span>
-                    </Link>
 
-                    <div className="flex items-center gap-8">
-                        <Link href={route('welcome') + '#igre'} className="text-[15px] font-medium text-stone-500 hover:text-stone-900 transition">Igre</Link>
-                        <Link href={route('welcome') + '#kako-igrati'} className="text-[15px] font-medium text-stone-500 hover:text-stone-900 transition">Kako igrati</Link>
-                        <Link href={route('about')} className="text-[15px] font-medium text-stone-900 transition">O nama</Link>
-                    </div>
+                        <div className="hidden md:flex items-center justify-center gap-10">
+                            <a href={route('welcome') + '#igre'} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
+                                onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
+                                onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
+                                Igre
+                            </a>
+                            <a href={route('welcome') + '#kako-igrati'} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
+                                onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
+                                onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
+                                Kako igrati
+                            </a>
+                            <Link href={route('about')} className="text-base font-semibold" style={{ color: '#005bc2' }}>
+                                O nama
+                            </Link>
+                        </div>
 
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href={route('login')}
-                            className="px-5 py-2.5 rounded-[10px] text-sm font-semibold text-stone-900 hover:bg-stone-100 transition"
-                        >
-                            Prijava
-                        </Link>
-                        <Link
-                            href={route('register')}
-                            className="px-5 py-2.5 rounded-[10px] bg-[#0C4A6E] text-sm font-semibold text-white hover:bg-[#083344] transition"
-                        >
-                            Registracija
-                        </Link>
-                    </div>
-                </nav>
+                        <div className="flex items-center justify-end gap-3">
+                            {auth.user ? (
+                                <Link href={route('dashboard')}
+                                    className="px-6 py-2 rounded-full text-base font-bold transition-colors"
+                                    style={{ color: '#005bc2' }}>
+                                    Dashboard
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link href={route('login')}
+                                        className="px-6 py-2 rounded-full text-base font-bold transition-all"
+                                        style={{ color: '#FA532F' }}>
+                                        Prijava
+                                    </Link>
+                                    <Link href={route('register')}
+                                        className="px-6 py-2 rounded-full text-base font-bold text-white transition-all"
+                                        style={{ background: '#18181b' }}
+                                        onMouseOver={e => { e.currentTarget.style.background = '#FA532F'; }}
+                                        onMouseOut={e => { e.currentTarget.style.background = '#18181b'; }}>
+                                        Registracija
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                    </nav>
+                </header>
 
-                {/* Hero */}
-                <section className="px-20 py-16">
-                    <div className="flex items-center gap-1.5 bg-amber-100 rounded-full px-3.5 py-1.5 w-fit mb-6">
-                        <span className="text-[13px]">&#9875;</span>
-                        <span className="text-[13px] font-semibold text-amber-800">Napravljeno na RITEH-u, Rijeka</span>
-                    </div>
-                    <h1 className="font-display text-[52px] font-extrabold text-stone-900 leading-[1.15] mb-5">
-                        O nama
-                    </h1>
-                    <p className="text-lg text-stone-500 leading-relaxed">
-                        Zvrk je studentski projekt Tehničkog fakulteta u Rijeci (RITEH). Cilj nam je omogućiti igračima da igraju klasične društvene igre online,
-                        s prijateljima, u stvarnom vremenu — bez instalacije i bez plaćanja.
-                    </p>
-                </section>
-
-                {/* Tim */}
-                <section className="bg-white px-20 py-16">
-                    <div className="flex flex-col gap-2 mb-10">
-                        <span className="text-xs font-bold text-orange-600 tracking-[2px]">TIM</span>
-                        <h2 className="font-display text-4xl font-extrabold text-stone-900">6 developera, 1 cilj</h2>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4">
-                        {team.map((member) => (
-                            <div key={member.name} className="bg-stone-50 border border-stone-200 rounded-2xl p-6 flex flex-col gap-2">
-                                <div className="w-12 h-12 bg-[#0C4A6E] rounded-full flex items-center justify-center mb-2">
-                                    <span className="text-white font-bold text-lg">{member.name[0]}</span>
+                <div className="pt-28">
+                    {/* Hero */}
+                    <section className="max-w-screen-xl mx-auto px-8 py-16">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-8">
+                            <div>
+                                <div className="relative inline-flex items-center gap-2 px-8 py-5 mb-6 text-base font-semibold overflow-hidden"
+                                    style={{ color: '#FA532F' }}>
+                                    <img src="/images/about_us_small_bg.svg" alt="" className="absolute inset-0 w-full h-full" style={{ objectFit: 'fill' }} />
+                                    <span className="relative">♠️  Napravljeno na RITEH-u, Rijeka</span>
                                 </div>
-                                <h3 className="font-display text-base font-bold text-stone-900">{member.name}</h3>
-                                <p className="text-sm text-stone-400">{member.role}</p>
+                                <h1 className="font-black tracking-tight leading-none mb-5"
+                                    style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', color: '#2f3336' }}>
+                                    O nama
+                                </h1>
+                                <p className="text-lg leading-relaxed max-w-2xl" style={{ color: '#5c5f63' }}>
+                                    Zvrk je studentski projekt Tehničkog fakulteta u Rijeci (RITEH). Cilj nam je omogućiti igračima da igraju klasične društvene igre online,
+                                    s prijateljima, u stvarnom vremenu — bez instalacije i bez plaćanja.
+                                </p>
                             </div>
-                        ))}
-                    </div>
-                </section>
 
-                {/* Tech stack */}
-                <section className="px-20 py-16">
-                    <div className="flex flex-col gap-2 mb-10">
-                        <span className="text-xs font-bold text-teal-600 tracking-[2px]">TEHNOLOGIJE</span>
-                        <h2 className="font-display text-4xl font-extrabold text-stone-900">Sto koristimo</h2>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        {tech.map((t) => (
-                            <div key={t.name} className="bg-white border border-stone-200 rounded-2xl p-6 flex flex-col gap-1">
-                                <h3 className="font-display text-base font-bold text-stone-900">{t.name}</h3>
-                                <p className="text-sm text-stone-400">{t.desc}</p>
+                            <div className="h-[400px] w-full">
+                                <Canvas shadows={false} camera={{ position: [19, 19, -90], fov: 45 }} style={{ background: 'transparent' }}>
+                                    <Suspense fallback={null}>
+                                        <Stage environment="sunset" intensity={0.6} shadows={false}>
+                                            <ZvrkModel />
+                                        </Stage>
+                                        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+                                    </Suspense>
+                                </Canvas>
                             </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* CTA */}
-                <section className="px-20 py-12">
-                    <div className="bg-[#0C4A6E] rounded-3xl px-16 py-14 flex items-center justify-between">
-                        <div className="flex flex-col gap-4 max-w-[560px]">
-                            <h2 className="font-display text-[32px] font-extrabold text-white">Spreman za igru?</h2>
-                            <p className="text-base text-sky-200 leading-relaxed max-w-[480px]">
-                                Besplatno, bez reklama, samo cista zabava s ekipom.
-                            </p>
                         </div>
-                        <Link
-                            href={route('register')}
-                            className="flex items-center gap-2.5 px-7 py-3.5 rounded-xl bg-orange-600 text-[15px] font-semibold text-white hover:bg-orange-700 transition shrink-0"
-                        >
-                            Registriraj se
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                        </Link>
-                    </div>
-                </section>
+                    </section>
 
-                {/* Footer */}
-                <footer className="bg-stone-50 border-t border-stone-200 px-20 pt-10 pb-8">
-                    <div className="flex justify-between items-start mb-8">
-                        <div className="flex flex-col gap-2.5">
-                            <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 bg-[#0C4A6E] rounded-lg flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
+                    {/* Tim */}
+                    <section className="py-16" style={{ backgroundColor: '#ffffff' }}>
+                        <div className="max-w-screen-xl mx-auto px-8">
+                            <div className="mb-10">
+                                <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#FA532F' }}>TIM</span>
+                                <h2 className="font-black text-4xl tracking-tight mt-2" style={{ color: '#2f3336' }}>6 developera, 1 cilj</h2>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {team.map((member) => (
+                                    <div key={member.name} className="rounded-2xl p-6 flex flex-col gap-2 border"
+                                        style={{ backgroundColor: '#f9f9fb', borderColor: '#eceef1' }}>
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2 text-white font-bold text-lg"
+                                            style={{ backgroundColor: '#18181b' }}>
+                                            {member.name[0]}
+                                        </div>
+                                        <h3 className="font-bold text-base" style={{ color: '#2f3336' }}>{member.name}</h3>
+                                        <p className="text-sm" style={{ color: '#94a3b8' }}>{member.role}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Tech stack */}
+                    <section className="py-16">
+                        <div className="max-w-screen-xl mx-auto px-8">
+                            <div className="mb-10">
+                                <span className="text-xs font-bold tracking-widest uppercase" style={{ color: '#72D660' }}>TEHNOLOGIJE</span>
+                                <h2 className="font-black text-4xl tracking-tight mt-2" style={{ color: '#2f3336' }}>Što koristimo</h2>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {tech.map((t) => (
+                                    <div key={t.name} className="rounded-2xl p-6 flex flex-col gap-1 border"
+                                        style={{ backgroundColor: '#ffffff', borderColor: '#eceef1' }}>
+                                        <h3 className="font-bold text-base" style={{ color: '#2f3336' }}>{t.name}</h3>
+                                        <p className="text-sm" style={{ color: '#94a3b8' }}>{t.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* CTA */}
+                    <section className="max-w-screen-xl mx-auto px-8 py-12">
+                        <div className="rounded-3xl px-16 py-14 flex items-center justify-between"
+                            style={{ backgroundColor: '#18181b' }}>
+                            <div className="max-w-lg">
+                                <h2 className="font-black text-3xl text-white mb-4">Spreman za igru?</h2>
+                                <p className="text-base leading-relaxed" style={{ color: '#94a3b8' }}>
+                                    Besplatno, bez reklama, samo čista zabava s ekipom.
+                                </p>
+                            </div>
+                            <Link href={auth.user ? route('dashboard') : route('register')}
+                                className="px-8 py-4 rounded-full font-bold text-white text-base transition-all shrink-0"
+                                style={{ backgroundColor: '#FA532F' }}
+                                onMouseOver={e => { e.currentTarget.style.backgroundColor = '#005bc2'; }}
+                                onMouseOut={e => { e.currentTarget.style.backgroundColor = '#FA532F'; }}>
+                                {auth.user ? 'Igraj odmah' : 'Registriraj se'} →
+                            </Link>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
+                        <div className="flex flex-col md:flex-row justify-between items-start px-12 py-12 max-w-screen-xl mx-auto">
+                            <div className="mb-8 md:mb-0">
+                                <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                                <p className="text-sm max-w-xs mt-2" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
+                                <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                <h4 className="text-sm font-bold uppercase tracking-wide" style={{ color: '#2f3336' }}>Igre</h4>
+                                <div className="grid grid-cols-2 gap-x-12 gap-y-2">
+                                    {[footerGames.slice(0, 4), footerGames.slice(4, 8)].map((col, ci) => (
+                                        <div key={ci} className="flex flex-col gap-2">
+                                            {col.map(g => (
+                                                <span key={g} className="text-sm font-medium" style={{ color: '#64748b' }}>{g}</span>
+                                            ))}
+                                        </div>
+                                    ))}
                                 </div>
-                                <span className="font-display text-lg font-extrabold text-stone-900">Zvrk</span>
                             </div>
-                            <p className="text-[13px] text-stone-400">Studentski projekt @ RITEH, Rijeka</p>
-                        </div>
 
-                        <div className="flex gap-14">
-                            <div className="flex flex-col gap-2.5">
-                                <span className="text-[13px] font-semibold text-stone-600">Igre</span>
-                                <span className="text-[13px] text-stone-400">Tic-Tac-Toe</span>
-                                <span className="text-[13px] text-stone-400">Ludo</span>
-                                <span className="text-[13px] text-stone-400">Dama</span>
-                                <span className="text-[13px] text-stone-400">4 u nizu</span>
-                            </div>
-                            <div className="flex flex-col gap-2.5">
-                                <span className="text-[13px] font-semibold text-stone-600">Vise igara</span>
-                                <span className="text-[13px] text-stone-400">Potapanje brodova</span>
-                                <span className="text-[13px] text-stone-400">Uno</span>
-                                <span className="text-[13px] text-stone-400">Bela</span>
-                                <span className="text-[13px] text-stone-400">Snaps</span>
-                            </div>
-                            <div className="flex flex-col gap-2.5">
-                                <span className="text-[13px] font-semibold text-stone-600">Platforma</span>
-                                <Link href={route('about')}className="text-[13px] text-stone-400">O nama</Link>
-                                <span className="text-[13px] text-stone-400">Ljestvica</span>
-                                <span className="text-[13px] text-stone-400">GitHub</span>
+                            <div className="mt-8 md:mt-0 flex flex-col gap-2">
+                                <h4 className="text-sm font-bold uppercase tracking-wide mb-1" style={{ color: '#2f3336' }}>Platforme</h4>
+                                <Link href={route('about')} className="text-sm font-medium" style={{ color: '#64748b' }}>O nama</Link>
+                                <a href="#" className="text-sm font-medium" style={{ color: '#64748b' }}>Ljestvica</a>
+                                <a href="https://github.com" target="_blank" rel="noreferrer" className="text-sm font-medium" style={{ color: '#64748b' }}>GitHub</a>
+                                <Link href={route('login')} className="text-sm font-medium" style={{ color: '#64748b' }}>Prijava</Link>
+                                <Link href={route('register')} className="text-sm font-medium" style={{ color: '#64748b' }}>Registracija</Link>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="border-t border-stone-200 pt-6 flex justify-center">
-                        <span className="text-xs text-stone-400">{'\u00A9'} 2026 Zvrk. Sva prava pridrzana.</span>
-                    </div>
-                </footer>
+                    </footer>
+                </div>
             </div>
         </>
     );
