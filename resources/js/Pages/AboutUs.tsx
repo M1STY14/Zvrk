@@ -5,17 +5,18 @@ import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense } from 'react';
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/new_un_lower2_62MB.glb');
-    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
+    const { scene } = useGLTF('/models/about_us_page_model_lower_32MB.glb');
+
+    return <primitive object={scene} scale={3} position={[0, 0, 0]} rotation={[0, 0, 0]} />;
 }
 
 const team = [
-    { name: 'Antonio Filipović', role: 'nan' },
-    { name: 'Nicole Ivanković', role: 'nan' },
-    { name: 'Leo Kocijan', role: 'nan' },
-    { name: 'Fran Krsto Pilić', role: 'nan' },
-    { name: 'Barbara Radoš', role: 'nan' },
-    { name: 'Antonio Veselić', role: 'nan' },
+    { name: 'Antonio Filipović', role: 'Frontend/Backend', photo: '/images/about_us_team_profiles/team_profile_Antonio.svg' },
+    { name: 'Nicole Ivanković', role: 'Frontend', photo: '/images/about_us_team_profiles/team_profile_Nicole.svg' },
+    { name: 'Leo Kocijan', role: 'Backend', photo: '/images/about_us_team_profiles/team_profile_Leo.svg' },
+    { name: 'Fran Krsto Pilić', role: 'Frontend', photo: '/images/about_us_team_profiles/team_profile_Fran.svg' },
+    { name: 'Barbara Radoš', role: 'Backend', photo: '/images/about_us_team_profiles/team_profile_Barbara.svg' },
+    { name: 'Antonio Veselić', role: 'Frontend/Backend', photo: '/images/about_us_team_profiles/team_profile_Antonio2.svg' },
 ];
 
 const tech = [
@@ -112,7 +113,7 @@ export default function AboutUs({ auth }: PageProps) {
                                 </p>
                             </div>
 
-                            <div className="h-[400px] w-full">
+                            <div className="h-[600px] w-full">
                                 <Canvas shadows={false} camera={{ position: [19, 19, -90], fov: 45 }} style={{ background: 'transparent' }}>
                                     <Suspense fallback={null}>
                                         <Stage environment="sunset" intensity={0.6} shadows={false}>
@@ -136,10 +137,7 @@ export default function AboutUs({ auth }: PageProps) {
                                 {team.map((member) => (
                                     <div key={member.name} className="rounded-2xl p-6 flex flex-col gap-2 border"
                                         style={{ backgroundColor: '#f9f9fb', borderColor: '#eceef1' }}>
-                                        <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2 text-white font-bold text-lg"
-                                            style={{ backgroundColor: '#18181b' }}>
-                                            {member.name[0]}
-                                        </div>
+                                        <img src={member.photo} alt={member.name} className="w-12 h-12 rounded-full mb-2 object-cover" />
                                         <h3 className="font-bold text-base" style={{ color: '#2f3336' }}>{member.name}</h3>
                                         <p className="text-sm" style={{ color: '#94a3b8' }}>{member.role}</p>
                                     </div>
