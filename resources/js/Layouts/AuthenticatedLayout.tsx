@@ -1,12 +1,13 @@
 import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactNode, useState } from 'react';
 
 export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const user = usePage().props.auth.user;
+    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: '#f9f9fb' }}>
@@ -139,21 +140,22 @@ export default function Authenticated({
                                 </button>
                             </Dropdown.Trigger>
 
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.show')}>
-                                View Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Edit Profile
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Log Out
-                            </ResponsiveNavLink>
-                        </div>
+                            <Dropdown.Content>
+                                <Dropdown.Link href={route('profile.show')}>
+                                    View Profile
+                                </Dropdown.Link>
+                                <Dropdown.Link href={route('profile.edit')}>
+                                    Edit Profile
+                                </Dropdown.Link>
+                                <Dropdown.Link
+                                    method="post"
+                                    href={route('logout')}
+                                    as="button"
+                                >
+                                    Log Out
+                                </Dropdown.Link>
+                            </Dropdown.Content>
+                        </Dropdown>
                     </div>
 
                 </nav>
