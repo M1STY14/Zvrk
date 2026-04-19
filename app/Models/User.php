@@ -25,7 +25,7 @@ use Illuminate\Notifications\Notifiable;
  * @property-read Carbon|null $updated_at
  *
  * Relationships
- * @property-read Collection<int, PlayerStat> $stats
+ * @property-read Collection<int, PlayerStat> $playerStats
  * @property-read Collection<int, GameSession> $gameSession
  */
 
@@ -83,12 +83,12 @@ class User extends Authenticatable
 
     public function totalGamesPlayed(): int
     {
-        return (int) $this->stats->sum('games_played');
+        return (int) $this->playerStats->sum('games_played');
     }
 
     public function totalWins(): int
     {
-        return (int) $this->stats->sum('wins');
+        return (int) $this->playerStats->sum('wins');
     }
 
     public function overallWinRate(): float

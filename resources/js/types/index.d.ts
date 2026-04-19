@@ -5,6 +5,16 @@ export interface User {
     email_verified_at?: string;
 }
 
+export interface ChatMessage {
+    id: string;
+    message: string;
+    sender: {
+        id: string;
+        name: string;
+    };
+    created_at: string;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
