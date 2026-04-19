@@ -1,23 +1,59 @@
 import InputError from '@/Components/InputError';
-import { Head, Link, useForm, router } from '@inertiajs/react';
-import { FormEventHandler, useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
+import { Suspense } from 'react';
+
+function ZvrkModel() {
+    const { scene } = useGLTF('/models/register_model_game_strategy_X_and_rook.glb');
+    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
+}
+
+const TYPING_LINES = ['Kreiraj račun.', 'Počni igrati.'];
 
 const floatingItems = [
-    { emoji: '🎲', style: { top: '12%', left: '18%', animationDelay: '0s', animationDuration: '6s', fontSize: '2.5rem' } },
+    { emoji: '🎲', style: { top: '20%', left: '20%', animationDelay: '0s', animationDuration: '6s', fontSize: '2.5rem' } },
     { emoji: '♟️', style: { top: '25%', left: '72%', animationDelay: '1.2s', animationDuration: '7s', fontSize: '2rem' } },
     { emoji: '🃏', style: { top: '55%', left: '25%', animationDelay: '0.5s', animationDuration: '8s', fontSize: '2.2rem' } },
-    { emoji: '🎯', style: { top: '70%', left: '65%', animationDelay: '2s', animationDuration: '6.5s', fontSize: '2rem' } },
-    { emoji: '🚢', style: { top: '40%', left: '45%', animationDelay: '0.8s', animationDuration: '7.5s', fontSize: '1.8rem' } },
+    { emoji: '🎯', style: { top: '75%', left: '75%', animationDelay: '2s', animationDuration: '6.5s', fontSize: '2rem' } },
+    { emoji: '🚢', style: { top: '40%', left: '60%', animationDelay: '0.8s', animationDuration: '7.5s', fontSize: '1.8rem' } },
     { emoji: '🔴', style: { top: '80%', left: '35%', animationDelay: '1.5s', animationDuration: '9s', fontSize: '1.5rem' } },
     { emoji: '🟡', style: { top: '18%', left: '40%', animationDelay: '3s', animationDuration: '7s', fontSize: '1.5rem' } },
+    { emoji: '🔴', style: { top: '70%', left: '90%', animationDelay: '1.5s', animationDuration: '9s', fontSize: '1.5rem' } },
+    { emoji: '🟡', style: { top: '30%', left: '90%', animationDelay: '3s', animationDuration: '7s', fontSize: '1.5rem' } },
     { emoji: '♠️', style: { top: '5%', left: '55%', animationDelay: '0.3s', animationDuration: '8.5s', fontSize: '2rem' } },
     { emoji: '🎮', style: { top: '35%', left: '10%', animationDelay: '2.5s', animationDuration: '7s', fontSize: '1.8rem' } },
     { emoji: '⭐', style: { top: '48%', left: '78%', animationDelay: '1.8s', animationDuration: '5.5s', fontSize: '1.4rem' } },
     { emoji: '♦️', style: { top: '75%', left: '10%', animationDelay: '2.2s', animationDuration: '6.5s', fontSize: '1.8rem' } },
 ];
 
+function useTypewriter(lines: string[], speed = 55, pauseMs = 1200) {
+    const [displayed, setDisplayed] = useState<string[]>(lines.map(() => ''));
+    const [lineIndex, setLineIndex] = useState(0);
+    const [charIndex, setCharIndex] = useState(0);
+    const [pausing, setPausing] = useState(false);
+
+    useEffect(() => {
+        if (pausing) {
+            const t = setTimeout(() => { setPausing(false); setLineIndex(i => i + 1); }, pauseMs);
+            return () => clearTimeout(t);
+        }
+        if (lineIndex >= lines.length) return;
+        if (charIndex < lines[lineIndex].length) {
+            const t = setTimeout(() => {
+                setDisplayed(prev => { const next = [...prev]; next[lineIndex] = lines[lineIndex].slice(0, charIndex + 1); return next; });
+                setCharIndex(i => i + 1);
+            }, speed);
+            return () => clearTimeout(t);
+        } else { setPausing(true); setCharIndex(0); }
+    }, [charIndex, lineIndex, pausing, lines, speed, pauseMs]);
+
+    return { displayed, currentLine: lineIndex, done: lineIndex >= lines.length };
+}
+
 export default function Register() {
-    const [exiting, setExiting] = useState(false);
+    const { displayed, currentLine, done } = useTypewriter(TYPING_LINES);
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -32,175 +68,194 @@ export default function Register() {
         });
     };
 
-    const goToLogin = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setExiting(true);
-        setTimeout(() => router.visit(route('login')), 350);
-    };
-
     return (
         <>
             <Head title="Registracija" />
             <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap');
                 @keyframes float {
                     0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
                     33% { transform: translateY(-18px) rotate(5deg); opacity: 1; }
                     66% { transform: translateY(-8px) rotate(-5deg); opacity: 0.85; }
                 }
                 .floating { animation: float linear infinite; }
-                @keyframes slideInFromRight {
-                    from { transform: translateX(60px); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOutToRight {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(60px); opacity: 0; }
-                }
-                .slide-in-right { animation: slideInFromRight 0.45s cubic-bezier(0.22,1,0.36,1) both; }
-                .slide-out-right { animation: slideOutToRight 0.35s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
-            <div className={`min-h-screen flex ${exiting ? 'slide-out-right' : 'slide-in-right'}`}>
-                {/* Lijeva strana — forma */}
-                <div className="w-full lg:w-1/2 bg-[#FFFBF5] flex flex-col">
-                    {/* Back arrow */}
-                    <div className="px-10 pt-7">
-                        <Link href={route('welcome')} className="inline-flex items-center gap-2 text-sm font-semibold text-stone-500 hover:text-stone-900 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
-                            Back
-                        </Link>
+            <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#f9f9fb', fontFamily: 'Manrope, sans-serif' }}>
+
+                {/* Floating emojis */}
+                {floatingItems.map((item, i) => (
+                    <div key={i} className="floating absolute select-none pointer-events-none" style={{ ...item.style, zIndex: 0 } as React.CSSProperties}>
+                        {item.emoji}
+                    </div>
+                ))}
+
+                {/* Navbar */}
+                <header className="fixed top-0 w-full z-50 border-b" style={{ backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', borderColor: '#eceef1' }}>
+                    <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
+                        <div>
+                            <Link href={route('welcome')}>
+                                <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                            </Link>
+                        </div>
+                        <div className="hidden md:flex items-center justify-center gap-10">
+                            <a href={route('welcome') + '#igre'} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
+                                onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
+                                onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
+                                Igre
+                            </a>
+                            <a href={route('welcome') + '#kako-igrati'} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
+                                onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
+                                onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
+                                Kako igrati
+                            </a>
+                            <Link href={route('about')} className="text-base font-semibold transition-colors" style={{ color: '#64748b' }}
+                                onMouseOver={e => (e.currentTarget.style.color = '#005bc2')}
+                                onMouseOut={e => (e.currentTarget.style.color = '#64748b')}>
+                                O nama
+                            </Link>
+                        </div>
+                        <div className="flex items-center justify-end gap-3">
+                            <Link href={route('login')} className="px-6 py-2 rounded-full text-base font-bold transition-all" style={{ color: '#FA532F' }}>
+                                Prijava
+                            </Link>
+                            <Link href={route('register')}
+                                className="px-6 py-2 rounded-full text-base font-bold text-white transition-all"
+                                style={{ background: '#18181b' }}
+                                onMouseOver={e => { e.currentTarget.style.background = '#FA532F'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = '#18181b'; }}>
+                                Registracija
+                            </Link>
+                        </div>
+                    </nav>
+                </header>
+
+                {/* Content */}
+                <div className="pt-28 min-h-screen flex items-center justify-center relative z-10">
+
+                    {/* Lijeva strana — 3D model */}
+                    <div className="hidden lg:flex items-center justify-center" style={{ width: '420px', flexShrink: 0 }}>
+                        <Canvas shadows={false} camera={{ position: [19, 19, -90], fov: 45 }} style={{ width: '420px', height: '420px' }}>
+                            <Suspense fallback={null}>
+                                <Stage environment="sunset" intensity={0.6} shadows={false}>
+                                    <ZvrkModel />
+                                </Stage>
+                                <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1} />
+                            </Suspense>
+                        </Canvas>
                     </div>
 
-                    {/* Mobile navbar */}
-                    <nav className="flex items-center px-8 h-[64px] lg:hidden">
-                        <Link href={route('welcome')} className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-[#0C4A6E] rounded-[8px] flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
-                            </div>
-                            <span className="font-display text-[20px] font-extrabold text-stone-900">Zvrk</span>
-                        </Link>
-                    </nav>
+                    {/* Desna strana — forma */}
+                    <div className="w-full lg:w-auto flex items-center justify-center px-8 py-12">
+                    <div className="w-full max-w-md">
 
-                    <div className="flex-1 flex items-center justify-center px-8 py-12">
-                        <div className="w-full max-w-[400px]">
-                            <div className="mb-8">
-                                <h1 className="font-display text-[30px] font-extrabold text-stone-900 mb-2">Kreiraj račun</h1>
-                                <p className="text-stone-500 text-[15px]">Registriraj se i počni igrati.</p>
-                            </div>
-
-                            <form onSubmit={submit} className="flex flex-col gap-4">
-                                <div className="flex flex-col gap-1.5">
-                                    <label htmlFor="name" className="text-sm font-semibold text-stone-700">Ime</label>
-                                    <input
-                                        id="name"
-                                        type="text"
-                                        name="name"
-                                        value={data.name}
-                                        autoComplete="name"
-                                        autoFocus
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E] focus:border-transparent transition"
-                                        placeholder="Tvoje ime"
-                                        required
-                                    />
-                                    <InputError message={errors.name} />
-                                </div>
-
-                                <div className="flex flex-col gap-1.5">
-                                    <label htmlFor="email" className="text-sm font-semibold text-stone-700">Email</label>
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        name="email"
-                                        value={data.email}
-                                        autoComplete="username"
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E] focus:border-transparent transition"
-                                        placeholder="tvoj@email.com"
-                                        required
-                                    />
-                                    <InputError message={errors.email} />
-                                </div>
-
-                                <div className="flex flex-col gap-1.5">
-                                    <label htmlFor="password" className="text-sm font-semibold text-stone-700">Lozinka</label>
-                                    <input
-                                        id="password"
-                                        type="password"
-                                        name="password"
-                                        value={data.password}
-                                        autoComplete="new-password"
-                                        onChange={(e) => setData('password', e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E] focus:border-transparent transition"
-                                        placeholder="••••••••"
-                                        required
-                                    />
-                                    <InputError message={errors.password} />
-                                </div>
-
-                                <div className="flex flex-col gap-1.5">
-                                    <label htmlFor="password_confirmation" className="text-sm font-semibold text-stone-700">Potvrdi lozinku</label>
-                                    <input
-                                        id="password_confirmation"
-                                        type="password"
-                                        name="password_confirmation"
-                                        value={data.password_confirmation}
-                                        autoComplete="new-password"
-                                        onChange={(e) => setData('password_confirmation', e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white text-stone-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#0C4A6E] focus:border-transparent transition"
-                                        placeholder="••••••••"
-                                        required
-                                    />
-                                    <InputError message={errors.password_confirmation} />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="w-full py-3.5 rounded-xl bg-[#0C4A6E] text-[15px] font-semibold text-white hover:bg-[#083344] transition disabled:opacity-50 mt-2"
-                                >
-                                    {processing ? 'Kreiranje...' : 'Registriraj se'}
-                                </button>
-                            </form>
-
-                            <p className="text-center text-sm text-stone-500 mt-6">
-                                Već imaš račun?{' '}
-                                <a href={route('login')} onClick={goToLogin} className="font-semibold text-[#0C4A6E] hover:underline">
-                                    Prijavi se
-                                </a>
+                        <div className="mb-8">
+                            <h1 className="font-black tracking-tight leading-none mb-2"
+                                style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#2f3336' }}>
+                                {displayed[0]}{!done && currentLine === 0 && <span className="animate-pulse">|</span>}
+                            </h1>
+                            <p className="font-semibold" style={{ fontSize: 'clamp(1rem, 2vw, 1.2rem)', color: '#64748b' }}>
+                                {displayed[1]}{!done && currentLine >= 1 && <span className="animate-pulse">|</span>}
                             </p>
                         </div>
-                    </div>
-                </div>
 
-                {/* Desna strana — animacija */}
-                <div className="hidden lg:flex w-1/2 bg-[#0C4A6E] relative overflow-hidden flex-col items-center justify-center">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#0C4A6E] via-[#0e5a82] to-[#1a3a5c]" />
-
-                    {floatingItems.map((item, i) => (
-                        <div key={i} className="floating absolute select-none" style={item.style as React.CSSProperties}>
-                            {item.emoji}
-                        </div>
-                    ))}
-
-                    {/* Logo — gore desno */}
-                    <div className="absolute top-8 right-8 z-10">
-                        <Link href={route('welcome')} className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 bg-white/10 rounded-[10px] flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="12" height="12" x="2" y="10" rx="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/></svg>
+                        <form onSubmit={submit} className="flex flex-col gap-5">
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="name" className="text-sm font-bold" style={{ color: '#2f3336' }}>Ime</label>
+                                <input
+                                    id="name"
+                                    type="text"
+                                    name="name"
+                                    value={data.name}
+                                    autoComplete="name"
+                                    autoFocus
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl text-sm transition"
+                                    style={{ border: '1.5px solid #eceef1', backgroundColor: '#f9f9fb', color: '#2f3336', outline: 'none' }}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#005bc2'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#eceef1'; }}
+                                    placeholder="Tvoje ime"
+                                    required
+                                />
+                                <InputError message={errors.name} />
                             </div>
-                            <span className="font-display text-[24px] font-extrabold text-white">Zvrk</span>
-                        </Link>
-                    </div>
 
-                    {/* Tekst — dolje lijevo */}
-                    <div className="absolute bottom-10 right-8 z-10 text-right max-w-[512px]">
-                        <h2 className="font-display text-[52px] font-extrabold text-white leading-tight mb-3">
-                            Novi igrač?<br />Dobrodošao<br />u igru.
-                        </h2>
-                        <p className="text-sky-200 text-[16px] leading-relaxed">
-                            Besplatno, bez reklama,<br />samo čista zabava s ekipom.
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="email" className="text-sm font-bold" style={{ color: '#2f3336' }}>Email</label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    value={data.email}
+                                    autoComplete="username"
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl text-sm transition"
+                                    style={{ border: '1.5px solid #eceef1', backgroundColor: '#f9f9fb', color: '#2f3336', outline: 'none' }}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#005bc2'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#eceef1'; }}
+                                    placeholder="tvoj@email.com"
+                                    required
+                                />
+                                <InputError message={errors.email} />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="password" className="text-sm font-bold" style={{ color: '#2f3336' }}>Lozinka</label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    name="password"
+                                    value={data.password}
+                                    autoComplete="new-password"
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl text-sm transition"
+                                    style={{ border: '1.5px solid #eceef1', backgroundColor: '#f9f9fb', color: '#2f3336', outline: 'none' }}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#005bc2'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#eceef1'; }}
+                                    placeholder="••••••••"
+                                    required
+                                />
+                                <InputError message={errors.password} />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="password_confirmation" className="text-sm font-bold" style={{ color: '#2f3336' }}>Potvrdi lozinku</label>
+                                <input
+                                    id="password_confirmation"
+                                    type="password"
+                                    name="password_confirmation"
+                                    value={data.password_confirmation}
+                                    autoComplete="new-password"
+                                    onChange={(e) => setData('password_confirmation', e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl text-sm transition"
+                                    style={{ border: '1.5px solid #eceef1', backgroundColor: '#f9f9fb', color: '#2f3336', outline: 'none' }}
+                                    onFocus={e => { e.currentTarget.style.borderColor = '#005bc2'; }}
+                                    onBlur={e => { e.currentTarget.style.borderColor = '#eceef1'; }}
+                                    placeholder="••••••••"
+                                    required
+                                />
+                                <InputError message={errors.password_confirmation} />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="w-full py-3.5 rounded-full text-base font-bold text-white transition-all mt-1"
+                                style={{ backgroundColor: '#18181b' }}
+                                onMouseOver={e => { if (!processing) e.currentTarget.style.backgroundColor = '#72D660'; }}
+                                onMouseOut={e => { e.currentTarget.style.backgroundColor = '#18181b'; }}
+                            >
+                                {processing ? 'Kreiranje...' : 'Registriraj se'}
+                            </button>
+                        </form>
+
+                        <p className="text-center text-sm mt-6" style={{ color: '#64748b' }}>
+                            Već imaš račun?{' '}
+                            <Link href={route('login')} className="font-bold" style={{ color: '#005bc2' }}>
+                                Prijavi se
+                            </Link>
                         </p>
+                    </div>
                     </div>
                 </div>
             </div>
