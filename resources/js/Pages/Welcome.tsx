@@ -428,29 +428,39 @@ export default function Welcome({ auth }: PageProps) {
                                 const shiftContentRight = isBela || isDama;
                                 const pos = gameCardPositions[i] ?? { top: `${8 + i * 10}%`, side: i % 2 ? 'left' : 'right' };
                                 const cardBackground = `url(${game.thumbnail}) center / cover no-repeat`;
+                                const innerCard = (
+                                    <div style={{
+                                        width: '100%',
+                                        background: cardBackground,
+                                        backdropFilter: 'blur(8px)',
+                                        borderRadius: '1.25rem',
+                                        padding: '2rem',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.2s',
+                                        boxShadow: 'none',
+                                    }}
+                                        onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; }}
+                                        onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; }}>
+                                        <div style={{ fontSize: '3rem', marginBottom: '0.75rem', marginLeft: shiftContentRight ? '0.6rem' : 0, visibility: isDama ? 'hidden' : 'visible' }}>{game.emoji}</div>
+                                        <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '1.5rem', color: '#2f3336', marginBottom: '0.4rem', marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.name}</h3>
+                                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem', marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.desc}</p>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 99, backgroundColor: accent + '22', color: accent, marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.players}</span>
+                                    </div>
+                                );
+
                                 return (
                                     <div key={game.name} className={`scroll-hidden game-tile game-roadmap-tile ${pos.side === 'left' ? 'side-left' : 'side-right'}`} data-game={game.name.toUpperCase()} style={{
                                         top: pos.top,
                                         transitionDelay: `${i * 0.08}s`,
                                     }}>
-                                        <div style={{
-                                            width: '100%',
-                                            background: cardBackground,
-                                            backdropFilter: 'blur(8px)',
-                                            borderRadius: '1.25rem',
-                                            padding: '2rem',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s',
-                                            boxShadow: 'none',
-                                        }}
-                                            onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; }}
-                                            onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; }}>
-                                            <div style={{ fontSize: '3rem', marginBottom: '0.75rem', marginLeft: shiftContentRight ? '0.6rem' : 0, visibility: isDama ? 'hidden' : 'visible' }}>{game.emoji}</div>
-                                            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '1.5rem', color: '#2f3336', marginBottom: '0.4rem', marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.name}</h3>
-                                            <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem', marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.desc}</p>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 99, backgroundColor: accent + '22', color: accent, marginLeft: shiftContentRight ? '0.6rem' : 0 }}>{game.players}</span>
-                                        </div>
+                                        {game.name === 'Tic-Tac-Toe' ? (
+                                            <Link href={route('tic-tac-toe')} className="block">
+                                                {innerCard}
+                                            </Link>
+                                        ) : (
+                                            innerCard
+                                        )}
                                     </div>
                                 );
                             })}
