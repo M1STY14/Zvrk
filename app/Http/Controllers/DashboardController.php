@@ -5,17 +5,14 @@ namespace App\Http\Controllers;
 use App\Data\AllGamesDashboardData;
 use App\Models\Game;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Container\Attributes\CurrentUser;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(#[CurrentUser] User $user): Response
     {
-        /** @var User $user */
-        $user = $request->user();
-        assert($user instanceof User);
         $user->load('playerStats');
 
         $games = Game::query()

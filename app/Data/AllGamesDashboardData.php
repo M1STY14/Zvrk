@@ -26,10 +26,10 @@ final class AllGamesDashboardData extends Data
 
     public static function fromCustom(Game $game, User $user): self
     {
-        $userStat = $user->stats->firstWhere('game_id', $game->id);
+        $userStat = $user->playerStats->firstWhere('game_id', $game->id);
 
         $activePlayersCount = $game->gameSessions()
-            ->whereIn('status', [GameStatus::Waiting->value, GameStatus::Playing->value])
+            ->whereIn('status', [GameStatus::Pending->value, GameStatus::Playing->value])
             ->withCount('players')
             ->get()
             ->sum('players_count');
