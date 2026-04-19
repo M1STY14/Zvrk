@@ -1,0 +1,104 @@
+import Dropdown from '@/Components/Dropdown';
+import { Link, usePage } from '@inertiajs/react';
+import { PropsWithChildren, ReactNode } from 'react';
+
+export default function GameLayout({
+    header,
+    children,
+}: PropsWithChildren<{ header?: ReactNode }>) {
+    const user = usePage().props.auth.user;
+
+    return (
+        <div className="min-h-screen" style={{ backgroundColor: '#f9f9fb' }}>
+            <header
+                className="fixed top-0 w-full z-50 border-b"
+                style={{
+                    backgroundColor: 'rgba(255,255,255,0.6)',
+                    backdropFilter: 'blur(24px)',
+                    borderColor: '#eceef1',
+                }}
+            >
+                <nav className="flex items-center justify-between gap-4 px-4 sm:px-8 py-4 max-w-screen-xl mx-auto">
+                    <Link href={route('dashboard')} className="flex-shrink-0">
+                        <img
+                            src="/images/zvrk_navbar_logo.png"
+                            alt="Zvrk"
+                            className="h-12 sm:h-16 w-auto"
+                        />
+                    </Link>
+
+                    <div className="flex items-center gap-3 sm:gap-6">
+                        <Link
+                            href={route('dashboard')}
+                            className="text-sm sm:text-base font-semibold transition-colors"
+                            style={{ color: '#64748b' }}
+                            onMouseOver={(e) =>
+                                (e.currentTarget.style.color = '#005bc2')
+                            }
+                            onMouseOut={(e) =>
+                                (e.currentTarget.style.color = '#64748b')
+                            }
+                        >
+                            ← Dashboard
+                        </Link>
+
+                        <Dropdown>
+                            <Dropdown.Trigger>
+                                <button
+                                    type="button"
+                                    className="px-3 sm:px-4 py-1.5 rounded-full text-sm font-bold text-white transition-all"
+                                    style={{ background: '#18181b' }}
+                                    onMouseOver={(e) => {
+                                        (e.currentTarget as HTMLButtonElement).style.background =
+                                            '#005bc2';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        (e.currentTarget as HTMLButtonElement).style.background =
+                                            '#18181b';
+                                    }}
+                                >
+                                    {user.name}
+                                    <svg
+                                        className="inline-block ms-2 -me-0.5 h-4 w-4"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                </button>
+                            </Dropdown.Trigger>
+
+                            <Dropdown.Content width="full">
+                                <Dropdown.Link href={route('profile.edit')}>
+                                    Profile
+                                </Dropdown.Link>
+                                <Dropdown.Link
+                                    href={route('logout')}
+                                    method="post"
+                                    as="button"
+                                >
+                                    Log Out
+                                </Dropdown.Link>
+                            </Dropdown.Content>
+                        </Dropdown>
+                    </div>
+                </nav>
+            </header>
+
+            {header && (
+                <div className="pt-24 sm:pt-28">
+                    <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+                        {header}
+                    </div>
+                </div>
+            )}
+
+            <main className={header ? '' : 'pt-24 sm:pt-28'}>{children}</main>
+        </div>
+    );
+}

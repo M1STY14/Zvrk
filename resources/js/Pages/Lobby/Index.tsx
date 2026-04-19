@@ -1,4 +1,4 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import GameLayout from '@/Components/Layout/GameLayout';
 import RoomCard from '../Components/RoomCard';
 import CreateRoomModal from '../Components/CreateRoomModal';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -46,7 +46,7 @@ export default function Index({ game, rooms, userRoomId = null }: Props) {
     };
 
     return (
-        <AuthenticatedLayout
+        <GameLayout
             header={
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold leading-tight text-gray-800">
@@ -98,6 +98,6 @@ export default function Index({ game, rooms, userRoomId = null }: Props) {
                 minPlayers={game.min_players}
                 maxPlayers={game.max_players}
             />
-        </AuthenticatedLayout>
+        </GameLayout>
     );
 }
