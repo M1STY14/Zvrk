@@ -94,4 +94,9 @@ final class GameSession extends Model
     {
         return $this->hasMany(ChatMessage::class);
     }
+
+    public function has(User $user): bool
+    {
+        return self::players()->where('user_id', $user->id)->exists();
+    }
 }

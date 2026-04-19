@@ -61,7 +61,7 @@ final class Game extends Model
     public function waitingRooms(): Collection
     {
         return $this->gameSessions()
-            ->where('status', GameStatus::Waiting)
+            ->where('status', GameStatus::Pending)
             ->where('is_private', false)
             ->withCount('players')
             ->with('host:id,name')
@@ -72,7 +72,7 @@ final class Game extends Model
     public function userRoomId(User $user): ?string
     {
         return $this->gameSessions()
-            ->where('status', GameStatus::Waiting)
+            ->where('status', GameStatus::Pending)
             ->whereHas('players', fn ($query) => $query->where('user_id', $user->id))
             ->value('id');
     }
