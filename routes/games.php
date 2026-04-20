@@ -10,6 +10,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(EnsurePlayerInGame::class)->group(function () {
         Route::get('/session/{gameSession}', [GameSessionController::class, 'show'])->name('game.show');
         Route::post('/session/{gameSession}/start', [GameSessionController::class, 'start'])->name('game.start');
+        Route::post('/session/{gameSession}/start-vs-ai', [GameSessionController::class, 'startWithAi'])->name('game.start-vs-ai');
+        Route::post('/session/{gameSession}/close-room', [GameSessionController::class, 'closeRoom'])->name('game.close-room');
         Route::post('/session/{gameSession}/move', [GameSessionController::class, 'move'])->name('game.move');
         Route::post('/session/{gameSession}/leave', [GameSessionController::class, 'leave'])->name('game.leave');
     });

@@ -51,4 +51,38 @@ final readonly class GameSessionPolicy
 
         return Response::allow();
     }
+
+    public function startVsAi(User $user, GameSession $gameSession): Response
+    {
+        if ($gameSession->host_user_id !== $user->id) {
+            return Response::deny('Only the host can start the game.');
+        }
+
+        if ($gameSession->status->isNot(GameStatus::Pending)) {
+            return Response::deny('This game session cannot be started.');
+        }
+
+        if ($gameSession->players()->count() !== 1) {
+            return Response::deny('AI matches can only be started from a single-player room.');
+        }
+
+        return Response::allow();
+    }
+
+    public function closeRoom(User $user, GameSession $gameSession): Response
+    {
+        if ($gameSession->host_user_id !== $user->id) {
+            return Response::deny('Only the host can close the room.');
+        }
+
+        if ($gameSession->status->isNot(GameStatus::Pending)) {
+            return Response::deny('This room cannot be closed.');
+        }
+
+        if ($gameSession->players()->count() !== 1) {
+            return Response::deny('Room can only be closed when no other players have joined.');
+        }
+
+        return Response::allow();
+    }
 }
