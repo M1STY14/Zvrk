@@ -12,10 +12,10 @@ use Illuminate\Http\JsonResponse;
 
  class ChatController extends Controller
 {
-    public function __invoke(GameSession $session, StoreChatMessageData $data, #[CurrentUser] User $user): JsonResponse
+    public function __invoke(GameSession $gameSession, StoreChatMessageData $data, #[CurrentUser] User $user): JsonResponse
     {
         $chatMessage = ChatMessage::query()->create([
-            'game_session_id' => $session->id,
+            'game_session_id' => $gameSession->id,
             'user_id' => $user->id,
             'message' => trim($data->message),
         ]);
@@ -23,7 +23,7 @@ use Illuminate\Http\JsonResponse;
         $chatMessage->load('user');
 
         broadcast(new ChatMessageSent(
-            sessionId: $session->id,
+            sessionId: $gameSession->id,
             messageId: $chatMessage->id,
             message: $chatMessage->message,
             senderId: $chatMessage->user->id,
