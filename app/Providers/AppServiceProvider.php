@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\GameType;
+use App\Games\Ludo\LudoEngine;
 use App\Games\TicTacToeEngine;
 use App\Services\GameEngineManager;
 use Illuminate\Contracts\Container\BindingResolutionException;
@@ -27,7 +28,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        $this->app->make(GameEngineManager::class)
-            ->register(GameType::TicTacToe->value, TicTacToeEngine::class);
+        $manager = $this->app->make(GameEngineManager::class);
+        $manager->register(GameType::TicTacToe->value, TicTacToeEngine::class);
+        $manager->register(GameType::Ludo->value, LudoEngine::class);
     }
 }
