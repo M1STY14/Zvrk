@@ -16,6 +16,7 @@ final class GameStarted implements ShouldBroadcast
         public string $sessionId,
         public array $board,
         public string $startingPlayerId,
+        public array $state = [],
     ) {
     }
 
@@ -35,6 +36,7 @@ final class GameStarted implements ShouldBroadcast
             'sessionId' => $this->sessionId,
             'board' => $this->board,
             'startingPlayerId' => $this->startingPlayerId,
+            'state' => $this->state,
         ];
     }
 }

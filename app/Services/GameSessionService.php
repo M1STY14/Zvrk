@@ -83,8 +83,9 @@ final readonly class GameSessionService
 
         broadcast(new GameStarted(
             sessionId: $session->id,
-            board: $stateArray['board'],
+            board: $stateArray['board'] ?? [],
             startingPlayerId: $startingPlayerId,
+            state: $stateArray,
         ));
     }
 
@@ -235,10 +236,11 @@ final readonly class GameSessionService
         broadcast(new MoveMade(
             sessionId: $session->id,
             playerId: $user->id,
-            row: $moveDataArray['row'],
-            column: $moveDataArray['col'],
-            board: $stateArray['board'],
+            row: $moveDataArray['row'] ?? 0,
+            column: $moveDataArray['col'] ?? 0,
+            board: $stateArray['board'] ?? [],
             nextPlayerId: $nextPlayerId,
+            state: $stateArray,
         ))->toOthers();
 
         if ($gameResult !== null) {
@@ -246,7 +248,8 @@ final readonly class GameSessionService
                 sessionId: $session->id,
                 winner: $gameResult->winner,
                 draw: $gameResult->draw,
-                board: $stateArray['board'],
+                board: $stateArray['board'] ?? [],
+                state: $stateArray,
             ));
         }
     }

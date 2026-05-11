@@ -30,7 +30,7 @@ class GameSeeder extends Seeder
                 'description' => 'Roll the dice and race your four tokens from start to finish. Block and capture opponents along the way!',
                 'min_players' => 2,
                 'max_players' => 4,
-                'is_active' => false, // TODO: need to implement game engine
+                'is_active' => true,
             ],
             [
                 'slug' => GameType::Checkers->value,

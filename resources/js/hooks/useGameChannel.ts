@@ -7,12 +7,14 @@ export type MoveMadeEvent = {
     column: number;
     board: number[][];
     nextPlayerId: string | null;
+    state: Record<string, unknown>;
 };
 
 export type GameStartedEvent = {
     sessionId: string;
     board: number[][];
     startingPlayerId: string;
+    state: Record<string, unknown>;
 };
 
 export type GameEndedEvent = {
@@ -20,6 +22,7 @@ export type GameEndedEvent = {
     winner: string | null;
     draw: boolean;
     board: number[][];
+    state: Record<string, unknown>;
 };
 
 export type GameChannelHandlers = {

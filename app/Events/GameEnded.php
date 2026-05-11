@@ -17,6 +17,7 @@ final class GameEnded implements ShouldBroadcast
         public ?string $winner,
         public bool $draw,
         public array $board,
+        public array $state = [],
     ) {
     }
 
@@ -37,6 +38,7 @@ final class GameEnded implements ShouldBroadcast
             'winner' => $this->winner,
             'draw' => $this->draw,
             'board' => $this->board,
+            'state' => $this->state,
         ];
     }
 }

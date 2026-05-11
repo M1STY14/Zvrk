@@ -19,6 +19,7 @@ final class MoveMade implements ShouldBroadcast
         public int $column,
         public array $board,
         public ?string $nextPlayerId = null,
+        public array $state = [],
     ) {
     }
 
@@ -41,6 +42,7 @@ final class MoveMade implements ShouldBroadcast
             'column' => $this->column,
             'board' => $this->board,
             'nextPlayerId' => $this->nextPlayerId,
+            'state' => $this->state,
         ];
     }
 }
