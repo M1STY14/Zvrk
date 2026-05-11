@@ -19,7 +19,7 @@ class LudoEngine implements GameContract
     private const STRETCH_END = 74;
     private const HOME = -1;
     private const SAFE_SQUARES = [0, 8, 17, 25, 34, 42, 51, 59];
-    private const PLAYER_START_OFFSETS = [1 => 0, 2 => 17, 3 => 34, 4 => 51];
+    private const PLAYER_START_OFFSETS = [1 => 57, 2 => 13, 3 => 0, 4 => 44];
     private const TOKENS_PER_PLAYER = 4;
     private const HOME_EXIT_DICE = 5;
     private const CAPTURE_BONUS = 20;

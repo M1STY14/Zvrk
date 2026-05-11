@@ -7,6 +7,7 @@ import { useGameState } from '@/hooks/useGameState';
 import { PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+import LudoPlay from './LudoPlay';
 
 const MARKS: Record<number, string> = { 1: '❌', 2: '⭕' };
 
@@ -49,6 +50,10 @@ function getCsrfToken(): string {
 }
 
 export default function Play({ auth, session }: Props) {
+    if (session.game.slug === 'ludo') {
+        return <LudoPlay auth={auth} session={session as never} />;
+    }
+
     const initialBoard = session.state?.board ?? [
         [0, 0, 0],
         [0, 0, 0],
