@@ -31,12 +31,12 @@ const START_OFFSETS: Record<number, number> = { 1: 57, 2: 13, 3: 0, 4: 44 };
 
 const COLORS: Record<number, { bg: string; border: string; light: string; text: string }> = {
     1: { bg: '#dc2626', border: '#991b1b', light: '#fee2e2', text: 'white' },
-    2: { bg: '#ca8a04', border: '#78350f', light: '#fef9c3', text: 'white' },
+    2: { bg: '#2563eb', border: '#1e40af', light: '#dbeafe', text: 'white' },
     3: { bg: '#16a34a', border: '#14532d', light: '#dcfce7', text: 'white' },
-    4: { bg: '#2563eb', border: '#1e40af', light: '#dbeafe', text: 'white' },
+    4: { bg: '#ca8a04', border: '#78350f', light: '#fef9c3', text: 'white' },
 };
 
-const PLAYER_LABELS: Record<number, string> = { 1: 'Crveni', 2: 'Žuti', 3: 'Zeleni', 4: 'Plavi' };
+const PLAYER_LABELS: Record<number, string> = { 1: 'Crveni', 2: 'Plavi', 3: 'Zeleni', 4: 'Žuti' };
 
 const CELL = 44; // px
 
@@ -249,10 +249,10 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
         // Player entry (colored start square)
         const ringIdx = RING_CELLS.findIndex(([r, c]) => r === row && c === col);
         if (ringIdx !== -1) {
-            if (ringIdx === 57) return '#fca5a5';   // P1 entry
-            if (ringIdx === 13) return '#fde68a';  // P2 entry
-            if (ringIdx === 0) return '#86efac';  // P3 entry
-            if (ringIdx === 44) return '#93c5fd';  // P4 entry
+            if (ringIdx === 57) return '#fca5a5';   // P1 entry (red)
+            if (ringIdx === 13) return '#93c5fd';  // P2 entry (blue)
+            if (ringIdx === 0) return '#86efac';  // P3 entry (green)
+            if (ringIdx === 44) return '#fde68a';  // P4 entry (yellow)
         }
         return 'white';
     }
