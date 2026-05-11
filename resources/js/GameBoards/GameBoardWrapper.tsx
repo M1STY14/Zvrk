@@ -1,13 +1,15 @@
+import LudoBoard, { LudoBoardProps } from './LudoBoard';
 import TicTacToeBoard, { TicTacToeBoardProps } from './TicTacToeBoard';
 
-type BoardProps = TicTacToeBoardProps;
+type BoardProps = TicTacToeBoardProps | LudoBoardProps;
 
 type Props = {
     gameSlug: string;
 } & BoardProps;
 
 const BOARDS: Record<string, (props: BoardProps) => JSX.Element> = {
-    'tic-tac-toe': TicTacToeBoard,
+    'tic-tac-toe': TicTacToeBoard as (props: BoardProps) => JSX.Element,
+    'ludo': LudoBoard as (props: BoardProps) => JSX.Element,
 };
 
 export default function GameBoardWrapper({ gameSlug, ...boardProps }: Props) {
@@ -16,7 +18,7 @@ export default function GameBoardWrapper({ gameSlug, ...boardProps }: Props) {
     if (!Board) {
         return (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500">
-                Igra "{gameSlug}" još nije podržana.
+                Igra &ldquo;{gameSlug}&rdquo; još nije podržana.
             </div>
         );
     }
