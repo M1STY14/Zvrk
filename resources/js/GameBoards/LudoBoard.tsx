@@ -22,51 +22,62 @@ export type LudoBoardProps = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RING_SIZE = 68;
-const STRETCH_END = 74;
+const RING_SIZE = 52;
+const STRETCH_END = 58;
 const HOME = -1;
-const HOME_EXIT_DICE = 5;
-const SAFE_SQUARES = [0, 8, 17, 25, 34, 42, 51, 59];
-const START_OFFSETS: Record<number, number> = { 1: 57, 2: 13, 3: 0, 4: 44 };
+const HOME_EXIT_DICE = 5; //izlazimo iz kuće kada kocka dobije 5
 
-const COLORS: Record<number, { bg: string; border: string; light: string; text: string }> = {
-    1: { bg: '#dc2626', border: '#991b1b', light: '#fee2e2', text: 'white' },
-    2: { bg: '#2563eb', border: '#1e40af', light: '#dbeafe', text: 'white' },
-    3: { bg: '#16a34a', border: '#14532d', light: '#dcfce7', text: 'white' },
-    4: { bg: '#ca8a04', border: '#78350f', light: '#fef9c3', text: 'white' },
+const SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
+
+const START_OFFSETS: Record<number, number> = {
+    1: 39, // Red - bottom right
+    2: 13, // Yellow - top right
+    3: 0,  // Green - top left
+    4: 26, // Blue - bottom right
 };
 
-const PLAYER_LABELS: Record<number, string> = { 1: 'Crveni', 2: 'Plavi', 3: 'Zeleni', 4: 'Žuti' };
+const COLORS: Record<number, { bg: string; border: string; light: string; text: string }> = {
+    1: { bg: '#dc2626', border: '#991b1b', light: '#fee2e2', text: 'white' }, // Red
+    2: { bg: '#ca8a04', border: '#78350f', light: '#fef9c3', text: 'white' }, // Yellow
+    3: { bg: '#16a34a', border: '#14532d', light: '#dcfce7', text: 'white' }, // Green
+    4: { bg: '#2563eb', border: '#1e40af', light: '#dbeafe', text: 'white' }, // Blue
+};
+
+const CENTER_COLORS: Record<number, string> = {
+    1: '#fca5a5', // light red
+    2: '#fde68a', // light yellow
+    3: '#86efac', // light green
+    4: '#93c5fd', // light blue
+};
+
+const PLAYER_LABELS: Record<number, string> = {
+    1: 'Crveni',
+    2: 'Žuti',
+    3: 'Zeleni',
+    4: 'Plavi',
+};
 
 const CELL = 44; // px
+const TOKEN_SHIFT_X = CELL / 2; // half right
+const TOKEN_SHIFT_Y = CELL / 2; // half down
 
 // ─── Board geometry ───────────────────────────────────────────────────────────
 const RING_CELLS: [number, number][] = [
-    // ── Row-6 right arm: P1 exits bottom-left, moves RIGHT ──
-    [6,1],[6,2],[6,3],[6,4],[6,5],       // abs  0– 4
-    // ── Col-6 top arm: turn UP ──
-    [5,6],[4,6],[3,6],[2,6],[1,6],       // abs  5– 9   (abs 8=[2,6] ★)
-    // ── Tip of top arm ──
-    [0,6],[0,7],[0,8],                   // abs 10–12
-    // ── Col-8 top arm: come DOWN ──
-    [1,8],[2,8],[3,8],[4,8],[5,8],       // abs 13–17  
-    [6,1],[6,2],[6,3],[6,4],[6,5],       // abs  0– 4   P1 entry=0=[6,1]
-    [5,6],[4,6],[3,6],[2,6],[1,6],       // abs  5– 9
-    [0,6],[0,7],[0,8],                   // abs 10–12
-    [1,8],[2,8],[3,8],[4,8],             // abs 13–16
-    [5,8],                               // abs 17      P2 entry ★
-    [6,9],[6,10],[6,11],[6,12],[6,13],   // abs 18–22
-    [6,14],[7,14],                       // abs 23–24   ★ abs24=[7,14]? no abs25
-    [8,14],[8,13],[8,12],[8,11],[8,10],[8,9], // abs 25–30  abs25=[8,14] ★
-    [9,8],[10,8],[11,8],[12,8],          // abs 31–34   P3 entry=34=[12,8] ★
-    [13,8],[14,8],[14,7],[14,6],         // abs 35–38
-    [13,6],[12,6],[11,6],[10,6],[9,6],   // abs 39–43   abs42=[10,6] ★
-    [8,5],[8,4],[8,3],[8,2],[8,1],       // abs 44–48
-    [8,0],[7,0],                         // abs 49–50
-    [6,0],                               // abs 51      P4 entry ★
-    [5,0],[4,0],[3,0],[2,0],[1,0],[0,0], // abs 52–57
-    [0,1],[0,2],[0,3],[0,4],[0,5],       // abs 58–62   abs59=[0,2] ★
-    [1,5],[2,5],[3,5],[4,5],[5,5],       // abs 63–67   → wraps to [6,1]
+    [6,1],[6,2],[6,3],[6,4],[6,5],
+    [5,6],[4,6],[3,6],[2,6],[1,6],
+    [0,6],[0,7],[0,8],
+
+    [1,8],[2,8],[3,8],[4,8],[5,8],
+    [6,9],[6,10],[6,11],[6,12],[6,13],
+    [6,14],[7,14],[8,14],
+
+    [8,13],[8,12],[8,11],[8,10],[8,9],
+    [9,8],[10,8],[11,8],[12,8],[13,8],
+    [14,8],[14,7],[14,6],
+
+    [13,6],[12,6],[11,6],[10,6],[9,6],
+    [8,5],[8,4],[8,3],[8,2],[8,1],
+    [8,0],[7,0],[6,0],
 ];
 
 // Stretch cells per player (home column, 6 steps toward center, pos 68..73)
@@ -74,12 +85,9 @@ const STRETCH: Record<number, [number, number][]> = {
     1: [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],
     2: [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
     3: [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
-    4: [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
+    4: [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
 };
 
-// Home zone token slot positions [row, col] (fractional → centre of slot in cells)
-// Each slot is [row, col] as the grid cell index where the slot circle is centred.
-// Home zones: P1=rows 9-14 cols 0-5, P2=rows 0-5 cols 9-14, P3=rows 0-5 cols 0-5, P4=rows 9-14 cols 9-14
 const HOME_SLOTS: Record<number, [number, number][]> = {
     1: [[10, 1], [10, 3], [12, 1], [12, 3]],
     2: [[1, 10], [1, 12], [3, 10], [3, 12]],
@@ -249,17 +257,17 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
         // Player entry (colored start square)
         const ringIdx = RING_CELLS.findIndex(([r, c]) => r === row && c === col);
         if (ringIdx !== -1) {
-            if (ringIdx === 57) return '#fca5a5';   // P1 entry (red)
-            if (ringIdx === 13) return '#93c5fd';  // P2 entry (blue)
-            if (ringIdx === 0) return '#86efac';  // P3 entry (green)
-            if (ringIdx === 44) return '#fde68a';  // P4 entry (yellow)
+            if (ringIdx === START_OFFSETS[1]) return '#fca5a5'; // Crveni
+            if (ringIdx === START_OFFSETS[2]) return '#fde68a'; // Žuti
+            if (ringIdx === START_OFFSETS[3]) return '#86efac'; // Zeleni
+            if (ringIdx === START_OFFSETS[4]) return '#93c5fd'; // Plavi
         }
         return 'white';
     }
 
     function cellContent(row: number, col: number): React.ReactNode {
         const ringIdx = RING_CELLS.findIndex(([r, c]) => r === row && c === col);
-        if (ringIdx !== -1 && SAFE_SQUARES.includes(ringIdx) && ![0, 17, 34, 51].includes(ringIdx)) {
+        if (ringIdx !== -1 && SAFE_SQUARES.includes(ringIdx) && ![0, 13, 26, 39].includes(ringIdx)) {
             return <span style={{ fontSize: 16, opacity: 0.45, lineHeight: 1 }}>★</span>;
         }
         // Center diagonal lines (finish area indicator)
@@ -326,9 +334,182 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    overflow: 'hidden', 
                                 }}
                             >
-                                {content}
+                                {row >= 6 && row <= 8 && col >= 6 && col <= 8 ? ( <>
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        background: '#f8fafc',
+                                    }}
+                                />
+                                {row === 6 && col === 6 && (
+                                    <>
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[2], // yellow
+                                                clipPath: 'polygon(0 0, 100% 0, 100% 100%)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[3], // green
+                                                clipPath: 'polygon(0 0, 0 100%, 100% 100%)',
+                                            }}
+                                        />
+                                    </>
+                                )}
+
+                                {row === 6 && col === 7 && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            background: CENTER_COLORS[2], // yellow
+                                        }}
+                                    />
+                                )}
+
+                                {/* 6,8 - pola žuto, pola plavo */}
+                                {row === 6 && col === 8 && (
+                                    <>
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[2], // yellow
+                                                clipPath: 'polygon(0 0, 100% 0, 0 100%)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[4], // blue
+                                                clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                                            }}
+                                        />
+                                    </>
+                                )}
+
+                                {row === 7 && col === 6 && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            background: CENTER_COLORS[3], // green
+                                        }}
+                                    />
+                                )}
+
+                                {row === 7 && col === 7 && (
+                                    <>
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[2], // yellow
+                                                clipPath: 'polygon(0 0, 100% 0, 50% 50%)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[4], // blue
+                                                clipPath: 'polygon(100% 0, 100% 100%, 50% 50%)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[1], // red
+                                                clipPath: 'polygon(0 100%, 100% 100%, 50% 50%)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[3], // green
+                                                clipPath: 'polygon(0 0, 0 100%, 50% 50%)',
+                                            }}
+                                        />
+                                    </>
+                                )}
+
+                                {row === 7 && col === 8 && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            background: CENTER_COLORS[4], // blue
+                                        }}
+                                    />
+                                )}
+
+                                {row === 8 && col === 6 && (
+                                    <>
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[3], // green
+                                                clipPath: 'polygon(0 0, 0 100%, 100% 0)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[1], // red
+                                                clipPath: 'polygon(0 100%, 100% 100%, 100% 0)',
+                                            }}
+                                        />
+                                    </>
+                                )}
+
+                                {row === 8 && col === 7 && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            background: CENTER_COLORS[1], // red
+                                        }}
+                                    />
+                                )}
+
+                                {row === 8 && col === 8 && (
+                                    <>
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[4], // blue
+                                                clipPath: 'polygon(100% 0, 100% 100%, 0 0)',
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: CENTER_COLORS[1], // red
+                                                clipPath: 'polygon(0 0, 100% 100%, 0 100%)',
+                                            }}
+                                        />
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            content
+                        )}
                             </div>
                         );
                     })
@@ -352,8 +533,8 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                 key={`hs-${pNum}-${slotIdx}`}
                                 style={{
                                     position: 'absolute',
-                                    left: slotCol * CELL,
-                                    top: slotRow * CELL,
+                                    left: slotCol * CELL + TOKEN_SHIFT_X,
+                                    top: slotRow * CELL + TOKEN_SHIFT_Y,
                                     width: CELL,
                                     height: CELL,
                                     display: 'flex',
