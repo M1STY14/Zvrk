@@ -2,6 +2,7 @@ import GameOverModal from '@/Components/Game/GameOverModal';
 import PlayerInfo from '@/Components/Game/PlayerInfo';
 import TurnIndicator from '@/Components/Game/TurnIndicator';
 import GameBoardWrapper from '@/GameBoards/GameBoardWrapper';
+import { TicTacToeState } from '@/GameBoards/TicTacToeBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import { useGameState } from '@/hooks/useGameState';
 import { PageProps } from '@/types';
@@ -26,18 +27,12 @@ type SessionGame = {
     name: string;
 };
 
-type SessionState = {
-    board: number[][];
-    currentTurn: number;
-    players: Record<string, string>;
-};
-
 type SessionProp = {
     id: string;
     name: string;
     status: string;
     game: SessionGame;
-    state: SessionState | null;
+    state: TicTacToeState | null;
     players: SessionPlayer[];
     winner_user_id: string | null;
 };
@@ -113,17 +108,17 @@ export default function Play({ auth, session }: Props) {
         ? MARKS[getPlayerNumber(state.currentPlayerId) ?? 0] ?? ''
         : '';
 
-    useGameChannel(session.id, {
+    useGameChannel<TicTacToeState>(session.id, {
         onMoveMade: (event) => {
-            applyServerBoard(event.board, event.nextPlayerId);
+            applyServerBoard(event.state.board, event.nextPlayerId);
         },
         onGameEnded: (event) => {
             const winnerName = event.winner ? playerNames[event.winner] ?? null : null;
-            applyGameEnd(winnerName, event.draw, event.board);
+            applyGameEnd(winnerName, event.draw, event.state.board);
             setShowGameOver(true);
         },
         onGameStarted: (event) => {
-            applyServerBoard(event.board, event.startingPlayerId);
+            applyServerBoard(event.state.board, event.startingPlayerId);
         },
     });
 
@@ -156,7 +151,7 @@ export default function Play({ auth, session }: Props) {
             }
 
             const data: {
-                state: SessionState;
+                state: TicTacToeState;
                 move_number: number;
                 game_over: boolean;
                 result: { winner: string | null; draw: boolean } | null;

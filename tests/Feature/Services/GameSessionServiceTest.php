@@ -356,8 +356,7 @@ class GameSessionServiceTest extends TestCase
         Event::assertDispatched(MoveMade::class, function ($event) use ($session, $host) {
             return $event->sessionId === $session->id
                 && $event->playerId === $host->id
-                && $event->row === 0
-                && $event->column === 0;
+                && $event->state['board'][0][0] === 1;
         });
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Data\GameState;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -12,15 +13,17 @@ final class MoveMade implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(
-        public string $sessionId,
-        public string $playerId,
-        public int $row,
-        public int $column,
-        public array $board,
-        public ?string $nextPlayerId = null,
-        public array $state = [],
-    ) {
+    public string $sessionId;
+    public string $playerId;
+    public ?string $nextPlayerId;
+    public array $state;
+
+    public function __construct(string $sessionId, string $playerId, ?string $nextPlayerId, GameState $state)
+    {
+        $this->sessionId = $sessionId;
+        $this->playerId = $playerId;
+        $this->nextPlayerId = $nextPlayerId;
+        $this->state = $state->toArray();
     }
 
     public function broadcastOn(): PresenceChannel
@@ -38,9 +41,6 @@ final class MoveMade implements ShouldBroadcast
         return [
             'sessionId' => $this->sessionId,
             'playerId' => $this->playerId,
-            'row' => $this->row,
-            'column' => $this->column,
-            'board' => $this->board,
             'nextPlayerId' => $this->nextPlayerId,
             'state' => $this->state,
         ];

@@ -1,5 +1,11 @@
 const SYMBOLS = [' ', '❌', '⭕'];
 
+export type TicTacToeState = {
+    board: number[][];
+    currentTurn: number;
+    players: Record<string, string>;
+};
+
 export type TicTacToeBoardProps = {
     board: number[][];
     isYourTurn: boolean;

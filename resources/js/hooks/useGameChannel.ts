@@ -1,37 +1,32 @@
 import { useEffect, useRef } from 'react';
 
-export type MoveMadeEvent = {
+export type MoveMadeEvent<TState> = {
     sessionId: string;
     playerId: string;
-    row: number;
-    column: number;
-    board: number[][];
     nextPlayerId: string | null;
-    state: Record<string, unknown>;
+    state: TState;
 };
 
-export type GameStartedEvent = {
+export type GameStartedEvent<TState> = {
     sessionId: string;
-    board: number[][];
     startingPlayerId: string;
-    state: Record<string, unknown>;
+    state: TState;
 };
 
-export type GameEndedEvent = {
+export type GameEndedEvent<TState> = {
     sessionId: string;
     winner: string | null;
     draw: boolean;
-    board: number[][];
-    state: Record<string, unknown>;
+    state: TState;
 };
 
-export type GameChannelHandlers = {
-    onMoveMade?: (event: MoveMadeEvent) => void;
-    onGameStarted?: (event: GameStartedEvent) => void;
-    onGameEnded?: (event: GameEndedEvent) => void;
+export type GameChannelHandlers<TState> = {
+    onMoveMade?: (event: MoveMadeEvent<TState>) => void;
+    onGameStarted?: (event: GameStartedEvent<TState>) => void;
+    onGameEnded?: (event: GameEndedEvent<TState>) => void;
 };
 
-export function useGameChannel(sessionId: string, handlers: GameChannelHandlers) {
+export function useGameChannel<TState>(sessionId: string, handlers: GameChannelHandlers<TState>) {
     const handlersRef = useRef(handlers);
     handlersRef.current = handlers;
 
@@ -40,9 +35,9 @@ export function useGameChannel(sessionId: string, handlers: GameChannelHandlers)
         const channel = window.Echo.join(channelName);
 
         channel
-            .listen('.move.made', (event: MoveMadeEvent) => handlersRef.current.onMoveMade?.(event))
-            .listen('.game.started', (event: GameStartedEvent) => handlersRef.current.onGameStarted?.(event))
-            .listen('.game.ended', (event: GameEndedEvent) => handlersRef.current.onGameEnded?.(event));
+            .listen('.move.made', (event: MoveMadeEvent<TState>) => handlersRef.current.onMoveMade?.(event))
+            .listen('.game.started', (event: GameStartedEvent<TState>) => handlersRef.current.onGameStarted?.(event))
+            .listen('.game.ended', (event: GameEndedEvent<TState>) => handlersRef.current.onGameEnded?.(event));
 
         return () => {
             window.Echo.leave(channelName);

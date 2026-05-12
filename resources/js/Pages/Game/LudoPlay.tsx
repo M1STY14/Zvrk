@@ -94,25 +94,19 @@ export default function LudoPlay({ auth, session }: Props) {
         ludoState.currentTurn === playerNumber;
 
     // Real-time updates from other players via WebSocket
-    useGameChannel(session.id, {
+    useGameChannel<LudoState>(session.id, {
         onMoveMade: (event) => {
-            if (event.state && 'tokens' in event.state) {
-                setLudoState(event.state as unknown as LudoState);
-            }
+            setLudoState(event.state);
         },
         onGameEnded: (event) => {
             const winnerName = event.winner ? playerNames[event.winner] ?? null : null;
             setWinner(winnerName);
             setGameOver(true);
             setShowGameOver(true);
-            if (event.state && 'tokens' in event.state) {
-                setLudoState(event.state as unknown as LudoState);
-            }
+            setLudoState(event.state);
         },
         onGameStarted: (event) => {
-            if (event.state && 'tokens' in event.state) {
-                setLudoState(event.state as unknown as LudoState);
-            }
+            setLudoState(event.state);
         },
     });
 
