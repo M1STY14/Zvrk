@@ -165,46 +165,154 @@ export default function LudoPlay({ auth, session }: Props) {
         );
     }
 
+    // Player colors for background tint
+    const PLAYER_COLORS: Record<number, { bg: string; light: string; name: string }> = {
+        1: { bg: '#dc2626', light: '#fff1f1', name: 'Crveni' },
+        2: { bg: '#ca8a04', light: '#fefce8', name: 'Žuti' },
+        3: { bg: '#16a34a', light: '#f0fdf4', name: 'Zeleni' },
+        4: { bg: '#2563eb', light: '#eff6ff', name: 'Plavi' },
+    };
+
+    const currentTurn = ludoState?.currentTurn ?? 1;
+    const activeColor = PLAYER_COLORS[currentTurn] ?? PLAYER_COLORS[1];
+
+    // Map player_number → player name
+    const playerNameByNumber = session.players.reduce<Record<number, string>>((acc, p) => {
+        acc[p.player_number] = p.user.name;
+        return acc;
+    }, {});
+
+    const rules = [
+        { label: 'Izlaz', text: 'Trebaš baciti točno 5 da izvučeš žeton iz kuće. Ne, 4+1 to ne vrijedi.' },
+        { label: 'Sigurno', text: 'Polja s zvjezdicom su azil. Tu nema "jedenja" — čak ni ako mrziš tog igrača.' },
+        { label: 'Jedenje', text: 'Sletaš na tuđe polje? Oni idu kući, a ti dobivaš bonus potez. Okrutno, ali pošteno.' },
+        { label: 'Duplo', text: 'Baci isti broj na obje kocke i igraš opet. Sreća ili vještina? Oboje, naravno.' },
+        { label: '3× duplo', text: 'Tri dupla zaredom i tvoj najnapredniji žeton ide kući' },
+        { label: 'Pobjeda', text: 'Prva dovedi sva 4 žetona u središte i proglasi se genijem.' },
+    ];
+
     return (
         <>
             <Head title={`${session.game.name} — ${session.name}`} />
 
-            <div className="min-h-screen bg-slate-50 text-slate-900 px-4 py-8">
-                <div className="max-w-5xl mx-auto">
-                    {/* Header */}
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+            <div
+                style={{
+                    minHeight: '100vh',
+                    background: activeColor.light,
+                    transition: 'background 0.6s ease',
+                    color: '#0f172a',
+                    paddingBottom: 40,
+                }}
+            >
+                {/* Header */}
+                <div style={{ maxWidth: 1400, margin: '0 auto', padding: '28px 24px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
                         <div>
-                            <h1 className="text-4xl font-extrabold tracking-tight">{session.game.name}</h1>
-                            <p className="mt-1 text-sm text-slate-500">{session.name}</p>
+                            <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>{session.game.name}</h1>
+                            <p style={{ margin: '2px 0 0', fontSize: 13, color: '#64748b' }}>{session.name}</p>
                         </div>
-                        <div className="flex flex-wrap gap-3">
+                        <div style={{ display: 'flex', gap: 10 }}>
                             <Link
                                 href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+                                style={{
+                                    borderRadius: 100, border: '1.5px solid #cbd5e1', padding: '8px 18px',
+                                    fontSize: 13, fontWeight: 600, color: '#475569', textDecoration: 'none',
+                                    background: 'white', transition: 'background 0.15s',
+                                }}
                             >
                                 Natrag u predvorje
                             </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}
-                                className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+                                style={{
+                                    borderRadius: 100, border: 'none', padding: '8px 18px',
+                                    fontSize: 13, fontWeight: 600, color: 'white',
+                                    background: '#0f172a', cursor: 'pointer',
+                                }}
                             >
                                 Napusti igru
                             </button>
                         </div>
                     </div>
 
-                    {/* Board */}
-                    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm overflow-x-auto">
-                        <GameBoardWrapper
-                            gameSlug="ludo"
-                            ludoState={ludoState}
-                            isYourTurn={isYourTurn}
-                            disabled={gameOver}
-                            playerNumber={playerNumber}
-                            onRoll={handleRoll}
-                            onMove={handleMove}
-                        />
+                    {/* Main layout: board + side panel */}
+                    <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+
+                        {/* Board */}
+                        <div style={{ overflow: 'auto' }}>
+                            <GameBoardWrapper
+                                gameSlug="ludo"
+                                ludoState={ludoState}
+                                isYourTurn={isYourTurn}
+                                disabled={gameOver}
+                                playerNumber={playerNumber}
+                                onRoll={handleRoll}
+                                onMove={handleMove}
+                            />
+                        </div>
+
+                        {/* Side panel */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 220, flex: 1 }}>
+
+                            {/* Turn indicator */}
+                            <div style={{
+                                borderRadius: 16, padding: '14px 18px',
+                                background: activeColor.bg, color: 'white',
+                                transition: 'background 0.4s ease',
+                                boxShadow: `0 4px 16px ${activeColor.bg}55`,
+                            }}>
+                                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, opacity: 0.8, textTransform: 'uppercase', letterSpacing: 0.8 }}>Na potezu</p>
+                                <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 800 }}>
+                                    {activeColor.name}
+                                    {playerNameByNumber[currentTurn] ? ` — ${playerNameByNumber[currentTurn]}` : ''}
+                                </p>
+                                {isYourTurn && !gameOver && (
+                                    <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '3px 8px', display: 'inline-block' }}>
+                                        Tvoj red! 🎲
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Players mini list */}
+                            <div style={{ borderRadius: 16, background: 'white', border: '1px solid #e2e8f0', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.8 }}>Igrači</p>
+                                {session.players.map(p => {
+                                    const pc = PLAYER_COLORS[p.player_number];
+                                    const isActive = p.player_number === currentTurn;
+                                    const isMe = p.user.id === auth.user.id;
+                                    return (
+                                        <div key={p.id} style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '6px 10px', borderRadius: 10,
+                                            background: isActive ? pc.light : 'transparent',
+                                            border: isActive ? `1.5px solid ${pc.bg}44` : '1.5px solid transparent',
+                                            transition: 'all 0.3s',
+                                        }}>
+                                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: pc.bg, flexShrink: 0 }} />
+                                            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#0f172a' : '#475569', flex: 1 }}>
+                                                {pc.name}{isMe ? ' (ti)' : ''}
+                                            </span>
+                                            <span style={{ fontSize: 11, color: '#94a3b8' }}>{p.user.name}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Rules */}
+                            <div style={{ borderRadius: 16, background: 'white', border: '1px solid #e2e8f0', padding: '12px 14px' }}>
+                                <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.8 }}>Pravila</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                                    {rules.map((r, i) => (
+                                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.label}</span>
+                                            <span style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{r.text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>

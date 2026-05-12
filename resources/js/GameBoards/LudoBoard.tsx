@@ -115,6 +115,17 @@ function canMove(tokens: Record<number, number[]>, player: number, tokenIdx: num
     return true;
 }
 
+// Returns every intermediate board position between fromPos and toPos
+function buildPath(fromPos: number, toPos: number): number[] {
+    const steps: number[] = [];
+    if (fromPos === HOME) {
+        for (let p = 0; p <= toPos; p++) steps.push(p);
+    } else {
+        for (let p = fromPos + 1; p <= toPos; p++) steps.push(p);
+    }
+    return steps;
+}
+
 // ─── Token SVG (figura čovjeka) ───────────────────────────────────────────────
 
 function TokenFigure({ color, size = 26, legs = true }: { color: string; size?: number; legs?: boolean }) {
@@ -164,12 +175,83 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const [shownDice, setShownDice] = useState<number[]>([]);
     const prevPhaseRef = useRef<string>(phase);
 
+    // Animation: track displayed positions separately from server state
+    const [displayTokens, setDisplayTokens] = useState<Record<number, number[]>>(tokens);
+    const prevTokensRef = useRef<Record<number, number[]>>(tokens);
+    const animatingRef = useRef(false);
+
     // Keep shownDice updated when we move to 'move' phase
     useEffect(() => {
         if (phase === 'move' && pendingDice.length > 0) {
             setShownDice(pendingDice.slice(0, 2));
         }
     }, [phase, pendingDice]);
+
+    // Step-by-step token animation when server sends new positions
+    useEffect(() => {
+        const prev = prevTokensRef.current;
+        const next = tokens;
+
+        // Find which token moved
+        let movedPlayer: number | null = null;
+        let movedIdx: number | null = null;
+        let fromPos: number | null = null;
+        let toPos: number | null = null;
+
+        for (const [pStr, pTokens] of Object.entries(next)) {
+            const p = Number(pStr);
+            const prevTokens = prev[p] ?? [];
+            for (let i = 0; i < pTokens.length; i++) {
+                if (pTokens[i] !== prevTokens[i] && pTokens[i] !== HOME) {
+                    movedPlayer = p;
+                    movedIdx = i;
+                    fromPos = prevTokens[i] ?? HOME;
+                    toPos = pTokens[i];
+                    break;
+                }
+            }
+            if (movedPlayer !== null) break;
+        }
+
+        prevTokensRef.current = next;
+
+        if (movedPlayer === null || movedIdx === null || fromPos === null || toPos === null) {
+            // No movement (e.g. token sent home after capture) — just sync display
+            setDisplayTokens(next);
+            return;
+        }
+
+        // Build intermediate steps and animate one step at a time
+        const path = buildPath(fromPos, toPos);
+        if (path.length === 0) {
+            setDisplayTokens(next);
+            return;
+        }
+
+        animatingRef.current = true;
+        let step = 0;
+        const STEP_MS = 160;
+
+        const tick = () => {
+            const currentPos = path[step];
+            setDisplayTokens(prev => {
+                const copy: Record<number, number[]> = {};
+                for (const [k, v] of Object.entries(prev)) copy[Number(k)] = [...v];
+                copy[movedPlayer!][movedIdx!] = currentPos;
+                return copy;
+            });
+            step++;
+            if (step < path.length) {
+                setTimeout(tick, STEP_MS);
+            } else {
+                // Sync fully to server state at end
+                setDisplayTokens(next);
+                animatingRef.current = false;
+            }
+        };
+
+        setTimeout(tick, STEP_MS);
+    }, [tokens]);
 
     // Reset selection when turn or phase changes
     useEffect(() => {
@@ -223,11 +305,11 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
         });
     }
 
-    // Collect all tokens on board cells, grouped by cell
+    // Collect all tokens on board cells using displayTokens (animated positions)
     type BoardToken = { player: number; idx: number };
     const cellMap = new Map<string, BoardToken[]>();
 
-    for (const [pStr, pTokens] of Object.entries(tokens)) {
+    for (const [pStr, pTokens] of Object.entries(displayTokens)) {
         const p = Number(pStr);
         pTokens.forEach((pos, idx) => {
             const cell = tokenCell(p, pos);
@@ -254,11 +336,23 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     for (let r = 9; r <= 14; r++) for (let c = 9; c <= 14; c++) pathSet.add(`${r},${c}`);
 
     function cellBackground(row: number, col: number): string {
-        // Home zones
-        if (row >= 9 && row <= 14 && col >= 0 && col <= 5) return COLORS[1].light;
-        if (row >= 0 && row <= 5 && col >= 9 && col <= 14) return COLORS[2].light;
-        if (row >= 0 && row <= 5 && col >= 0 && col <= 5) return COLORS[3].light;
-        if (row >= 9 && row <= 14 && col >= 9 && col <= 14) return COLORS[4].light;
+        // Home zones — border ring is colored, inner 4×4 is white
+        if (row >= 9 && row <= 14 && col >= 0 && col <= 5) {
+            const inner = row >= 10 && row <= 13 && col >= 1 && col <= 4;
+            return inner ? 'white' : '#fca5a5';
+        }
+        if (row >= 0 && row <= 5 && col >= 9 && col <= 14) {
+            const inner = row >= 1 && row <= 4 && col >= 10 && col <= 13;
+            return inner ? 'white' : '#fde68a';
+        }
+        if (row >= 0 && row <= 5 && col >= 0 && col <= 5) {
+            const inner = row >= 1 && row <= 4 && col >= 1 && col <= 4;
+            return inner ? 'white' : '#86efac';
+        }
+        if (row >= 9 && row <= 14 && col >= 9 && col <= 14) {
+            const inner = row >= 10 && row <= 13 && col >= 10 && col <= 13;
+            return inner ? 'white' : '#93c5fd';
+        }
         
 
         // Center finish triangle region
@@ -294,7 +388,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const boardH = 15 * CELL;
 
     return (
-        <div style={{ fontFamily: 'Manrope, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+        <div style={{ fontFamily: 'Manrope, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, position: 'relative' }}>
             <style>{`
                 @keyframes diceRoll {
                     0%   { transform: rotate(0deg) scale(1); }
@@ -321,8 +415,6 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                 width: boardW,
                 height: boardH,
                 borderRadius: 12,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-                overflow: 'hidden',
                 background: '#e2e8f0',
                 flexShrink: 0,
             }}>
@@ -334,6 +426,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                         if (!pathSet.has(key)) return null;
                         const bg = cellBackground(row, col);
                         const content = cellContent(row, col);
+                        const isHomeZone = (row <= 5 && col <= 5) || (row <= 5 && col >= 9) || (row >= 9 && col <= 5) || (row >= 9 && col >= 9);
                         return (
                             <div
                                 key={key}
@@ -344,7 +437,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                     width: CELL,
                                     height: CELL,
                                     background: bg,
-                                    border: '1px solid #cbd5e1',
+                                    border: isHomeZone ? 'none' : '1px solid #cbd5e1',
                                     boxSizing: 'border-box',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -533,7 +626,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                 {/* Home inner circles + tokens at HOME */}
                 {([1, 2, 3, 4] as const).map(pNum => {
                     const c = COLORS[pNum];
-                    const homeTokenIdxs = (tokens[pNum] ?? [])
+                    const homeTokenIdxs = (displayTokens[pNum] ?? [])
                         .map((pos, idx) => ({ pos, idx }))
                         .filter(({ pos }) => pos === HOME);
 
@@ -640,7 +733,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                 {/* Finished tokens shown in center */}
                 {([1, 2, 3, 4] as const).flatMap(pNum => {
                     const c = COLORS[pNum];
-                    const finished = (tokens[pNum] ?? []).filter(p => p === STRETCH_END);
+                    const finished = (displayTokens[pNum] ?? []).filter(p => p === STRETCH_END);
                     const centerOffsets: [number, number][] = [[-8, -8], [8, -8], [-8, 8], [8, 8]];
                     return finished.map((_, i) => {
                         const [ox, oy] = centerOffsets[i] ?? [0, 0];
@@ -663,6 +756,23 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                         );
                     });
                 })}
+
+                {/* ── Board corner overlay ── */}
+                <img
+                    src="/images/ludo_game_props/ludo_board_corner.svg"
+                    alt=""
+                    style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: boardW + 12,
+                        height: boardH + 4,
+                        pointerEvents: 'none',
+                        zIndex: 3,
+                        display: 'block',
+                    }}
+                />
             </div>
 
             {/* ── Controls ── */}
@@ -761,7 +871,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
 
                 {/* Player status row */}
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {Object.entries(tokens).map(([pStr, pTokens]) => {
+                    {Object.entries(displayTokens).map(([pStr, pTokens]) => {
                         const pNum = Number(pStr);
                         const c = COLORS[pNum];
                         const atHome = pTokens.filter(p => p === HOME).length;
@@ -794,8 +904,8 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                     border: `2px solid ${isActive ? 'rgba(255,255,255,0.6)' : c.border}`,
                                     flexShrink: 0,
                                 }} />
-                                <span>{PLAYER_LABELS[pNum]}{isMe ? ' (ti)' : ''}</span>
-                                <span style={{ opacity: 0.8, fontSize: 12 }}>
+                                
+                                <span style={{ opacity: 0.8, fontSize: 14 }}>
                                     {finished > 0 && `✓${finished} `}
                                     {onBoard > 0 && `▲${onBoard} `}
                                     {atHome > 0 && `⌂${atHome}`}
