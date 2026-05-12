@@ -107,12 +107,32 @@ function tokenCell(player: number, pos: number): [number, number] | null {
     return RING_CELLS[absPos] ?? null;
 }
 
+function isPathBlocked(tokens: Record<number, number[]>, player: number, from: number, to: number): boolean {
+    for (let pos = from + 1; pos <= to; pos++) {
+        if (pos >= RING_SIZE) break;
+        const abs = (START_OFFSETS[player] + pos) % RING_SIZE;
+        for (const [opStr, opTokens] of Object.entries(tokens)) {
+            const op = Number(opStr);
+            if (op === player) continue;
+            const count = opTokens.filter(opPos => {
+                if (opPos < 0 || opPos >= RING_SIZE) return false;
+                return (START_OFFSETS[op] + opPos) % RING_SIZE === abs;
+            }).length;
+            if (count >= 2) return true;
+        }
+    }
+    return false;
+}
+
 function canMove(tokens: Record<number, number[]>, player: number, tokenIdx: number, dice: number): boolean {
     const pos = tokens[player]?.[tokenIdx];
     if (pos === undefined || pos === STRETCH_END) return false;
-    if (pos === HOME) return dice === HOME_EXIT_DICE;
+    if (pos === HOME) {
+        if (dice !== HOME_EXIT_DICE) return false;
+        return !isPathBlocked(tokens, player, HOME, 0);
+    }
     if (pos + dice > STRETCH_END) return false;
-    return true;
+    return !isPathBlocked(tokens, player, pos, pos + dice);
 }
 
 // Returns every intermediate board position between fromPos and toPos
@@ -179,6 +199,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const [displayTokens, setDisplayTokens] = useState<Record<number, number[]>>(tokens);
     const prevTokensRef = useRef<Record<number, number[]>>(tokens);
     const animatingRef = useRef(false);
+    const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Keep shownDice updated when we move to 'move' phase, reset on turn change
     useEffect(() => {
@@ -230,6 +251,12 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
             return;
         }
 
+        // Cancel any in-progress animation before starting a new one
+        if (animationTimeoutRef.current !== null) {
+            clearTimeout(animationTimeoutRef.current);
+            animationTimeoutRef.current = null;
+        }
+
         animatingRef.current = true;
         let step = 0;
         const STEP_MS = 160;
@@ -244,15 +271,15 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
             });
             step++;
             if (step < path.length) {
-                setTimeout(tick, STEP_MS);
+                animationTimeoutRef.current = setTimeout(tick, STEP_MS);
             } else {
-                // Sync fully to server state at end
                 setDisplayTokens(next);
                 animatingRef.current = false;
+                animationTimeoutRef.current = null;
             }
         };
 
-        setTimeout(tick, STEP_MS);
+        animationTimeoutRef.current = setTimeout(tick, STEP_MS);
     }, [tokens]);
 
     // Reset selection when turn or phase changes
