@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
 use App\Enums\GameStatus;
+use App\Enums\GameType;
 use App\Events\PlayerLeftLobby;
 use App\Models\GameSession;
 use App\Models\User;
@@ -29,7 +30,12 @@ final class GameSessionController extends Controller
     {
         $gameSession->load(['players.user:id,name,avatar', 'game']);
 
-        return Inertia::render('Game/Play', [
+        $page = match (GameType::from($gameSession->game->slug)) {
+            GameType::Ludo => 'Game/LudoPlay',
+            default        => 'Game/Play',
+        };
+
+        return Inertia::render($page, [
             'session' => [
                 'id' => $gameSession->id,
                 'name' => $gameSession->name,
