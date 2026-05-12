@@ -180,12 +180,14 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const prevTokensRef = useRef<Record<number, number[]>>(tokens);
     const animatingRef = useRef(false);
 
-    // Keep shownDice updated when we move to 'move' phase
+    // Keep shownDice updated when we move to 'move' phase, reset on turn change
     useEffect(() => {
         if (phase === 'move' && pendingDice.length > 0) {
             setShownDice(pendingDice.slice(0, 2));
+        } else if (phase === 'roll') {
+            setShownDice([]);
         }
-    }, [phase, pendingDice]);
+    }, [phase, pendingDice, currentTurn]);
 
     // Step-by-step token animation when server sends new positions
     useEffect(() => {
