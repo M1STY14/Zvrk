@@ -15,11 +15,11 @@ use InvalidArgumentException;
 
 class LudoEngine implements GameContract
 {
-    private const RING_SIZE = 68;
-    private const STRETCH_END = 74;
+    private const RING_SIZE = 52;
+    private const STRETCH_END = 58;
     private const HOME = -1;
-    private const SAFE_SQUARES = [0, 8, 17, 25, 34, 42, 51, 59];
-    private const PLAYER_START_OFFSETS = [1 => 57, 2 => 13, 3 => 0, 4 => 44];
+    private const SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
+    private const PLAYER_START_OFFSETS = [1 => 39, 2 => 13, 3 => 0, 4 => 26];
     private const TOKENS_PER_PLAYER = 4;
     private const HOME_EXIT_DICE = 5;
     private const CAPTURE_BONUS = 20;
