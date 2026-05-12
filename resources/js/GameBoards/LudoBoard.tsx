@@ -115,6 +115,21 @@ function canMove(tokens: Record<number, number[]>, player: number, tokenIdx: num
     return true;
 }
 
+// ─── Token SVG (figura čovjeka) ───────────────────────────────────────────────
+
+function TokenFigure({ color, size = 26, legs = true }: { color: string; size?: number; legs?: boolean }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="5" r="3.2" fill={color} stroke="white" strokeWidth="1.2" />
+            <path d="M7 11.5 C7 9 9 8 12 8 C15 8 17 9 17 11.5 L16 17 L8 17 Z" fill={color} stroke="white" strokeWidth="1" />
+            {legs && <>
+                <line x1="9" y1="17" x2="8" y2="22" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+                <line x1="15" y1="17" x2="16" y2="22" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
+            </>}
+        </svg>
+    );
+}
+
 // ─── Dice face SVG ────────────────────────────────────────────────────────────
 
 const DOT_POSITIONS: Record<number, [number, number][]> = {
@@ -542,44 +557,26 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                     justifyContent: 'center',
                                 }}
                             >
-                                {/* Slot ring */}
-                                <div style={{
-                                    width: CELL - 6,
-                                    height: CELL - 6,
-                                    borderRadius: '50%',
-                                    border: `3px solid ${c.bg}`,
-                                    background: 'rgba(255,255,255,0.5)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}>
-                                    {tokenHere !== undefined && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleTokenClick(tokenHere.idx)}
-                                            style={{
-                                                width: CELL - 18,
-                                                height: CELL - 18,
-                                                borderRadius: '50%',
-                                                background: c.bg,
-                                                border: isSelected ? `3px solid white` : `2px solid ${c.border}`,
-                                                outline: isSelected ? `3px solid ${c.bg}` : undefined,
-                                                cursor: isMovable ? 'pointer' : 'default',
-                                                animation: isMovable && !isSelected ? 'tokenPulse 1.2s ease-in-out infinite' : undefined,
-                                                color: 'white',
-                                                fontWeight: 800,
-                                                fontSize: 12,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                transition: 'transform 0.15s',
-                                                transform: isSelected ? 'scale(1.15)' : undefined,
-                                            }}
-                                        >
-                                            {tokenHere.idx + 1}
-                                        </button>
-                                    )}
-                                </div>
+                                {tokenHere !== undefined && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleTokenClick(tokenHere.idx)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: 0,
+                                            cursor: isMovable ? 'pointer' : 'default',
+                                            animation: isMovable && !isSelected ? 'tokenPulse 1.2s ease-in-out infinite' : undefined,
+                                            transition: 'transform 0.15s',
+                                            transform: isSelected ? 'scale(1.2)' : undefined,
+                                            outline: isSelected ? `3px solid ${c.bg}` : 'none',
+                                            borderRadius: 4,
+                                            display: 'flex',
+                                        }}
+                                    >
+                                        <TokenFigure color={c.bg} size={CELL - 4} legs={false} />
+                                    </button>
+                                )}
                             </div>
                         );
                     });
@@ -602,7 +599,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                         const isMovable = isMine && movableTokens.has(bt.idx);
                         const isSelected = isMine && selectedToken === bt.idx;
                         const [ox, oy] = offsets[i] ?? [0, 0];
-                        const size = 26;
+                        const size = 36;
 
                         return (
                             <button
@@ -634,7 +631,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                     transform: isSelected ? 'scale(1.2)' : undefined,
                                 }}
                             >
-                                {bt.idx + 1}
+                                <TokenFigure color={c.bg} size={size} />
                             </button>
                         );
                     });
