@@ -39,7 +39,7 @@ final class GameSessionController extends Controller
             'session' => [
                 'id' => $gameSession->id,
                 'name' => $gameSession->name,
-                'status' => $gameSession->status->value,
+                'is_finished' => $gameSession->status->is(GameStatus::Finished) || $gameSession->status->is(GameStatus::Abandoned),
                 'state' => $gameSession->state,
                 'winner_user_id' => $gameSession->winner_user_id,
                 'game' => [

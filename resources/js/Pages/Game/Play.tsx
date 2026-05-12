@@ -29,7 +29,7 @@ type SessionGame = {
 type SessionProp = {
     id: string;
     name: string;
-    status: string;
+    is_finished: boolean;
     game: SessionGame;
     state: TicTacToeState | null;
     players: SessionPlayer[];
@@ -53,7 +53,7 @@ export default function Play({ auth, session }: Props) {
     const playersByNumber: Record<string, string> = session.state?.players ?? {};
     const initialCurrentPlayerId = session.state ? playersByNumber[String(session.state.currentTurn)] ?? null : null;
 
-    const isFinished = session.status === 'finished' || session.status === 'abandoned';
+    const isFinished = session.is_finished;
     const initialWinnerName = session.winner_user_id
         ? session.players.find((p) => p.user.id === session.winner_user_id)?.user.name ?? null
         : null;

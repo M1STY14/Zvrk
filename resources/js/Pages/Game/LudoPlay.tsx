@@ -19,7 +19,7 @@ type SessionGame = { slug: string; name: string };
 type SessionProp = {
     id: string;
     name: string;
-    status: string;
+    is_finished: boolean;
     game: SessionGame;
     state: LudoState | null;
     players: SessionPlayer[];
@@ -57,7 +57,7 @@ async function postMove(sessionId: string, moveData: Record<string, unknown>): P
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LudoPlay({ auth, session }: Props) {
-    const isFinished = session.status === 'finished' || session.status === 'abandoned';
+    const isFinished = session.is_finished;
 
     const initialWinnerName = session.winner_user_id
         ? session.players.find((p) => p.user.id === session.winner_user_id)?.user.name ?? null
