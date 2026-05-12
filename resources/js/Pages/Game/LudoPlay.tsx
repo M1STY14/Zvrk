@@ -56,8 +56,18 @@ async function postMove(sessionId: string, moveData: Record<string, unknown>): P
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const RULES = [
+    { label: 'Izlaz', text: 'Trebaš baciti točno 5 da izvučeš žeton iz kuće. Ne, 4+1 to ne vrijedi.' },
+    { label: 'Sigurno', text: 'Polja s zvjezdicom su azil. Tu nema "jedenja" — čak ni ako mrziš tog igrača.' },
+    { label: 'Jedenje', text: 'Sletaš na tuđe polje? Oni idu kući, a ti dobivaš bonus potez. Okrutno, ali pošteno.' },
+    { label: 'Duplo', text: 'Baci isti broj na obje kocke i igraš opet. Sreća ili vještina? Oboje, naravno.' },
+    { label: '3× duplo', text: 'Tri dupla zaredom i tvoj najnapredniji žeton ide kući.' },
+    { label: 'Pobjeda', text: 'Prva dovedi sva 4 žetona u središte i proglasi se genijem.' },
+];
+
 export default function LudoPlay({ auth, session }: Props) {
     const isFinished = session.is_finished;
+    const [showRules, setShowRules] = useState(false);
 
     const initialWinnerName = session.winner_user_id
         ? session.players.find((p) => p.user.id === session.winner_user_id)?.user.name ?? null
@@ -170,20 +180,6 @@ export default function LudoPlay({ auth, session }: Props) {
     const currentTurn = ludoState?.currentTurn ?? 1;
     const activeColor = PLAYER_COLORS[currentTurn] ?? PLAYER_COLORS[1];
 
-    // Map player_number → player name
-    const playerNameByNumber = session.players.reduce<Record<number, string>>((acc, p) => {
-        acc[p.player_number] = p.user.name;
-        return acc;
-    }, {});
-
-    const rules = [
-        { label: 'Izlaz', text: 'Trebaš baciti točno 5 da izvučeš žeton iz kuće. Ne, 4+1 to ne vrijedi.' },
-        { label: 'Sigurno', text: 'Polja s zvjezdicom su azil. Tu nema "jedenja" — čak ni ako mrziš tog igrača.' },
-        { label: 'Jedenje', text: 'Sletaš na tuđe polje? Oni idu kući, a ti dobivaš bonus potez. Okrutno, ali pošteno.' },
-        { label: 'Duplo', text: 'Baci isti broj na obje kocke i igraš opet. Sreća ili vještina? Oboje, naravno.' },
-        { label: '3× duplo', text: 'Tri dupla zaredom i tvoj najnapredniji žeton ide kući' },
-        { label: 'Pobjeda', text: 'Prva dovedi sva 4 žetona u središte i proglasi se genijem.' },
-    ];
 
     return (
         <>
@@ -205,7 +201,20 @@ export default function LudoPlay({ auth, session }: Props) {
                             <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, letterSpacing: -0.5 }}>{session.game.name}</h1>
                             <p style={{ margin: '2px 0 0', fontSize: 13, color: '#64748b' }}>{session.name}</p>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowRules(r => !r)}
+                                title="Pravila igre"
+                                style={{
+                                    width: 36, height: 36, borderRadius: '50%',
+                                    border: '1.5px solid #cbd5e1', background: 'white',
+                                    fontSize: 15, fontWeight: 700, color: '#475569',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >
+                                ?
+                            </button>
                             <Link
                                 href={route('lobby.index', session.game.slug)}
                                 style={{
@@ -230,82 +239,101 @@ export default function LudoPlay({ auth, session }: Props) {
                         </div>
                     </div>
 
-                    {/* Main layout: board + side panel */}
-                    <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-
-                        {/* Board */}
-                        <div style={{ overflow: 'auto' }}>
-                            <GameBoardWrapper
-                                gameSlug="ludo"
-                                ludoState={ludoState}
-                                isYourTurn={isYourTurn}
-                                disabled={gameOver}
-                                playerNumber={playerNumber}
-                                onRoll={handleRoll}
-                                onMove={handleMove}
-                            />
-                        </div>
-
-                        {/* Side panel */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 220, flex: 1 }}>
-
-                            {/* Turn indicator */}
+                    {/* Rules popup */}
+                    {showRules && (
+                        <div style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.35)', zIndex: 100,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }} onClick={() => setShowRules(false)}>
                             <div style={{
-                                borderRadius: 16, padding: '14px 18px',
-                                background: activeColor.bg, color: 'white',
-                                transition: 'background 0.4s ease',
-                                boxShadow: `0 4px 16px ${activeColor.bg}55`,
-                            }}>
-                                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, opacity: 0.8, textTransform: 'uppercase', letterSpacing: 0.8 }}>Na potezu</p>
-                                <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 800 }}>
-                                    {activeColor.name}
-                                    {playerNameByNumber[currentTurn] ? ` — ${playerNameByNumber[currentTurn]}` : ''}
-                                </p>
-                                {isYourTurn && !gameOver && (
-                                    <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '3px 8px', display: 'inline-block' }}>
-                                        Tvoj red! 🎲
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Players mini list */}
-                            <div style={{ borderRadius: 16, background: 'white', border: '1px solid #e2e8f0', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.8 }}>Igrači</p>
-                                {session.players.map(p => {
-                                    const pc = PLAYER_COLORS[p.player_number];
-                                    const isActive = p.player_number === currentTurn;
-                                    const isMe = p.user.id === auth.user.id;
-                                    return (
-                                        <div key={p.id} style={{
-                                            display: 'flex', alignItems: 'center', gap: 8,
-                                            padding: '6px 10px', borderRadius: 10,
-                                            background: isActive ? pc.light : 'transparent',
-                                            border: isActive ? `1.5px solid ${pc.bg}44` : '1.5px solid transparent',
-                                            transition: 'all 0.3s',
-                                        }}>
-                                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: pc.bg, flexShrink: 0 }} />
-                                            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#0f172a' : '#475569', flex: 1 }}>
-                                                {pc.name}{isMe ? ' (ti)' : ''}
-                                            </span>
-                                            <span style={{ fontSize: 11, color: '#94a3b8' }}>{p.user.name}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Rules */}
-                            <div style={{ borderRadius: 16, background: 'white', border: '1px solid #e2e8f0', padding: '12px 14px' }}>
-                                <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.8 }}>Pravila</p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                                    {rules.map((r, i) => (
-                                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                background: 'white', borderRadius: 20, padding: '28px 36px',
+                                maxWidth: 620, width: '90%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+                            }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Pravila igre</h2>
+                                    <button type="button" onClick={() => setShowRules(false)} style={{
+                                        background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8', lineHeight: 1,
+                                    }}>✕</button>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    {RULES.map((r, i) => (
+                                        <div key={i}>
                                             <span style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.label}</span>
-                                            <span style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{r.text}</span>
+                                            <p style={{ margin: '2px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{r.text}</p>
                                         </div>
                                     ))}
                                 </div>
+                                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                                    <img src="/images/game_rules_explanation.svg" alt="Pravila igre" style={{ width: 300, height: 150 }} />
+                                </div>
                             </div>
+                        </div>
+                    )}
 
+                    {/* Board + player avatars */}
+                    <style>{`
+                        @keyframes avatarPulse {
+                            0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.3); }
+                            50%       { box-shadow: 0 0 0 8px rgba(0,0,0,0.08); transform: scale(1.08); }
+                        }
+                    `}</style>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+                        {/* Board with avatar corners */}
+                        <div style={{ position: 'relative', width: 660, height: 660, flexShrink: 0 }}>
+                            {/* Player avatar circles at each corner */}
+                            {session.players.map(p => {
+                                const pc = PLAYER_COLORS[p.player_number];
+                                const isActive = p.player_number === currentTurn;
+                                const isMe = p.user.id === auth.user.id;
+                                const initials = p.user.name.slice(0, 2).toUpperCase();
+
+                                const corner: Record<number, React.CSSProperties> = {
+                                    3: { top: -26,    left: -26 },
+                                    2: { top: -26,    right: -26 },
+                                    1: { bottom: -26, left: -26 },
+                                    4: { bottom: -26, right: -26 },
+                                };
+                                const pos = corner[p.player_number];
+                                if (!pos) return null;
+
+                                return (
+                                    <div key={p.id} style={{
+                                        position: 'absolute',
+                                        ...pos,
+                                        width: 52, height: 52,
+                                        borderRadius: '50%',
+                                        background: pc.bg,
+                                        border: `3px solid ${isMe ? 'white' : pc.bg}`,
+                                        outline: isMe ? `2px solid ${pc.bg}` : 'none',
+                                        display: 'flex', flexDirection: 'column',
+                                        alignItems: 'center', justifyContent: 'center',
+                                        color: 'white', fontWeight: 700, fontSize: 13,
+                                        zIndex: 30,
+                                        animation: isActive ? 'avatarPulse 1s ease-in-out infinite' : 'none',
+                                        transition: 'box-shadow 0.3s',
+                                        cursor: 'default',
+                                        userSelect: 'none',
+                                    }}
+                                    title={p.user.name}>
+                                        <span>{initials}</span>
+                                        {isMe && <span style={{ fontSize: 8, opacity: 0.85, lineHeight: 1 }}>ti</span>}
+                                    </div>
+                                );
+                            })}
+
+                            {/* Board — fills the wrapper exactly */}
+                            <div style={{ position: 'absolute', top: 0, left: 0 }}>
+                                <GameBoardWrapper
+                                    gameSlug="ludo"
+                                    ludoState={ludoState}
+                                    isYourTurn={isYourTurn}
+                                    disabled={gameOver}
+                                    playerNumber={playerNumber}
+                                    onRoll={handleRoll}
+                                    onMove={handleMove}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

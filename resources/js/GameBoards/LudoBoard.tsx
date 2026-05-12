@@ -898,51 +898,6 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                     )}
                 </div>
 
-                {/* Player status row */}
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {Object.entries(displayTokens).map(([pStr, pTokens]) => {
-                        const pNum = Number(pStr);
-                        const c = COLORS[pNum];
-                        const atHome = pTokens.filter(p => p === HOME).length;
-                        const finished = pTokens.filter(p => p === STRETCH_END).length;
-                        const onBoard = pTokens.length - atHome - finished;
-                        const isActive = currentTurn === pNum;
-                        const isMe = playerNumber === pNum;
-
-                        return (
-                            <div
-                                key={pNum}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    padding: '8px 16px',
-                                    borderRadius: 100,
-                                    background: isActive ? c.bg : '#f1f5f9',
-                                    color: isActive ? 'white' : '#374151',
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    border: `2px solid ${isActive ? c.border : '#e2e8f0'}`,
-                                    transition: 'all 0.25s',
-                                    boxShadow: isActive ? `0 4px 12px ${c.bg}55` : undefined,
-                                }}
-                            >
-                                <div style={{
-                                    width: 10, height: 10, borderRadius: '50%',
-                                    background: isActive ? 'white' : c.bg,
-                                    border: `2px solid ${isActive ? 'rgba(255,255,255,0.6)' : c.border}`,
-                                    flexShrink: 0,
-                                }} />
-                                
-                                <span style={{ opacity: 0.8, fontSize: 14 }}>
-                                    {finished > 0 && `✓${finished} `}
-                                    {onBoard > 0 && `▲${onBoard} `}
-                                    {atHome > 0 && `⌂${atHome}`}
-                                </span>
-                            </div>
-                        );
-                    })}
-                </div>
             </div>
         </div>
     );
