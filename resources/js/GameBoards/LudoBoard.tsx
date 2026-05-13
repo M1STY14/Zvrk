@@ -192,8 +192,9 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
 
     const [selectedToken, setSelectedToken] = useState<number | null>(null);
     const [rolling, setRolling] = useState(false);
+    const [rollingDice, setRollingDice] = useState<number[]>([]);
     const [shownDice, setShownDice] = useState<number[]>([]);
-    const prevPhaseRef = useRef<string>(phase);
+    const rollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Animation: track displayed positions separately from server state
     const [displayTokens, setDisplayTokens] = useState<Record<number, number[]>>(tokens);
@@ -201,14 +202,35 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const animatingRef = useRef(false);
     const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const startRollingAnimation = () => {
+        setRolling(true);
+        setRollingDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
+        rollingIntervalRef.current = setInterval(() => {
+            setRollingDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
+        }, 250);
+    };
+
+    const stopRollingAnimation = () => {
+        if (rollingIntervalRef.current !== null) {
+            clearInterval(rollingIntervalRef.current);
+            rollingIntervalRef.current = null;
+        }
+        setRolling(false);
+        setRollingDice([]);
+    };
+
     // Keep shownDice updated when we move to 'move' phase, reset on turn change
     useEffect(() => {
         if (phase === 'move' && pendingDice.length > 0) {
+            stopRollingAnimation();
             setShownDice(pendingDice.slice(0, 2));
         } else if (phase === 'roll') {
             setShownDice([]);
+            // Start animation for the player whose turn it is (visible to all watchers)
+            startRollingAnimation();
         }
-    }, [phase, pendingDice, currentTurn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [phase, currentTurn]);
 
     // Step-by-step token animation when server sends new positions
     useEffect(() => {
@@ -285,7 +307,6 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     // Reset selection when turn or phase changes
     useEffect(() => {
         setSelectedToken(null);
-        prevPhaseRef.current = phase;
     }, [currentTurn, phase]);
 
     // Auto-select token if only one is movable
@@ -305,9 +326,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
 
     const handleRoll = () => {
         if (!isYourTurn || phase !== 'roll' || disabled) return;
-        setRolling(true);
         onRoll();
-        setTimeout(() => setRolling(false), 600);
     };
 
     const handleTokenClick = (tokenIdx: number) => {
@@ -827,14 +846,14 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                 {/* Dice + roll button */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
 
-                    {/* Dice display */}
-                    {shownDice.length > 0 && (
+                    {/* Dice display — show shaking random dice while rolling, real result after */}
+                    {(rolling || shownDice.length > 0) && (
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            {(phase === 'move' ? pendingDice : shownDice).map((val, i) => {
+                            {(rolling ? rollingDice : phase === 'move' ? pendingDice : shownDice).map((val, i) => {
                                 const isBonus = val > 6;
-                                const isClickable = phase === 'move' && selectedToken !== null && isYourTurn &&
+                                const isClickable = !rolling && phase === 'move' && selectedToken !== null && isYourTurn &&
                                     playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
-                                const isUsable = phase === 'move' && selectedToken !== null && isYourTurn &&
+                                const isUsable = !rolling && phase === 'move' && selectedToken !== null && isYourTurn &&
                                     playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
 
                                 return (
@@ -851,8 +870,8 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                             cursor: isUsable ? 'pointer' : 'default',
                                             opacity: selectedToken !== null && !isUsable ? 0.3 : phase === 'move' && selectedToken === null ? 0.65 : 1,
                                             filter: selectedToken !== null && !isUsable ? 'grayscale(1)' : 'none',
-                                            animation: rolling ? 'diceRoll 0.6s ease-out' : undefined,
-                                            transition: 'transform 0.15s, opacity 0.2s',
+                                            animation: rolling ? 'diceShake 0.35s ease-in-out infinite' : undefined,
+                                            transition: rolling ? 'none' : 'transform 0.15s, opacity 0.2s',
                                             transform: isClickable ? 'scale(1.08)' : undefined,
                                         }}
                                     >
