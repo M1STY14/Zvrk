@@ -818,7 +818,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                 const isClickable = phase === 'move' && selectedToken !== null && isYourTurn &&
                                     !isBonus && playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
                                 const isUsable = phase === 'move' && selectedToken !== null && isYourTurn &&
-                                    playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
+                                    !isBonus && playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
 
                                 return (
                                     <button
@@ -832,7 +832,8 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                             border: 'none',
                                             padding: 0,
                                             cursor: isUsable ? 'pointer' : 'default',
-                                            opacity: phase === 'move' && selectedToken === null ? 0.65 : 1,
+                                            opacity: selectedToken !== null && !isUsable ? 0.3 : phase === 'move' && selectedToken === null ? 0.65 : 1,
+                                            filter: selectedToken !== null && !isUsable ? 'grayscale(1)' : 'none',
                                             animation: rolling ? 'diceRoll 0.6s ease-out' : undefined,
                                             transition: 'transform 0.15s, opacity 0.2s',
                                             transform: isClickable ? 'scale(1.08)' : undefined,
