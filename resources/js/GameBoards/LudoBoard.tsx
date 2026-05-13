@@ -759,20 +759,37 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                     });
                 })}
 
-                {/* Finished tokens shown in center */}
+                {/* Finished tokens shown in their color triangle */}
                 {([1, 2, 3, 4] as const).flatMap(pNum => {
                     const c = COLORS[pNum];
                     const finished = (displayTokens[pNum] ?? []).filter(p => p === STRETCH_END);
-                    const centerOffsets: [number, number][] = [[-8, -8], [8, -8], [-8, 8], [8, 8]];
+                    // Each player's triangle center offset from board center (7,7)
+                    const triangleCenters: Record<number, [number, number]> = {
+                        1: [0,  0.6],  // bottom triangle (red)
+                        2: [0, -0.6],  // top triangle (yellow)
+                        3: [-0.6, 0],  // left triangle (green)
+                        4: [0.6,  0],  // right triangle (blue)
+                    };
+                    const [tcx, tcy] = triangleCenters[pNum];
+                    // Per-player offsets matching each triangle's orientation
+                    const slotOffsetsByPlayer: Record<number, [number, number][]> = {
+                        1: [[0, -10], [20, 8],  [-20, 8],  [0, 9]],  // bottom ▼: spread left/right, top slot first
+                        2: [[0, 10],  [20, -8], [-20, -8], [0, -9]], // top ▲: mirror of player 1
+                        3: [[10, 0],  [-8, 20], [-8, -20], [-9, 0]], // left ◀: rotated 90°
+                        4: [[-10, 0], [8, 20],  [8, -20],  [9, 0]],  // right ▶: rotated 90° mirrored
+                    };
+                    const slotOffsets = slotOffsetsByPlayer[pNum] ?? slotOffsetsByPlayer[1];
                     return finished.map((_, i) => {
-                        const [ox, oy] = centerOffsets[i] ?? [0, 0];
+                        const [sox, soy] = slotOffsets[i] ?? [0, 0];
+                        const cx = 7 * CELL + CELL / 2 + tcx * CELL + sox;
+                        const cy = 7 * CELL + CELL / 2 + tcy * CELL + soy;
                         return (
                             <div
                                 key={`fin-${pNum}-${i}`}
                                 style={{
                                     position: 'absolute',
-                                    left: 7 * CELL + CELL / 2 + ox - 10,
-                                    top: 7 * CELL + CELL / 2 + oy - 10,
+                                    left: cx - 10,
+                                    top: cy - 10,
                                     width: 20,
                                     height: 20,
                                     borderRadius: '50%',
@@ -816,9 +833,9 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                             {(phase === 'move' ? pendingDice : shownDice).map((val, i) => {
                                 const isBonus = val > 6;
                                 const isClickable = phase === 'move' && selectedToken !== null && isYourTurn &&
-                                    !isBonus && playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
+                                    playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
                                 const isUsable = phase === 'move' && selectedToken !== null && isYourTurn &&
-                                    !isBonus && playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
+                                    playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
 
                                 return (
                                     <button
