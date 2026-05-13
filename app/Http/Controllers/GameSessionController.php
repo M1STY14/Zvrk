@@ -30,16 +30,11 @@ final class GameSessionController extends Controller
     {
         $gameSession->load(['players.user:id,name,avatar', 'game']);
 
-        $page = match (GameType::from($gameSession->game->slug)) {
-            GameType::Ludo => 'Game/LudoPlay',
-            default        => 'Game/Play',
-        };
-
-        return Inertia::render($page, [
+        return Inertia::render(GameType::getInertiaPageFrom($gameSession), [
             'session' => [
                 'id' => $gameSession->id,
                 'name' => $gameSession->name,
-                'is_finished' => $gameSession->status->is(GameStatus::Finished) || $gameSession->status->is(GameStatus::Abandoned),
+                'is_finished' => $gameSession->status->isFinished(),
                 'state' => $gameSession->state,
                 'winner_user_id' => $gameSession->winner_user_id,
                 'game' => [

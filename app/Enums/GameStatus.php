@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\CompareEnumTrait;
+
 /**
  * @property-read string $value
  * @property-read string $name
@@ -9,18 +11,14 @@ namespace App\Enums;
 
 enum GameStatus: string
 {
+    use CompareEnumTrait;
     case Pending = 'pending';
     case Playing = 'playing';
     case Finished = 'finished';
     case Abandoned = 'abandoned';
 
-    public function is(self $type): bool
+    public function isFinished(): bool
     {
-        return $this === $type;
-    }
-
-    public function isNot(self $type): bool
-    {
-        return $this !== $type;
+        return $this->is(GameStatus::Finished) || $this->is(GameStatus::Abandoned);
     }
 }
