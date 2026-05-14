@@ -22,7 +22,6 @@ export type LudoBoardProps = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RING_SIZE = 52;
 const STRETCH_END = 58;
 const HOME = -1;
 const HOME_EXIT_DICE = 5; //izlazimo iz kuće kada kocka dobije 5
@@ -82,10 +81,10 @@ const RING_CELLS: [number, number][] = [
 
 // Stretch cells per player (home column, 6 steps toward center, pos 68..73)
 const STRETCH: Record<number, [number, number][]> = {
-    1: [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],
-    2: [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
-    3: [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
-    4: [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
+    1: [[14,7],[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],
+    2: [[0,7],[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
+    3: [[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
+    4: [[7,14],[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
 };
 
 const HOME_SLOTS: Record<number, [number, number][]> = {
@@ -97,26 +96,28 @@ const HOME_SLOTS: Record<number, [number, number][]> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const STRETCH_START = 51;
+
 function tokenCell(player: number, pos: number): [number, number] | null {
     if (pos === HOME || pos === STRETCH_END) return null;
-    if (pos >= RING_SIZE) {
-        const idx = pos - RING_SIZE; // 0–5
+    if (pos >= STRETCH_START) {
+        const idx = pos - STRETCH_START; // 0–6
         return STRETCH[player]?.[idx] ?? null;
     }
-    const absPos = (START_OFFSETS[player] + pos) % RING_SIZE;
+    const absPos = (START_OFFSETS[player] + pos) % 52;
     return RING_CELLS[absPos] ?? null;
 }
 
 function isPathBlocked(tokens: Record<number, number[]>, player: number, from: number, to: number): boolean {
     for (let pos = from + 1; pos <= to; pos++) {
-        if (pos >= RING_SIZE) break;
-        const abs = (START_OFFSETS[player] + pos) % RING_SIZE;
+        if (pos >= STRETCH_START) break;
+        const abs = (START_OFFSETS[player] + pos) % 52;
         for (const [opStr, opTokens] of Object.entries(tokens)) {
             const op = Number(opStr);
             if (op === player) continue;
             const count = opTokens.filter(opPos => {
-                if (opPos < 0 || opPos >= RING_SIZE) return false;
-                return (START_OFFSETS[op] + opPos) % RING_SIZE === abs;
+                if (opPos < 0 || opPos >= STRETCH_START) return false;
+                return (START_OFFSETS[op] + opPos) % 52 === abs;
             }).length;
             if (count >= 2) return true;
         }
@@ -425,7 +426,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
         if (row >= 6 && row <= 8 && col >= 6 && col <= 8) return '#f8fafc';
         // Stretch corridors
         for (const [p, cells] of Object.entries(STRETCH)) {
-            if (cells.some(([r, c]) => r === row && c === col)) {
+            if (cells.slice(1).some(([r, c]) => r === row && c === col)) {
                 return COLORS[Number(p)].light;
             }
         }
