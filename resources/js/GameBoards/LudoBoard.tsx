@@ -202,32 +202,49 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const animatingRef = useRef(false);
     const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const rollingStartTimeRef = useRef<number>(0);
+    const pendingStopRef = useRef<{ dice: number[] } | null>(null);
+
     const startRollingAnimation = () => {
         setRolling(true);
+        rollingStartTimeRef.current = Date.now();
+        pendingStopRef.current = null;
         setRollingDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
         rollingIntervalRef.current = setInterval(() => {
             setRollingDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
-        }, 250);
+        }, 400);
     };
 
-    const stopRollingAnimation = () => {
-        if (rollingIntervalRef.current !== null) {
-            clearInterval(rollingIntervalRef.current);
-            rollingIntervalRef.current = null;
+    const stopRollingAnimation = (finalDice?: number[]) => {
+        const MIN_ANIM_MS = 700;
+        const elapsed = Date.now() - rollingStartTimeRef.current;
+        const remaining = MIN_ANIM_MS - elapsed;
+
+        const doStop = () => {
+            if (rollingIntervalRef.current !== null) {
+                clearInterval(rollingIntervalRef.current);
+                rollingIntervalRef.current = null;
+            }
+            setRolling(false);
+            setRollingDice([]);
+            if (finalDice) setShownDice(finalDice);
+        };
+
+        if (remaining > 0) {
+            pendingStopRef.current = { dice: finalDice ?? [] };
+            setTimeout(doStop, remaining);
+        } else {
+            doStop();
         }
-        setRolling(false);
-        setRollingDice([]);
     };
 
     // Keep shownDice updated when we move to 'move' phase, reset on turn change
     useEffect(() => {
         if (phase === 'move' && pendingDice.length > 0) {
-            stopRollingAnimation();
-            setShownDice(pendingDice.slice(0, 2));
+            stopRollingAnimation(pendingDice.slice(0, 2));
         } else if (phase === 'roll') {
+            stopRollingAnimation();
             setShownDice([]);
-            // Start animation for the player whose turn it is (visible to all watchers)
-            startRollingAnimation();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [phase, currentTurn]);
@@ -326,6 +343,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
 
     const handleRoll = () => {
         if (!isYourTurn || phase !== 'roll' || disabled) return;
+        startRollingAnimation();
         onRoll();
     };
 
@@ -445,6 +463,13 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                     60%  { transform: rotate(-10deg) scale(1.05); }
                     80%  { transform: rotate(8deg) scale(1); }
                     100% { transform: rotate(0deg) scale(1); }
+                }
+                @keyframes diceShake {
+                    0%   { transform: translate(0px, 0px) rotate(0deg); }
+                    25%  { transform: translate(-3px, -2px) rotate(-8deg); }
+                    50%  { transform: translate(3px, 2px) rotate(8deg); }
+                    75%  { transform: translate(-2px, 3px) rotate(-5deg); }
+                    100% { transform: translate(0px, 0px) rotate(0deg); }
                 }
                 @keyframes tokenPulse {
                     0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.25); }
@@ -870,7 +895,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                             cursor: isUsable ? 'pointer' : 'default',
                                             opacity: selectedToken !== null && !isUsable ? 0.3 : phase === 'move' && selectedToken === null ? 0.65 : 1,
                                             filter: selectedToken !== null && !isUsable ? 'grayscale(1)' : 'none',
-                                            animation: rolling ? 'diceShake 0.35s ease-in-out infinite' : undefined,
+                                            animation: rolling ? 'diceShake 0.5s ease-in-out infinite' : undefined,
                                             transition: rolling ? 'none' : 'transform 0.15s, opacity 0.2s',
                                             transform: isClickable ? 'scale(1.08)' : undefined,
                                         }}
