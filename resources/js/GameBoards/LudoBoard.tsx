@@ -192,8 +192,9 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
 
     const [selectedToken, setSelectedToken] = useState<number | null>(null);
     const [rolling, setRolling] = useState(false);
+    const [rollingDice, setRollingDice] = useState<number[]>([]);
     const [shownDice, setShownDice] = useState<number[]>([]);
-    const prevPhaseRef = useRef<string>(phase);
+    const rollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Animation: track displayed positions separately from server state
     const [displayTokens, setDisplayTokens] = useState<Record<number, number[]>>(tokens);
@@ -201,14 +202,35 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     const animatingRef = useRef(false);
     const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    const startRollingAnimation = () => {
+        setRolling(true);
+        setRollingDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
+        rollingIntervalRef.current = setInterval(() => {
+            setRollingDice([Math.ceil(Math.random() * 6), Math.ceil(Math.random() * 6)]);
+        }, 250);
+    };
+
+    const stopRollingAnimation = () => {
+        if (rollingIntervalRef.current !== null) {
+            clearInterval(rollingIntervalRef.current);
+            rollingIntervalRef.current = null;
+        }
+        setRolling(false);
+        setRollingDice([]);
+    };
+
     // Keep shownDice updated when we move to 'move' phase, reset on turn change
     useEffect(() => {
         if (phase === 'move' && pendingDice.length > 0) {
+            stopRollingAnimation();
             setShownDice(pendingDice.slice(0, 2));
         } else if (phase === 'roll') {
             setShownDice([]);
+            // Start animation for the player whose turn it is (visible to all watchers)
+            startRollingAnimation();
         }
-    }, [phase, pendingDice, currentTurn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [phase, currentTurn]);
 
     // Step-by-step token animation when server sends new positions
     useEffect(() => {
@@ -285,7 +307,6 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
     // Reset selection when turn or phase changes
     useEffect(() => {
         setSelectedToken(null);
-        prevPhaseRef.current = phase;
     }, [currentTurn, phase]);
 
     // Auto-select token if only one is movable
@@ -305,9 +326,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
 
     const handleRoll = () => {
         if (!isYourTurn || phase !== 'roll' || disabled) return;
-        setRolling(true);
         onRoll();
-        setTimeout(() => setRolling(false), 600);
     };
 
     const handleTokenClick = (tokenIdx: number) => {
@@ -759,20 +778,37 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                     });
                 })}
 
-                {/* Finished tokens shown in center */}
+                {/* Finished tokens shown in their color triangle */}
                 {([1, 2, 3, 4] as const).flatMap(pNum => {
                     const c = COLORS[pNum];
                     const finished = (displayTokens[pNum] ?? []).filter(p => p === STRETCH_END);
-                    const centerOffsets: [number, number][] = [[-8, -8], [8, -8], [-8, 8], [8, 8]];
+                    // Each player's triangle center offset from board center (7,7)
+                    const triangleCenters: Record<number, [number, number]> = {
+                        1: [0,  0.6],  // bottom triangle (red)
+                        2: [0, -0.6],  // top triangle (yellow)
+                        3: [-0.6, 0],  // left triangle (green)
+                        4: [0.6,  0],  // right triangle (blue)
+                    };
+                    const [tcx, tcy] = triangleCenters[pNum];
+                    // Per-player offsets matching each triangle's orientation
+                    const slotOffsetsByPlayer: Record<number, [number, number][]> = {
+                        1: [[0, -10], [20, 8],  [-20, 8],  [0, 9]],  // bottom ▼: spread left/right, top slot first
+                        2: [[0, 10],  [20, -8], [-20, -8], [0, -9]], // top ▲: mirror of player 1
+                        3: [[10, 0],  [-8, 20], [-8, -20], [-9, 0]], // left ◀: rotated 90°
+                        4: [[-10, 0], [8, 20],  [8, -20],  [9, 0]],  // right ▶: rotated 90° mirrored
+                    };
+                    const slotOffsets = slotOffsetsByPlayer[pNum] ?? slotOffsetsByPlayer[1];
                     return finished.map((_, i) => {
-                        const [ox, oy] = centerOffsets[i] ?? [0, 0];
+                        const [sox, soy] = slotOffsets[i] ?? [0, 0];
+                        const cx = 7 * CELL + CELL / 2 + tcx * CELL + sox;
+                        const cy = 7 * CELL + CELL / 2 + tcy * CELL + soy;
                         return (
                             <div
                                 key={`fin-${pNum}-${i}`}
                                 style={{
                                     position: 'absolute',
-                                    left: 7 * CELL + CELL / 2 + ox - 10,
-                                    top: 7 * CELL + CELL / 2 + oy - 10,
+                                    left: cx - 10,
+                                    top: cy - 10,
                                     width: 20,
                                     height: 20,
                                     borderRadius: '50%',
@@ -810,14 +846,14 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                 {/* Dice + roll button */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
 
-                    {/* Dice display */}
-                    {shownDice.length > 0 && (
+                    {/* Dice display — show shaking random dice while rolling, real result after */}
+                    {(rolling || shownDice.length > 0) && (
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            {(phase === 'move' ? pendingDice : shownDice).map((val, i) => {
+                            {(rolling ? rollingDice : phase === 'move' ? pendingDice : shownDice).map((val, i) => {
                                 const isBonus = val > 6;
-                                const isClickable = phase === 'move' && selectedToken !== null && isYourTurn &&
-                                    !isBonus && playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
-                                const isUsable = phase === 'move' && selectedToken !== null && isYourTurn &&
+                                const isClickable = !rolling && phase === 'move' && selectedToken !== null && isYourTurn &&
+                                    playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
+                                const isUsable = !rolling && phase === 'move' && selectedToken !== null && isYourTurn &&
                                     playerNumber !== null && canMove(tokens, playerNumber, selectedToken, val);
 
                                 return (
@@ -832,9 +868,10 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
                                             border: 'none',
                                             padding: 0,
                                             cursor: isUsable ? 'pointer' : 'default',
-                                            opacity: phase === 'move' && selectedToken === null ? 0.65 : 1,
-                                            animation: rolling ? 'diceRoll 0.6s ease-out' : undefined,
-                                            transition: 'transform 0.15s, opacity 0.2s',
+                                            opacity: selectedToken !== null && !isUsable ? 0.3 : phase === 'move' && selectedToken === null ? 0.65 : 1,
+                                            filter: selectedToken !== null && !isUsable ? 'grayscale(1)' : 'none',
+                                            animation: rolling ? 'diceShake 0.35s ease-in-out infinite' : undefined,
+                                            transition: rolling ? 'none' : 'transform 0.15s, opacity 0.2s',
                                             transform: isClickable ? 'scale(1.08)' : undefined,
                                         }}
                                     >
