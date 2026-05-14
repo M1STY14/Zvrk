@@ -19,7 +19,7 @@ export default function Authenticated({
                     {/* Logo */}
                     <div>
                         <Link href="/">
-                            <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                            <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                         </Link>
                         
 

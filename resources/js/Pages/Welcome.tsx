@@ -33,7 +33,7 @@ const steps = [
 ];
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/new_un_lower2_62MB.glb');
+    const { scene } = useGLTF('/models/welcome_zvrk.glb');
     return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
@@ -294,7 +294,7 @@ export default function Welcome({ auth }: PageProps) {
                 <header id="main-nav" className="fixed top-0 w-full z-50 border-b" style={{ backgroundColor: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', borderColor: '#eceef1' }}>
                     <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
                         <div>
-                            <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                            <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                         </div>
 
                         <div className="hidden md:flex items-center justify-center gap-10">
@@ -545,7 +545,7 @@ export default function Welcome({ auth }: PageProps) {
                 <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
                     <div className="flex flex-col md:flex-row justify-between items-center md:items-start px-12 py-12 max-w-screen-xl mx-auto">
                         <div className="mb-8 md:mb-0">
-                            <div> <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" /></div>
+                            <div> <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" /></div>
                             <p className="text-sm max-w-xs" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
                             <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
                         </div>

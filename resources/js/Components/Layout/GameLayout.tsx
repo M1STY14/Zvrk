@@ -21,7 +21,7 @@ export default function GameLayout({
                 <nav className="flex items-center justify-between gap-4 px-4 sm:px-8 py-4 max-w-screen-xl mx-auto">
                     <Link href={route('dashboard')} className="flex-shrink-0">
                         <img
-                            src="/images/zvrk_navbar_logo.png"
+                            src="/images/zvrk_navbar_logo.webp"
                             alt="Zvrk"
                             className="h-12 sm:h-16 w-auto"
                         />

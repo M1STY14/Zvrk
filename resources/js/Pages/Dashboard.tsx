@@ -232,7 +232,7 @@ export default function Dashboard({ games, userStats }: Props) {
             <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
                 <div className="flex flex-col md:flex-row justify-between items-center md:items-start px-12 py-12 max-w-screen-xl mx-auto">
                     <div className="mb-8 md:mb-0">
-                        <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                        <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                         <p className="text-sm max-w-xs mt-2" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
                         <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
                     </div>
