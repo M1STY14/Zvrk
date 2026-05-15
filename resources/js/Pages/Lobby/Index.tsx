@@ -2,6 +2,7 @@ import GameLayout from '@/Components/Layout/GameLayout';
 import RoomCard from '../Components/RoomCard';
 import CreateRoomModal from '../Components/CreateRoomModal';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -51,6 +52,11 @@ export default function Index({ game, rooms, userRoomId = null }: Props) {
         });
     };
 
+    const handleQuickMatch = () => {
+        setJoinError(null);
+        router.post(route('lobby.quick-match', game.slug));
+    };
+
     return (
         <GameLayout
             header={
@@ -58,12 +64,20 @@ export default function Index({ game, rooms, userRoomId = null }: Props) {
                     <h2 className="text-xl font-semibold leading-tight text-gray-800">
                         {game.name} — Lobby
                     </h2>
-                    <PrimaryButton
-                        onClick={() => setShowModal(true)}
-                        disabled={userRoomId !== null}
-                    >
-                        Kreiraj sobu
-                    </PrimaryButton>
+                    <div className="flex gap-2">
+                        <SecondaryButton
+                            onClick={handleQuickMatch}
+                            disabled={userRoomId !== null}
+                        >
+                            Brzi meč
+                        </SecondaryButton>
+                        <PrimaryButton
+                            onClick={() => setShowModal(true)}
+                            disabled={userRoomId !== null}
+                        >
+                            Kreiraj sobu
+                        </PrimaryButton>
+                    </div>
                 </div>
             }
         >

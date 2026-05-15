@@ -8,6 +8,7 @@ use App\Http\Requests\CreateLobbyRequest;
 use App\Models\Game;
 use App\Models\GameSession;
 use App\Models\User;
+use App\Services\MatchmakingService;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -65,5 +66,21 @@ final class LobbyController extends Controller
         PlayerJoinedLobby::dispatch($game->slug, $user->id, $user->name);
 
         return to_route('lobby.show', [$game->slug, $session->id]);
+    }
+
+    public function quickMatch(
+        Game $game,
+        #[CurrentUser] User $user,
+        MatchmakingService $matchmaking,
+    ): RedirectResponse {
+        abort_unless($game->is_active, 404);
+
+        $result = $matchmaking->quickMatch($game, $user);
+
+        if ($result->started) {
+            return to_route('game.show', $result->session->id);
+        }
+
+        return to_route('lobby.show', [$game->slug, $result->session->id]);
     }
 }

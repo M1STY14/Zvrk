@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/lobby/{game:slug}', [LobbyController::class, 'index'])->name('lobby.index');
+    Route::post('/lobby/{game:slug}/quick-match', [LobbyController::class, 'quickMatch'])->name('lobby.quick-match');
     Route::post('/lobby/{game:slug}', [LobbyController::class, 'store'])->name('lobby.store');
     Route::get('/lobby/{game:slug}/{session}', [LobbyController::class, 'show'])->name('lobby.show');
 });
