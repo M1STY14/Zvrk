@@ -83,8 +83,8 @@ final readonly class GameSessionService
 
         broadcast(new GameStarted(
             sessionId: $session->id,
-            board: $stateArray['board'],
             startingPlayerId: $startingPlayerId,
+            state: $initialState,
         ));
     }
 
@@ -133,7 +133,7 @@ final readonly class GameSessionService
             return [$stateArray, $moveNumber, $gameResult];
         });
 
-        $this->broadcastMoveResult($session, $user, $engine, $stateArray, $moveDataArray, $gameResult);
+        $this->broadcastMoveResult($session, $user, $engine, $stateArray, $gameResult);
 
         if ($gameResult === null) {
             [$stateArray, $moveNumber, $gameResult] = $this->playBotTurnIfNeeded($session->load('players'), $engine, $stateArray, $moveNumber);
@@ -206,7 +206,7 @@ final readonly class GameSessionService
             }
         });
 
-        $this->broadcastMoveResult($session, $botUser, $engine, $stateArray, ['row' => $moveData->row, 'col' => $moveData->col], $gameResult);
+        $this->broadcastMoveResult($session, $botUser, $engine, $stateArray, $gameResult);
 
         return [$stateArray, $moveNumber, $gameResult];
     }
@@ -227,7 +227,7 @@ final readonly class GameSessionService
         $session->players()->delete();
     }
 
-    private function broadcastMoveResult(GameSession $session, User $user, mixed $engine, array $stateArray, array $moveDataArray, mixed $gameResult): void
+    private function broadcastMoveResult(GameSession $session, User $user, mixed $engine, array $stateArray, mixed $gameResult): void
     {
         $state = $engine->makeState($stateArray);
         $nextPlayerId = $stateArray['players'][$engine->getCurrentTurn($state)] ?? null;
@@ -235,10 +235,8 @@ final readonly class GameSessionService
         broadcast(new MoveMade(
             sessionId: $session->id,
             playerId: $user->id,
-            row: $moveDataArray['row'],
-            column: $moveDataArray['col'],
-            board: $stateArray['board'],
             nextPlayerId: $nextPlayerId,
+            state: $state,
         ))->toOthers();
 
         if ($gameResult !== null) {
@@ -246,13 +244,16 @@ final readonly class GameSessionService
                 sessionId: $session->id,
                 winner: $gameResult->winner,
                 draw: $gameResult->draw,
-                board: $stateArray['board'],
+                state: $state,
             ));
         }
     }
 
     private function handleGameAbandonment(GameSession $session): void
     {
+        $engine = $this->engineManager->resolve($session->game->slug);
+        $state = $engine->makeState($session->state);
+
         $session->players()->delete();
 
         $session->update([
@@ -264,7 +265,7 @@ final readonly class GameSessionService
             sessionId: $session->id,
             winner: null,
             draw: false,
-            board: $session->state['board'] ?? [],
+            state: $state,
         ));
     }
 

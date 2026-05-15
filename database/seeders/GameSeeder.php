@@ -28,9 +28,11 @@ class GameSeeder extends Seeder
                 'slug' => GameType::Ludo->value,
                 'name' => 'Ludo',
                 'description' => 'Roll the dice and race your four tokens from start to finish. Block and capture opponents along the way!',
+                //JUST FOR DEMO (AGAIN) TO SEE PICTURE OF GAME ON DASHBOARD
+                'image' => '/images/homepage_games_thumbnails/covjece_ne_ljuti_se_left_side.svg',
                 'min_players' => 2,
                 'max_players' => 4,
-                'is_active' => false, // TODO: need to implement game engine
+                'is_active' => true,
             ],
             [
                 'slug' => GameType::Checkers->value,

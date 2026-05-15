@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
 use App\Enums\GameStatus;
+use App\Enums\GameType;
 use App\Events\PlayerLeftLobby;
 use App\Models\GameSession;
 use App\Models\User;
@@ -29,11 +30,11 @@ final class GameSessionController extends Controller
     {
         $gameSession->load(['players.user:id,name,avatar', 'game']);
 
-        return Inertia::render('Game/Play', [
+        return Inertia::render(GameType::getInertiaPageFrom($gameSession), [
             'session' => [
                 'id' => $gameSession->id,
                 'name' => $gameSession->name,
-                'status' => $gameSession->status->value,
+                'is_finished' => $gameSession->status->isFinished(),
                 'state' => $gameSession->state,
                 'winner_user_id' => $gameSession->winner_user_id,
                 'game' => [

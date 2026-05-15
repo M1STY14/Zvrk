@@ -30,7 +30,21 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        $this->command->info('Test user created.');
+        User::query()->create([
+            'name' => 'Test User 3',
+            'email' => 'test3@example.com',
+            'password' => Hash::make('testUserPassword'),
+            'email_verified_at' => now(),
+        ]);
+
+        User::query()->create([
+            'name' => 'Test User 4',
+            'email' => 'test4@example.com',
+            'password' => Hash::make('testUserPassword'),
+            'email_verified_at' => now(),
+        ]);
+
+        $this->command->info('Test users created.');
 
         $this->call([
             GameSeeder::class,

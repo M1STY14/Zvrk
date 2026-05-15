@@ -6,7 +6,7 @@ import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense } from 'react';
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/login_model_game_strategy_O_and_knight.glb');
+    const { scene } = useGLTF('/models/login_zvrk.glb');
     return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
@@ -100,7 +100,7 @@ export default function Login({
                     <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
                         <div>
                             <Link href={route('welcome')}>
-                                <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                                <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                             </Link>
                         </div>
                         <div className="hidden md:flex items-center justify-center gap-10">

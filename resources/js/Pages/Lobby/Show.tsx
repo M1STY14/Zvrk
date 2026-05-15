@@ -129,9 +129,11 @@ export default function Show({ game, session }: Props) {
                                     <PrimaryButton onClick={handleStart} disabled={!canStartGame}>
                                         Pokreni igru
                                     </PrimaryButton>
-                                    <PrimaryButton onClick={handleStartAi} disabled={!canStartAi}>
-                                        Igraj protiv AI
-                                    </PrimaryButton>
+                                    {game.slug === 'tic-tac-toe' && (
+                                        <PrimaryButton onClick={handleStartAi} disabled={!canStartAi}>
+                                            Igraj protiv AI
+                                        </PrimaryButton>
+                                    )}
                                     {canCloseRoom && (
                                         <SecondaryButton onClick={handleCloseRoom}>
                                             Zatvori sobu

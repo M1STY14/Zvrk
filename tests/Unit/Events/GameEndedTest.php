@@ -2,20 +2,31 @@
 
 namespace Tests\Unit\Events;
 
+use App\Data\TicTacToeState;
 use App\Events\GameEnded;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 class GameEndedTest extends TestCase
 {
+    private function makeState(array $board = [[1, 1, 1], [2, 2, 0], [0, 0, 0]]): TicTacToeState
+    {
+        return new TicTacToeState(
+            board: $board,
+            currentTurn: 1,
+            players: new Collection(['1' => 'player-1', '2' => 'player-2']),
+        );
+    }
+
     public function test_it_implements_should_broadcast(): void
     {
         $event = new GameEnded(
             sessionId: 'session-1',
             winner: 'player-1',
             draw: false,
-            board: [[1, 1, 1], [2, 2, 0], [0, 0, 0]],
+            state: $this->makeState(),
         );
 
         $this->assertInstanceOf(ShouldBroadcast::class, $event);
@@ -27,7 +38,7 @@ class GameEndedTest extends TestCase
             sessionId: 'session-1',
             winner: 'player-1',
             draw: false,
-            board: [[1, 1, 1], [2, 2, 0], [0, 0, 0]],
+            state: $this->makeState(),
         );
 
         $channel = $event->broadcastOn();
@@ -42,7 +53,7 @@ class GameEndedTest extends TestCase
             sessionId: 'session-1',
             winner: 'player-1',
             draw: false,
-            board: [[1, 1, 1], [2, 2, 0], [0, 0, 0]],
+            state: $this->makeState(),
         );
 
         $this->assertSame('game.ended', $event->broadcastAs());
@@ -50,39 +61,39 @@ class GameEndedTest extends TestCase
 
     public function test_it_broadcasts_correct_payload_with_winner(): void
     {
-        $board = [[1, 1, 1], [2, 2, 0], [0, 0, 0]];
+        $state = $this->makeState();
 
         $event = new GameEnded(
             sessionId: 'session-1',
             winner: 'player-1',
             draw: false,
-            board: $board,
+            state: $state,
         );
 
         $this->assertSame([
             'sessionId' => 'session-1',
             'winner' => 'player-1',
             'draw' => false,
-            'board' => $board,
+            'state' => $state->toArray(),
         ], $event->broadcastWith());
     }
 
     public function test_it_broadcasts_correct_payload_on_draw(): void
     {
-        $board = [[1, 2, 1], [1, 2, 2], [2, 1, 1]];
+        $state = $this->makeState([[1, 2, 1], [1, 2, 2], [2, 1, 1]]);
 
         $event = new GameEnded(
             sessionId: 'session-1',
             winner: null,
             draw: true,
-            board: $board,
+            state: $state,
         );
 
         $this->assertSame([
             'sessionId' => 'session-1',
             'winner' => null,
             'draw' => true,
-            'board' => $board,
+            'state' => $state->toArray(),
         ], $event->broadcastWith());
     }
 }

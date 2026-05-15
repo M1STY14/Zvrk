@@ -15,11 +15,12 @@ use InvalidArgumentException;
 
 class LudoEngine implements GameContract
 {
-    private const RING_SIZE = 68;
-    private const STRETCH_END = 74;
+    private const RING_SIZE = 52;
+    private const STRETCH_START = 51;
+    private const STRETCH_END = 58;
     private const HOME = -1;
-    private const SAFE_SQUARES = [0, 8, 17, 25, 34, 42, 51, 59];
-    private const PLAYER_START_OFFSETS = [1 => 0, 2 => 17, 3 => 34, 4 => 51];
+    private const SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
+    private const PLAYER_START_OFFSETS = [1 => 39, 2 => 13, 3 => 0, 4 => 26];
     private const TOKENS_PER_PLAYER = 4;
     private const HOME_EXIT_DICE = 5;
     private const CAPTURE_BONUS = 20;
@@ -225,7 +226,7 @@ class LudoEngine implements GameContract
         $tokens[$playerNumber][$tokenIndex] = $newPos;
 
         $captured = false;
-        if ($newPos < self::RING_SIZE) {
+        if ($newPos < self::STRETCH_START) {
             $absLanded = (self::PLAYER_START_OFFSETS[$playerNumber] + $newPos) % self::RING_SIZE;
 
             if (! in_array($absLanded, self::SAFE_SQUARES, true)) {
@@ -234,7 +235,7 @@ class LudoEngine implements GameContract
                         continue;
                     }
                     foreach ($opTokens as $opIdx => $opPos) {
-                        if ($opPos < 0 || $opPos >= self::RING_SIZE) {
+                        if ($opPos < 0 || $opPos >= self::STRETCH_START) {
                             continue;
                         }
                         $opAbs = (self::PLAYER_START_OFFSETS[$opPlayer] + $opPos) % self::RING_SIZE;
@@ -335,7 +336,7 @@ class LudoEngine implements GameContract
     private function pathBlocked(LudoState $state, int $playerNumber, int $from, int $to): bool
     {
         for ($pos = $from + 1; $pos <= $to; $pos++) {
-            if ($pos >= self::RING_SIZE) {
+            if ($pos >= self::STRETCH_START) {
                 break;
             }
             $abs = (self::PLAYER_START_OFFSETS[$playerNumber] + $pos) % self::RING_SIZE;
@@ -346,7 +347,7 @@ class LudoEngine implements GameContract
                 }
                 $count = 0;
                 foreach ($opTokens as $opPos) {
-                    if ($opPos < 0 || $opPos >= self::RING_SIZE) {
+                    if ($opPos < 0 || $opPos >= self::STRETCH_START) {
                         continue;
                     }
                     $opAbs = (self::PLAYER_START_OFFSETS[$opPlayer] + $opPos) % self::RING_SIZE;

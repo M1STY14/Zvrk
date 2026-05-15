@@ -5,7 +5,7 @@ import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense } from 'react';
 
 function ZvrkModel() {
-    const { scene } = useGLTF('/models/about_us_page_model_lower_32MB.glb');
+    const { scene } = useGLTF('/models/about_zvrk.glb');
 
     return <primitive object={scene} scale={3} position={[0, 0, 0]} rotation={[0, 0, 0]} />;
 }
@@ -46,7 +46,7 @@ export default function AboutUs({ auth }: PageProps) {
                     <nav className="grid grid-cols-3 items-center px-8 py-4 max-w-screen-xl mx-auto">
                         <div>
                             <Link href={route('welcome')}>
-                                <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                                <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                             </Link>
                         </div>
 
@@ -186,7 +186,7 @@ export default function AboutUs({ auth }: PageProps) {
                     <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
                         <div className="flex flex-col md:flex-row justify-between items-start px-12 py-12 max-w-screen-xl mx-auto">
                             <div className="mb-8 md:mb-0">
-                                <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                                <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                                 <p className="text-sm max-w-xs mt-2" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
                                 <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
                             </div>

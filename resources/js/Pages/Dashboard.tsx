@@ -89,11 +89,7 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <div className="border-t border-yellow-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-yellow-800">👥 Players: 2-4</p>
                                 </div>
-                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
-                                        COMING SOON
-                                    </span>
-                                </div>
+                                 
                             </div>
 
                             {/* Checkers */}
@@ -236,7 +232,7 @@ export default function Dashboard({ games, userStats }: Props) {
             <footer className="border-t" style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0' }}>
                 <div className="flex flex-col md:flex-row justify-between items-center md:items-start px-12 py-12 max-w-screen-xl mx-auto">
                     <div className="mb-8 md:mb-0">
-                        <img src="/images/zvrk_navbar_logo.png" alt="Zvrk" className="h-16 w-auto" />
+                        <img src="/images/zvrk_navbar_logo.webp" alt="Zvrk" className="h-16 w-auto" />
                         <p className="text-sm max-w-xs mt-2" style={{ color: '#64748b' }}>Studentski projekt @ RITEH, Rijeka.</p>
                         <p className="text-xs mt-4" style={{ color: '#94a3b8' }}>© 2026 Zvrk. Sva prava pridržana.</p>
                     </div>
