@@ -18,7 +18,7 @@ class GameSeeder extends Seeder
                 'slug' => GameType::TicTacToe->value,
                 'name' => 'Tic-Tac-Toe',
                 'description' => 'Take turns placing Xs and Os on a 3x3 grid. Get three in a row to win!',
-                //JUST FOR DEMO TO SEE PICTURE OF GAME ON DASHBOARD
+                // JUST FOR DEMO TO SEE PICTURE OF GAME ON DASHBOARD
                 'image' => '/images/homepage_games_thumbnails/tic_tac_toe_right_side.svg',
                 'min_players' => 2,
                 'max_players' => 2,
@@ -28,7 +28,7 @@ class GameSeeder extends Seeder
                 'slug' => GameType::Ludo->value,
                 'name' => 'Ludo',
                 'description' => 'Roll the dice and race your four tokens from start to finish. Block and capture opponents along the way!',
-                //JUST FOR DEMO (AGAIN) TO SEE PICTURE OF GAME ON DASHBOARD
+                // JUST FOR DEMO (AGAIN) TO SEE PICTURE OF GAME ON DASHBOARD
                 'image' => '/images/homepage_games_thumbnails/covjece_ne_ljuti_se_left_side.svg',
                 'min_players' => 2,
                 'max_players' => 4,
@@ -59,6 +59,6 @@ class GameSeeder extends Seeder
             );
         }
 
-        $this->command->info("Games have been created!");
+        $this->command->info('Games have been created!');
     }
 }

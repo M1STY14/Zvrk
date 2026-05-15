@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 final class LobbyController extends Controller
 {
@@ -26,19 +27,22 @@ final class LobbyController extends Controller
         ]);
     }
 
-    public function show(Game $game, GameSession $session): Response
+    public function show(Game $game, GameSession $gameSession): Response
     {
-        $session->load([
+        $gameSession->load([
             'players.user:id,name,avatar',
-            'game'
+            'game',
         ]);
 
         return Inertia::render('Lobby/Show', [
             'game' => $game,
-            'session' => $session,
+            'session' => $gameSession,
         ]);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function store(CreateLobbyRequest $request, Game $game, #[CurrentUser] User $user): RedirectResponse
     {
         if ($game->userRoomId($user) !== null) {
@@ -65,22 +69,23 @@ final class LobbyController extends Controller
 
         PlayerJoinedLobby::dispatch($game->slug, $user->id, $user->name);
 
-        return to_route('lobby.show', [$game->slug, $session->id]);
+        return redirect()->route('lobby.show', [$game->slug, $session->id]);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function quickMatch(
         Game $game,
         #[CurrentUser] User $user,
-        MatchmakingService $matchmaking,
+        MatchmakingService $matchmakingService,
     ): RedirectResponse {
-        abort_unless($game->is_active, 404);
-
-        $result = $matchmaking->quickMatch($game, $user);
+        $result = $matchmakingService->quickMatch($game, $user);
 
         if ($result->started) {
-            return to_route('game.show', $result->session->id);
+            return redirect()->route('game.show', $result->session->id);
         }
 
-        return to_route('lobby.show', [$game->slug, $result->session->id]);
+        return redirect()->route('lobby.show', [$game->slug, $result->session->id]);
     }
 }

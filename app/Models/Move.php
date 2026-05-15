@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read GameSession $gameSession
  * @property-read User $user
  */
-
 final class Move extends Model
 {
     use HasUlids;

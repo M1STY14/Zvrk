@@ -8,7 +8,7 @@ use Inertia\Response;
 
 class WelcomePageController extends Controller
 {
-    public function __invoke():Response
+    public function __invoke(): Response
     {
         return Inertia::render('Welcome', [
             'canLogin' => Route::has('login'),

@@ -19,8 +19,7 @@ final class ChatMessageSent implements ShouldBroadcast
         public string $senderId,
         public string $senderName,
         public string $createdAt,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): PrivateChannel
     {

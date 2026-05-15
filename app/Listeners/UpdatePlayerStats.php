@@ -38,9 +38,9 @@ final class UpdatePlayerStats implements ShouldQueue
 
                 $stat->update([
                     'games_played' => DB::raw('games_played + 1'),
-                    'wins' => DB::raw('wins + ' . ($isWinner ? 1 : 0)),
-                    'losses' => DB::raw('losses + ' . (! $event->draw && ! $isWinner ? 1 : 0)),
-                    'draws' => DB::raw('draws + ' . ($event->draw ? 1 : 0)),
+                    'wins' => DB::raw('wins + '.($isWinner ? 1 : 0)),
+                    'losses' => DB::raw('losses + '.(! $event->draw && ! $isWinner ? 1 : 0)),
+                    'draws' => DB::raw('draws + '.($event->draw ? 1 : 0)),
                 ]);
             }
         });

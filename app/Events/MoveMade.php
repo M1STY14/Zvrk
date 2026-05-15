@@ -14,8 +14,11 @@ final class MoveMade implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $sessionId;
+
     public string $playerId;
+
     public ?string $nextPlayerId;
+
     public array $state;
 
     public function __construct(string $sessionId, string $playerId, ?string $nextPlayerId, GameState $state)

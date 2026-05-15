@@ -67,12 +67,12 @@ final class GameSessionController extends Controller
         $gameSession->load('game');
 
         if ($gameSession->has($user)) {
-            return to_route('lobby.show', [$gameSession->game->slug, $gameSession->id]);
+            return redirect()->route('lobby.show', [$gameSession->game->slug, $gameSession->id]);
         }
 
         $this->gameSessionService->addPlayer($gameSession, $user);
 
-        return to_route('lobby.show', [$gameSession->game->slug, $gameSession->id]);
+        return redirect()->route('lobby.show', [$gameSession->game->slug, $gameSession->id]);
     }
 
     /**
@@ -86,7 +86,7 @@ final class GameSessionController extends Controller
 
         $this->gameSessionService->startGame($gameSession);
 
-        return to_route('game.show', $gameSession->id);
+        return redirect()->route('game.show', $gameSession->id);
     }
 
     /**
@@ -100,7 +100,7 @@ final class GameSessionController extends Controller
 
         $this->gameSessionService->startGameWithAi($gameSession);
 
-        return to_route('game.show', $gameSession->id);
+        return redirect()->route('game.show', $gameSession->id);
     }
 
     /**
@@ -118,7 +118,7 @@ final class GameSessionController extends Controller
 
         PlayerLeftLobby::dispatch($gameSession->game->slug, $user->id, $user->name);
 
-        return to_route('lobby.index', $gameSession->game->slug);
+        return redirect()->route('lobby.index', $gameSession->game->slug);
     }
 
     /**
@@ -141,6 +141,6 @@ final class GameSessionController extends Controller
 
         $this->gameSessionService->removePlayer($gameSession, $user);
 
-        return to_route('lobby.index', $gameSession->game->slug);
+        return redirect()->route('lobby.index', $gameSession->game->slug);
     }
 }

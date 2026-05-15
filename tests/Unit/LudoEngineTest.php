@@ -92,7 +92,7 @@ class LudoEngineTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->initialState(collect([User::factory()->create()->id]));
+        (new LudoEngine)->initialState(collect([User::factory()->create()->id]));
     }
 
     public function test_initial_state_throws_with_more_than_four_players(): void
@@ -101,12 +101,12 @@ class LudoEngineTest extends TestCase
 
         $ids = collect(range(1, 5))->map(fn () => User::factory()->create()->id);
 
-        (new LudoEngine())->initialState($ids);
+        (new LudoEngine)->initialState($ids);
     }
 
     public function test_initial_state_for_two_players(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         /** @var LudoState $state */
         $state = $engine->initialState(collect([
             $this->players->get(1),
@@ -125,7 +125,7 @@ class LudoEngineTest extends TestCase
 
     public function test_initial_state_for_three_players(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         /** @var LudoState $state */
         $state = $engine->initialState(collect([
             $this->players->get(1),
@@ -142,7 +142,7 @@ class LudoEngineTest extends TestCase
 
     public function test_initial_state_for_four_players(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         /** @var LudoState $state */
         $state = $engine->initialState($this->players->values());
 
@@ -152,7 +152,7 @@ class LudoEngineTest extends TestCase
 
     public function test_get_current_turn_returns_state_value(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), currentTurn: 2);
 
         $this->assertSame(2, $engine->getCurrentTurn($state));
@@ -160,7 +160,7 @@ class LudoEngineTest extends TestCase
 
     public function test_validate_move_rejects_wrong_players_turn(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), currentTurn: 1);
 
         $this->assertFalse($engine->validateMove($state, 2, $this->rollMove()));
@@ -170,19 +170,19 @@ class LudoEngineTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->validateMove(new class extends GameState {}, 1, $this->rollMove());
+        (new LudoEngine)->validateMove(new class extends GameState {}, 1, $this->rollMove());
     }
 
     public function test_validate_move_throws_for_wrong_move_type(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->validateMove($this->makeState($this->homeTokens(2)), 1, new class extends MoveData {});
+        (new LudoEngine)->validateMove($this->makeState($this->homeTokens(2)), 1, new class extends MoveData {});
     }
 
     public function test_validate_move_in_roll_phase_only_accepts_pure_roll_action(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), phase: LudoPhase::Roll);
 
         $this->assertTrue($engine->validateMove($state, 1, $this->rollMove()));
@@ -193,7 +193,7 @@ class LudoEngineTest extends TestCase
 
     public function test_validate_move_in_move_phase_rejects_roll_action(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), pendingDice: [5, 3], phase: LudoPhase::Move);
 
         $this->assertFalse($engine->validateMove($state, 1, $this->rollMove()));
@@ -201,7 +201,7 @@ class LudoEngineTest extends TestCase
 
     public function test_validate_move_rejects_token_index_out_of_range(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), pendingDice: [5, 3], phase: LudoPhase::Move);
 
         $this->assertFalse($engine->validateMove($state, 1, $this->tokenMove(-1, 5)));
@@ -210,7 +210,7 @@ class LudoEngineTest extends TestCase
 
     public function test_validate_move_rejects_dice_value_not_in_pending(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [10, -1, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [3, 5],
@@ -223,7 +223,7 @@ class LudoEngineTest extends TestCase
 
     public function test_validate_move_rejects_null_dice_value_in_move_phase(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), pendingDice: [5, 3], phase: LudoPhase::Move);
 
         $this->assertFalse($engine->validateMove($state, 1, new LudoMoveData(action: null, tokenIndex: 0, diceValue: null)));
@@ -321,7 +321,7 @@ class LudoEngineTest extends TestCase
 
     public function test_token_at_home_cannot_move_with_non_five(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), pendingDice: [3, 4], phase: LudoPhase::Move);
 
         $this->assertFalse($engine->validateMove($state, 1, $this->tokenMove(0, 3)));
@@ -330,7 +330,7 @@ class LudoEngineTest extends TestCase
 
     public function test_token_at_home_can_move_with_five(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState($this->homeTokens(2), pendingDice: [5, 3], phase: LudoPhase::Move);
 
         $this->assertTrue($engine->validateMove($state, 1, $this->tokenMove(0, 5)));
@@ -345,7 +345,7 @@ class LudoEngineTest extends TestCase
 
     public function test_bonus_value_cannot_exit_home_token(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // Token home with only bonus values pending — none can exit.
         $state = $this->makeState($this->homeTokens(2), pendingDice: [20, 10], phase: LudoPhase::Move);
 
@@ -355,7 +355,7 @@ class LudoEngineTest extends TestCase
 
     public function test_token_advances_correct_number_of_squares(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [5, -1, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [3, 4],
@@ -370,7 +370,7 @@ class LudoEngineTest extends TestCase
 
     public function test_token_enters_home_stretch(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // Ring spans 0..67; stretch begins at 68. Token at 65 + 4 = 69.
         $state = $this->makeState(
             [1 => [65, -1, -1, -1], 2 => [-1, -1, -1, -1]],
@@ -386,7 +386,7 @@ class LudoEngineTest extends TestCase
 
     public function test_token_finishes_with_exact_roll(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // Token at 72 + 2 = 74 (finish).
         $state = $this->makeState(
             [1 => [72, -1, -1, -1], 2 => [-1, -1, -1, -1]],
@@ -402,7 +402,7 @@ class LudoEngineTest extends TestCase
 
     public function test_overshoot_finish_is_invalid(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [72, -1, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [3, 1],
@@ -414,7 +414,7 @@ class LudoEngineTest extends TestCase
 
     public function test_finished_token_cannot_be_moved(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [74, -1, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [1, 2],
@@ -426,7 +426,7 @@ class LudoEngineTest extends TestCase
 
     public function test_apply_move_does_not_mutate_original_tokens(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $tokens = [1 => [5, -1, -1, -1], 2 => [-1, -1, -1, -1]];
         $state = $this->makeState($tokens, pendingDice: [3, 4], phase: LudoPhase::Move);
 
@@ -438,7 +438,7 @@ class LudoEngineTest extends TestCase
 
     public function test_capture_sends_opponent_home_and_pushes_twenty_bonus(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P1 at 11 + 3 = 14, abs (0+14)%68 = 14 (not safe).
         // P2 at 65, abs (17+65)%68 = 14. Captured.
         $state = $this->makeState(
@@ -458,7 +458,7 @@ class LudoEngineTest extends TestCase
 
     public function test_capture_sends_all_opponent_tokens_on_square_home(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [11, -1, -1, -1], 2 => [65, 65, -1, -1]],
             pendingDice: [3, 1],
@@ -474,7 +474,7 @@ class LudoEngineTest extends TestCase
 
     public function test_safe_zone_start_square_blocks_capture(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P1 at 14, dice 3 -> 17 (P2's start, safe). P2 at 0 (abs 17). No capture.
         $state = $this->makeState(
             [1 => [14, -1, -1, -1], 2 => [0, -1, -1, -1]],
@@ -492,7 +492,7 @@ class LudoEngineTest extends TestCase
 
     public function test_safe_zone_star_square_blocks_capture(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P1 at 5 + 3 = 8 (star, safe). P2 at 59 (abs 8).
         $state = $this->makeState(
             [1 => [5, -1, -1, -1], 2 => [59, -1, -1, -1]],
@@ -508,7 +508,7 @@ class LudoEngineTest extends TestCase
 
     public function test_finishing_a_token_pushes_ten_bonus(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [72, 10, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [2, 4],
@@ -525,7 +525,7 @@ class LudoEngineTest extends TestCase
 
     public function test_blockade_prevents_landing_on_blockaded_square(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P2 has two tokens at relative 1 (abs 18). P1 wants to land on abs 18 (relative 18).
         $state = $this->makeState(
             [1 => [15, -1, -1, -1], 2 => [1, 1, -1, -1]],
@@ -538,7 +538,7 @@ class LudoEngineTest extends TestCase
 
     public function test_blockade_prevents_passing_through_blockaded_square(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // Blockade at abs 18 (P2 has two tokens at relative 1). P1 at 15, dice 5 -> would land at 20 but passes 18.
         $state = $this->makeState(
             [1 => [15, -1, -1, -1], 2 => [1, 1, -1, -1]],
@@ -551,7 +551,7 @@ class LudoEngineTest extends TestCase
 
     public function test_own_pair_does_not_block_self(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P1 has a pair at relative 18, and a third token wants to pass through.
         $state = $this->makeState(
             [1 => [15, 18, 18, -1], 2 => [-1, -1, -1, -1]],
@@ -564,7 +564,7 @@ class LudoEngineTest extends TestCase
 
     public function test_single_opponent_token_does_not_block(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P2 has only one token at relative 1 (abs 18). Not a blockade.
         $state = $this->makeState(
             [1 => [15, -1, -1, -1], 2 => [1, -1, -1, -1]],
@@ -577,7 +577,7 @@ class LudoEngineTest extends TestCase
 
     public function test_doubles_bonus_grants_extra_roll_after_both_dice_spent(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // After rolling doubles, spend both dice. Then extra roll.
         $state = $this->makeState(
             [1 => [10, -1, -1, -1], 2 => [-1, -1, -1, -1]],
@@ -602,7 +602,7 @@ class LudoEngineTest extends TestCase
 
     public function test_unspendable_remaining_dice_forfeit_no_doubles_bonus(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         // P1: [70, 71, -1, -1]. pendingDice = [4, 4] (doubles), consecutiveDoubles=1.
         // Spend 4 on token 0 -> 74 (finish, +10 bonus).
         // Remaining pending: [4, 10]. Token 0 finished (cannot move). Token 1 at 71, can't add 4 or 10.
@@ -626,7 +626,7 @@ class LudoEngineTest extends TestCase
 
     public function test_normal_turn_passes_after_both_dice_spent(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [1 => [10, -1, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [3, 4],
@@ -644,7 +644,7 @@ class LudoEngineTest extends TestCase
 
     public function test_turn_order_two_players(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $twoPlayers = collect([1 => $this->players->get(1), 2 => $this->players->get(2)]);
 
         // P1 spends both dice -> turn passes to P2.
@@ -662,7 +662,7 @@ class LudoEngineTest extends TestCase
 
     public function test_turn_order_three_players(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $threePlayers = collect([
             1 => $this->players->get(1),
             2 => $this->players->get(2),
@@ -684,7 +684,7 @@ class LudoEngineTest extends TestCase
 
     public function test_turn_order_four_players(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState(
             [
                 1 => [-1, -1, -1, -1],
@@ -704,7 +704,7 @@ class LudoEngineTest extends TestCase
 
     public function test_check_game_over_returns_winner_when_all_tokens_finish(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState([1 => [74, 74, 74, 74], 2 => [10, -1, -1, -1]]);
 
         $result = $engine->checkGameOver($state);
@@ -716,7 +716,7 @@ class LudoEngineTest extends TestCase
 
     public function test_check_game_over_returns_null_when_ongoing(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $state = $this->makeState([1 => [74, 74, 74, 70], 2 => [10, -1, -1, -1]]);
 
         $this->assertNull($engine->checkGameOver($state));
@@ -726,33 +726,33 @@ class LudoEngineTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->checkGameOver(new class extends GameState {});
+        (new LudoEngine)->checkGameOver(new class extends GameState {});
     }
 
     public function test_apply_move_throws_for_wrong_state_type(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->applyMove(new class extends GameState {}, 1, $this->rollMove());
+        (new LudoEngine)->applyMove(new class extends GameState {}, 1, $this->rollMove());
     }
 
     public function test_apply_move_throws_for_wrong_move_type(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->applyMove($this->makeState($this->homeTokens(2)), 1, new class extends MoveData {});
+        (new LudoEngine)->applyMove($this->makeState($this->homeTokens(2)), 1, new class extends MoveData {});
     }
 
     public function test_get_current_turn_throws_for_wrong_state_type(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new LudoEngine())->getCurrentTurn(new class extends GameState {});
+        (new LudoEngine)->getCurrentTurn(new class extends GameState {});
     }
 
     public function test_make_state_round_trip(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
         $original = $this->makeState(
             [1 => [10, -1, 74, 5], 2 => [0, 30, -1, -1]],
             currentTurn: 2,
@@ -775,7 +775,7 @@ class LudoEngineTest extends TestCase
 
     public function test_make_move_data_round_trip(): void
     {
-        $engine = new LudoEngine();
+        $engine = new LudoEngine;
 
         /** @var LudoMoveData $rollMove */
         $rollMove = $engine->makeMoveData(['action' => 'roll', 'tokenIndex' => null, 'diceValue' => null]);

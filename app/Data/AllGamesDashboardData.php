@@ -21,8 +21,7 @@ final class AllGamesDashboardData extends Data
         public int $active_players,
         public int $user_games_played,
         public int $user_wins,
-    ) {
-    }
+    ) {}
 
     public static function fromCustom(Game $game, User $user): self
     {
