@@ -14,8 +14,11 @@ final class GameEnded implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $sessionId;
+
     public ?string $winner;
+
     public bool $draw;
+
     public array $state;
 
     public function __construct(string $sessionId, ?string $winner, bool $draw, GameState $state)

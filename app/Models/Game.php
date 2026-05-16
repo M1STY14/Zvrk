@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use App\Enums\GameStatus;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +26,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Collection<int, GameSession> $gameSessions
  * @property-read Collection<int, PlayerStat> $playerStats
  */
-
 final class Game extends Model
 {
     use HasFactory, HasUlids;

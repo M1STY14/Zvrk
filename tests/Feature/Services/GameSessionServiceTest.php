@@ -22,6 +22,7 @@ class GameSessionServiceTest extends TestCase
     use RefreshDatabase;
 
     private GameSessionService $service;
+
     private Game $game;
 
     protected function setUp(): void

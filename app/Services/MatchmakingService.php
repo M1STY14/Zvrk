@@ -8,6 +8,7 @@ use App\Models\Game;
 use App\Models\GameSession;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 final readonly class MatchmakingService
 {
@@ -15,6 +16,9 @@ final readonly class MatchmakingService
         private GameSessionService $gameSessionService,
     ) {}
 
+    /**
+     * @throws Throwable
+     */
     public function quickMatch(Game $game, User $user): QuickMatchResult
     {
         return DB::transaction(function () use ($game, $user) {

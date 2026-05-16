@@ -8,6 +8,7 @@ use App\Data\TicTacToeState;
 final class TicTacToeBot
 {
     public const EMAIL = 'ai-bot@zvrk.local';
+
     public const NAME = 'AI Bot';
 
     public function selectMove(TicTacToeState $state): TicTacToeMoveData

@@ -14,7 +14,9 @@ final class GameStarted implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $sessionId;
+
     public string $startingPlayerId;
+
     public array $state;
 
     public function __construct(string $sessionId, string $startingPlayerId, GameState $state)

@@ -35,12 +35,13 @@ class TicTacToeEngine implements GameContract
         if ($players->count() < 2) {
             throw new InvalidArgumentException('TicTacToe requires exactly two players.');
         }
-        //returns a 3x3 empty board with player 1's turn
+
+        // returns a 3x3 empty board with player 1's turn
         return new TicTacToeState(
             board: [
-                [0,0,0],
-                [0,0,0],
-                [0,0,0],
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
             ],
             currentTurn: 1,
             players: collect([
@@ -64,13 +65,13 @@ class TicTacToeEngine implements GameContract
         $row = $moveData->row;
         $col = $moveData->col;
 
-        //wrong player's turn
+        // wrong player's turn
         if ($playerNumber !== $state->currentTurn) {
             return false;
         }
 
-        //out of bounds
-        if ($row < 0 || $row > 2 || $col < 0 || $col > 2){
+        // out of bounds
+        if ($row < 0 || $row > 2 || $col < 0 || $col > 2) {
             return false;
         }
 
@@ -92,7 +93,7 @@ class TicTacToeEngine implements GameContract
             throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeMoveData.');
         }
 
-        //places the mark and advances the turn
+        // places the mark and advances the turn
         $board = $state->board;
 
         $board[$moveData->row][$moveData->col] = $playerNumber;
@@ -112,24 +113,24 @@ class TicTacToeEngine implements GameContract
 
         $board = $state->board;
 
-        //all possible winning states
+        // all possible winning states
         $lines = [
-            //rows
+            // rows
             [$board[0][0], $board[0][1], $board[0][2]],
             [$board[1][0], $board[1][1], $board[1][2]],
             [$board[2][0], $board[2][1], $board[2][2]],
 
-            //columns
+            // columns
             [$board[0][0], $board[1][0], $board[2][0]],
             [$board[0][1], $board[1][1], $board[2][1]],
             [$board[0][2], $board[1][2], $board[2][2]],
 
-            //diagonals
+            // diagonals
             [$board[0][0], $board[1][1], $board[2][2]],
             [$board[0][2], $board[1][1], $board[2][0]],
         ];
 
-        //checks for row, column or diagonal win
+        // checks for row, column or diagonal win
         foreach ($lines as [$a, $b, $c]) {
             if ($a !== 0 && $a === $b && $b === $c) {
                 return new GameResult(
@@ -139,12 +140,12 @@ class TicTacToeEngine implements GameContract
             }
         }
 
-        //checks if game is still ongoing
+        // checks if game is still ongoing
         if (in_array(0, array_merge(...$board), true)) {
             return null;
         }
 
-        //draw
+        // draw
         return new GameResult(
             winner: null,
             draw: true,
@@ -156,13 +157,7 @@ class TicTacToeEngine implements GameContract
         if (! $state instanceof TicTacToeState) {
             throw new InvalidArgumentException('TicTacToeEngine expects TicTacToeState.');
         }
+
         return $state->currentTurn;
     }
 }
-
-
-
-
-
-
-

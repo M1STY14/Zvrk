@@ -10,7 +10,7 @@ use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\JsonResponse;
 
- class ChatController extends Controller
+class ChatController extends Controller
 {
     public function __invoke(GameSession $gameSession, StoreChatMessageData $data, #[CurrentUser] User $user): JsonResponse
     {

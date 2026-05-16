@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Collection<int, GameSession> $gameSessions
  * @property-read User $user
  */
-
 final class ChatMessage extends Model
 {
     use HasUlids;

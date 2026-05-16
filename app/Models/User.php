@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -28,7 +27,6 @@ use Illuminate\Notifications\Notifiable;
  * @property-read Collection<int, PlayerStat> $playerStats
  * @property-read Collection<int, GameSession> $gameSession
  */
-
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

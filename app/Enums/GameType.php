@@ -9,7 +9,6 @@ use App\Models\GameSession;
  * @property-read string $value
  * @property-read string $name
  */
-
 enum GameType: string
 {
     use CompareEnumTrait;
@@ -18,10 +17,11 @@ enum GameType: string
     case Checkers = 'checkers';
     case FourInARow = 'four-in-a-row';
 
-    public static function getInertiaPageFrom(GameSession $gameSession): string {
+    public static function getInertiaPageFrom(GameSession $gameSession): string
+    {
         return match (GameType::from($gameSession->game->slug)) {
             GameType::Ludo => 'Game/LudoPlay',
-            default        => 'Game/Play',
+            default => 'Game/Play',
         };
     }
 }

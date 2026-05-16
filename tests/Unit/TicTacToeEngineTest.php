@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use App\Data\GameState;
 use App\Data\MoveData;
-use App\Data\TicTacToeState;
 use App\Data\TicTacToeMoveData;
+use App\Data\TicTacToeState;
 use App\Games\TicTacToeEngine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,13 +18,14 @@ class TicTacToeEngineTest extends TestCase
     use RefreshDatabase;
 
     private TicTacToeEngine $engine;
+
     private Collection $players;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->engine = new TicTacToeEngine();
+        $this->engine = new TicTacToeEngine;
         $this->players = collect([
             1 => User::factory()->create()->id,
             2 => User::factory()->create()->id,

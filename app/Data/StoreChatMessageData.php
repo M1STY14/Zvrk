@@ -13,8 +13,7 @@ final class StoreChatMessageData extends Data
     public function __construct(
         #[Required, StringType, Max(250), Regex('/\S/')]
         public string $message,
-    ) {
-    }
+    ) {}
 
     public static function messages(): array
     {

@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
+     *
      * @throws BindingResolutionException
      */
     public function boot(): void
