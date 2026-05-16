@@ -38,12 +38,10 @@ final readonly class MatchmakingService
             if ($session === null) {
                 $session = $this->createQuickMatchSession($game, $user);
                 $playerCount = 1;
-            } elseif (! $session->has($user)) {
+            } else {
                 $session->setRelation('game', $game);
                 $this->gameSessionService->addPlayer($session, $user);
                 $playerCount = $session->players_count + 1;
-            } else {
-                $playerCount = $session->players_count;
             }
 
             $started = $playerCount >= $session->max_players;
