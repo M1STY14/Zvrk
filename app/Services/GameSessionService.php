@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Ai\TicTacToeBot;
 use App\Data\GameResult;
 use App\Enums\GameStatus;
 use App\Events\GameEnded;
 use App\Events\GameStarted;
 use App\Events\MoveMade;
 use App\Events\PlayerJoinedLobby;
-use App\Ai\TicTacToeBot;
 use App\Events\PlayerLeftLobby;
 use App\Games\TicTacToeEngine;
 use App\Models\GameSession;
@@ -173,7 +173,7 @@ final readonly class GameSessionService
             return [$stateArray, $previousMoveNumber, null];
         }
 
-        $bot = new TicTacToeBot();
+        $bot = new TicTacToeBot;
         $moveData = $bot->selectMove($state);
 
         $gameResult = null;

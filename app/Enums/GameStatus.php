@@ -8,7 +8,6 @@ use App\CompareEnumTrait;
  * @property-read string $value
  * @property-read string $name
  */
-
 enum GameStatus: string
 {
     use CompareEnumTrait;

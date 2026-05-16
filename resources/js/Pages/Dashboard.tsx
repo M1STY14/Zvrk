@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 
 interface Game {
     id: string;
@@ -139,14 +139,12 @@ export default function Dashboard({ games, userStats }: Props) {
                         <h3 className="text-2xl font-bold text-gray-900 mb-6">Game Catalog</h3>
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                             {games.map((game) => (
-                                <Link
+                                <div
                                     key={game.id}
-                                    href={game.is_active ? route('lobby.index', { game: game.slug }) : '#'}
                                     className={`group overflow-hidden bg-white rounded-lg transition-all duration-300 flex flex-col ${
-                                        game.is_active ? 'cursor-pointer' : 'cursor-not-allowed'
-                                    } ${!game.is_active ? 'opacity-60' : ''}`}
+                                        !game.is_active ? 'opacity-60' : ''
+                                    }`}
                                     style={{ boxShadow: '0 2px 2px -1px rgba(0,0,0,0.1)' }}
-                                    as={game.is_active ? 'a' : 'div'}
                                 >
                                     {/* Game Image */}
                                     <div className="relative overflow-hidden bg-gray-50 h-48">
@@ -209,14 +207,29 @@ export default function Dashboard({ games, userStats }: Props) {
                                             </div>
                                         )}
 
-                                        {/* Play Button */}
                                         {game.is_active && (
-                                            <button className="mt-4 w-full bg-black hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-3xl transition-colors duration-200">
-                                                Play Now
-                                            </button>
+                                            <div className="mt-4 flex flex-col gap-2">
+                                                <Link
+                                                    href={route('lobby.index', { game: game.slug })}
+                                                    className="w-full bg-black hover:bg-red-400 text-white font-semibold py-2 px-4 rounded-3xl transition-colors duration-200 text-center"
+                                                >
+                                                    Play Now
+                                                </Link>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        router.post(
+                                                            route('lobby.quick-match', game.slug),
+                                                        )
+                                                    }
+                                                    className="w-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-800 font-semibold py-2 px-4 rounded-3xl transition-colors duration-200"
+                                                >
+                                                    Quick Match
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
-                                </Link>
+                                </div>
                             ))}
                         </div>
                     </div>

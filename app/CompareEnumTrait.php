@@ -11,6 +11,6 @@ trait CompareEnumTrait
 
     public function isNot(self $status): bool
     {
-        return !$this->is($status);
+        return ! $this->is($status);
     }
 }

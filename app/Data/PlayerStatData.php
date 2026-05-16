@@ -14,8 +14,7 @@ final class PlayerStatData extends Data
         public int $losses,
         public int $draws,
         public float $winRate,
-    ) {
-    }
+    ) {}
 
     public static function fromModel(PlayerStat $stat): self
     {

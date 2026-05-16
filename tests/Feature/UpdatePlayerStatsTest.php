@@ -23,7 +23,7 @@ final class UpdatePlayerStatsTest extends TestCase
 
         $session = $this->createSessionWithPlayers($game, $winner, $loser, winner: $winner);
 
-        (new UpdatePlayerStats())->handle(new GameEnded(
+        (new UpdatePlayerStats)->handle(new GameEnded(
             sessionId: $session->id,
             winner: $winner->id,
             draw: false,
@@ -57,7 +57,7 @@ final class UpdatePlayerStatsTest extends TestCase
 
         $session = $this->createSessionWithPlayers($game, $playerOne, $playerTwo, winner: null);
 
-        (new UpdatePlayerStats())->handle(new GameEnded(
+        (new UpdatePlayerStats)->handle(new GameEnded(
             sessionId: $session->id,
             winner: null,
             draw: true,
@@ -84,7 +84,7 @@ final class UpdatePlayerStatsTest extends TestCase
 
         $session = $this->createSessionWithPlayers($game, $winner, $loser, winner: $winner);
 
-        (new UpdatePlayerStats())->handle(new GameEnded(
+        (new UpdatePlayerStats)->handle(new GameEnded(
             sessionId: $session->id,
             winner: $winner->id,
             draw: false,
@@ -100,7 +100,7 @@ final class UpdatePlayerStatsTest extends TestCase
         $winner = User::factory()->create();
         $loser = User::factory()->create();
 
-        $listener = new UpdatePlayerStats();
+        $listener = new UpdatePlayerStats;
 
         for ($i = 0; $i < 2; $i++) {
             $session = $this->createSessionWithPlayers($game, $winner, $loser, winner: $winner);

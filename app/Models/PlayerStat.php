@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read User $user
  * @property-read Game $game
  */
-
 final class PlayerStat extends Model
 {
     use HasUlids;

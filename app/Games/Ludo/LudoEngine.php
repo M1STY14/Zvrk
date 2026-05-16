@@ -16,16 +16,27 @@ use InvalidArgumentException;
 class LudoEngine implements GameContract
 {
     private const RING_SIZE = 52;
+
     private const STRETCH_START = 51;
+
     private const STRETCH_END = 58;
+
     private const HOME = -1;
+
     private const SAFE_SQUARES = [0, 8, 13, 21, 26, 34, 39, 47];
+
     private const PLAYER_START_OFFSETS = [1 => 39, 2 => 13, 3 => 0, 4 => 26];
+
     private const TOKENS_PER_PLAYER = 4;
+
     private const HOME_EXIT_DICE = 5;
+
     private const CAPTURE_BONUS = 20;
+
     private const FINISH_BONUS = 10;
+
     private const MAX_CONSECUTIVE_DOUBLES = 3;
+
     private const BLOCKADE_SIZE = 2;
 
     private Closure $diceRoller;

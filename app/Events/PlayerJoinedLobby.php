@@ -16,8 +16,7 @@ final class PlayerJoinedLobby implements ShouldBroadcast
         public string $gameSlug,
         public string $playerId,
         public string $playerName,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): PresenceChannel
     {

@@ -30,6 +30,6 @@ final class GameEngineManager
             throw new InvalidArgumentException("No game engine registered for slug [{$slug}].");
         }
 
-        return new $engineClass();
+        return new $engineClass;
     }
 }

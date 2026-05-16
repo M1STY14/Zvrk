@@ -35,7 +35,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Collection<int, Move> $moves
  * @property-read Collection<int, ChatMessage> $chatMessages
  */
-
 final class GameSession extends Model
 {
     use HasFactory, HasUlids;
