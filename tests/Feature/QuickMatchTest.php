@@ -218,5 +218,9 @@ final class QuickMatchTest extends TestCase
 
         $this->assertTrue($session->fresh()->status->is(GameStatus::Playing));
         $this->assertEquals(4, $session->fresh()->players()->count());
+        $this->assertEquals(
+            [1, 2, 3, 4],
+            $session->players()->orderBy('player_number')->pluck('player_number')->all(),
+        );
     }
 }

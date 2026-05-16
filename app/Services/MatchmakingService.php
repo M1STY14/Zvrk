@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Data\QuickMatchResult;
 use App\Enums\GameStatus;
-use App\Events\PlayerJoinedLobby;
 use App\Models\Game;
 use App\Models\GameSession;
 use App\Models\User;
@@ -32,23 +31,25 @@ final readonly class MatchmakingService
 
             $session = $this->findJoinableSession($game);
 
-            if ($session !== null) {
-                $session = $this->joinAvailableSession($session, $user, $game);
-            } else {
+            if ($session === null) {
                 $session = $this->createQuickMatchSession($game, $user);
+                $playerCount = 1;
+            } elseif (! $session->has($user)) {
+                $session->setRelation('game', $game);
+                $this->gameSessionService->addPlayer($session, $user);
+                $playerCount = $session->players_count + 1;
+            } else {
+                $playerCount = $session->players_count;
             }
 
-            $session->refresh();
-            $playerCount = $session->players()->count();
-            $started = false;
+            $started = $playerCount >= $session->max_players;
 
-            if ($playerCount >= $session->max_players) {
+            if ($started) {
                 $session->load(['players', 'game']);
                 $this->gameSessionService->startGame($session);
-                $started = true;
             }
 
-            return new QuickMatchResult($session->fresh(), $started);
+            return new QuickMatchResult($session, $started);
         });
     }
 
@@ -65,27 +66,6 @@ final readonly class MatchmakingService
             ->first();
     }
 
-    private function joinAvailableSession(GameSession $session, User $user, Game $game): GameSession
-    {
-        $session = GameSession::query()->lockForUpdate()->findOrFail($session->id);
-
-        if ($session->players()->count() >= $session->max_players) {
-            $nextSession = $this->findJoinableSession($game);
-
-            if ($nextSession !== null) {
-                return $this->joinAvailableSession($nextSession, $user, $game);
-            }
-
-            return $this->createQuickMatchSession($game, $user);
-        }
-
-        if (! $session->has($user)) {
-            $this->gameSessionService->addPlayer($session, $user);
-        }
-
-        return $session;
-    }
-
     private function createQuickMatchSession(Game $game, User $user): GameSession
     {
         $session = GameSession::query()->create([
@@ -97,13 +77,8 @@ final readonly class MatchmakingService
             'is_private' => false,
         ]);
 
-        $session->players()->create([
-            'user_id' => $user->id,
-            'player_number' => 1,
-            'joined_at' => now(),
-        ]);
-
-        PlayerJoinedLobby::dispatch($game->slug, $user->id, $user->name);
+        $session->setRelation('game', $game);
+        $this->gameSessionService->addPlayer($session, $user);
 
         return $session;
     }
