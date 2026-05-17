@@ -18,9 +18,11 @@ use App\Jobs\ForfeitDisconnectedPlayerJob;
 use App\Models\GamePlayer;
 use App\Models\GameSession;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final readonly class GameSessionService
 {
@@ -95,6 +97,8 @@ final readonly class GameSessionService
 
     /**
      * @throws ValidationException
+     * @throws ModelNotFoundException
+     * @throws InvalidArgumentException
      */
     public function applyMove(GameSession $session, User $user, array $moveDataArray): array
     {
