@@ -464,7 +464,7 @@ class GameSessionServiceTest extends TestCase
         });
     }
 
-    public function test_remove_player_from_playing_session_sets_abandoned(): void
+    public function test_remove_player_from_playing_session_forfeits_with_opponent_as_winner(): void
     {
         Event::fake();
 
@@ -476,14 +476,19 @@ class GameSessionServiceTest extends TestCase
         $session->refresh();
 
         $this->assertTrue($session->status->is(GameStatus::Abandoned));
+        $this->assertSame($host->id, $session->winner_user_id);
         $this->assertNotNull($session->finished_at);
-        $this->assertDatabaseMissing('game_players', [
+        $this->assertDatabaseHas('game_players', [
             'game_session_id' => $session->id,
             'user_id' => $host->id,
         ]);
+        $this->assertDatabaseHas('game_players', [
+            'game_session_id' => $session->id,
+            'user_id' => $player2->id,
+        ]);
     }
 
-    public function test_remove_player_from_playing_session_broadcasts_game_ended(): void
+    public function test_remove_player_from_playing_session_broadcasts_forfeit_game_ended(): void
     {
         Event::fake([GameEnded::class]);
 
@@ -494,30 +499,12 @@ class GameSessionServiceTest extends TestCase
 
         $this->service->removePlayer($session, $player2);
 
-        Event::assertDispatched(GameEnded::class, function ($event) use ($session) {
+        Event::assertDispatched(GameEnded::class, function ($event) use ($session, $host) {
             return $event->sessionId === $session->id
-                && $event->winner === null
-                && $event->draw === false;
+                && $event->winner === $host->id
+                && $event->draw === false
+                && $event->reason === 'forfeit';
         });
-    }
-
-    public function test_remove_player_from_playing_session_deletes_player_record(): void
-    {
-        Event::fake();
-
-        [$session, $host, $player2] = $this->createTwoPlayerSession();
-        $this->beginGame($session);
-
-        $this->service->removePlayer($session, $player2);
-
-        $this->assertDatabaseMissing('game_players', [
-            'game_session_id' => $session->id,
-            'user_id' => $player2->id,
-        ]);
-        $this->assertDatabaseMissing('game_players', [
-            'game_session_id' => $session->id,
-            'user_id' => $host->id,
-        ]);
     }
 
     public function test_remove_player_from_finished_session_deletes_all_players(): void

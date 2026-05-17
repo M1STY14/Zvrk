@@ -4,18 +4,25 @@ namespace App\Services;
 
 use App\Ai\TicTacToeBot;
 use App\Data\GameResult;
+use App\Data\TicTacToeState;
 use App\Enums\GameStatus;
 use App\Events\GameEnded;
 use App\Events\GameStarted;
+use App\Events\LobbyRoomClosed;
 use App\Events\MoveMade;
+use App\Events\PlayerConnectionChanged;
 use App\Events\PlayerJoinedLobby;
 use App\Events\PlayerLeftLobby;
 use App\Games\TicTacToeEngine;
+use App\Jobs\ForfeitDisconnectedPlayerJob;
+use App\Models\GamePlayer;
 use App\Models\GameSession;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 final readonly class GameSessionService
 {
@@ -90,6 +97,8 @@ final readonly class GameSessionService
 
     /**
      * @throws ValidationException
+     * @throws ModelNotFoundException
+     * @throws InvalidArgumentException
      */
     public function applyMove(GameSession $session, User $user, array $moveDataArray): array
     {
@@ -166,6 +175,11 @@ final readonly class GameSessionService
         }
 
         $state = $engine->makeState($stateArray);
+
+        if (! $state instanceof TicTacToeState) {
+            return [$stateArray, $previousMoveNumber, null];
+        }
+
         $currentTurn = $engine->getCurrentTurn($state);
         $nextPlayerId = $stateArray['players'][$currentTurn] ?? null;
 
@@ -211,10 +225,170 @@ final readonly class GameSessionService
         return [$stateArray, $moveNumber, $gameResult];
     }
 
+    public function markPlayerConnected(GameSession $session, User $user): void
+    {
+        $updated = $session->players()
+            ->where('user_id', $user->id)
+            ->where('is_connected', false)
+            ->update([
+                'is_connected' => true,
+                'disconnected_at' => null,
+            ]);
+
+        if ($updated === 0) {
+            return;
+        }
+
+        broadcast(new PlayerConnectionChanged(
+            sessionId: $session->id,
+            userId: $user->id,
+            isConnected: true,
+        ))->toOthers();
+    }
+
+    public function markPlayerDisconnected(GameSession $session, User $user): void
+    {
+        $updated = $session->players()
+            ->where('user_id', $user->id)
+            ->where('is_connected', true)
+            ->update([
+                'is_connected' => false,
+                'disconnected_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            return;
+        }
+
+        broadcast(new PlayerConnectionChanged(
+            sessionId: $session->id,
+            userId: $user->id,
+            isConnected: false,
+        ))->toOthers();
+
+        $session->refresh();
+
+        if ($session->status->is(GameStatus::Pending) && $session->host_user_id === $user->id) {
+            $this->abandonPendingRoomByHost($session, $user);
+
+            return;
+        }
+
+        if ($session->status->is(GameStatus::Playing) && ! $this->isAiUser($user)) {
+            ForfeitDisconnectedPlayerJob::dispatch($session->id, $user->id)
+                ->delay(now()->addSeconds(60));
+        }
+    }
+
+    public function abandonPendingRoomByHost(GameSession $session, User $host): void
+    {
+        $session->loadMissing('game');
+
+        $abandoned = DB::transaction(function () use ($session, $host) {
+            $session = GameSession::query()->lockForUpdate()->find($session->id);
+
+            if ($session === null
+                || $session->status->isNot(GameStatus::Pending)
+                || $session->host_user_id !== $host->id) {
+                return false;
+            }
+
+            $session->players()->delete();
+            $session->update(['status' => GameStatus::Abandoned]);
+
+            return true;
+        });
+
+        if (! $abandoned) {
+            return;
+        }
+
+        PlayerLeftLobby::dispatch($session->game->slug, $host->id, $host->name);
+
+        broadcast(new LobbyRoomClosed(
+            sessionId: $session->id,
+            gameSlug: $session->game->slug,
+        ));
+    }
+
+    public function forfeitDueToDisconnect(GameSession $session, User $disconnectedUser): void
+    {
+        $session->loadMissing(['game', 'players']);
+
+        $player = $session->players->firstWhere('user_id', $disconnectedUser->id);
+
+        if ($player === null || $player->is_connected || $player->disconnected_at === null) {
+            return;
+        }
+
+        if ($player->disconnected_at->diffInSeconds(now()) < 60) {
+            return;
+        }
+
+        $this->forfeitGame($session, $disconnectedUser);
+    }
+
+    public function forfeitGame(GameSession $session, User $forfeitingUser): void
+    {
+        $session->loadMissing('game');
+
+        $engine = $this->engineManager->resolve($session->game->slug);
+
+        $result = DB::transaction(function () use ($session, $forfeitingUser, $engine) {
+            $session = GameSession::query()
+                ->lockForUpdate()
+                ->with(['players.user', 'game'])
+                ->find($session->id);
+
+            if ($session === null || $session->status->isNot(GameStatus::Playing)) {
+                return null;
+            }
+
+            if (! $session->players->contains('user_id', $forfeitingUser->id)) {
+                return null;
+            }
+
+            $winnerUserId = $session->players
+                ->first(fn (GamePlayer $p) => $p->user_id !== $forfeitingUser->id
+                    && ! $this->isAiUser($p->user))
+                ?->user_id;
+
+            $state = $engine->makeState($session->state);
+
+            $session->update([
+                'status' => GameStatus::Abandoned,
+                'winner_user_id' => $winnerUserId,
+                'finished_at' => now(),
+            ]);
+
+            return [
+                'state' => $state,
+                'winnerUserId' => $winnerUserId,
+            ];
+        });
+
+        if ($result === null) {
+            return;
+        }
+
+        broadcast(new GameEnded(
+            sessionId: $session->id,
+            winner: $result['winnerUserId'],
+            draw: false,
+            state: $result['state'],
+            reason: 'forfeit',
+        ));
+    }
+
+    private function isAiUser(User $user): bool
+    {
+        return $user->email === TicTacToeBot::EMAIL;
+    }
+
     public function removePlayer(GameSession $session, User $user): void
     {
         if ($session->status->is(GameStatus::Playing)) {
-            $this->handleGameAbandonment($session);
+            $this->forfeitGame($session, $user);
         } elseif ($session->status->is(GameStatus::Finished) || $session->status->is(GameStatus::Abandoned)) {
             $this->removeAllPlayers($session);
         } elseif ($session->status->is(GameStatus::Pending)) {
@@ -249,34 +423,15 @@ final readonly class GameSessionService
         }
     }
 
-    private function handleGameAbandonment(GameSession $session): void
-    {
-        $engine = $this->engineManager->resolve($session->game->slug);
-        $state = $engine->makeState($session->state);
-
-        $session->players()->delete();
-
-        $session->update([
-            'status' => GameStatus::Abandoned,
-            'finished_at' => now(),
-        ]);
-
-        broadcast(new GameEnded(
-            sessionId: $session->id,
-            winner: null,
-            draw: false,
-            state: $state,
-        ));
-    }
-
     private function handlePendingGameRemoval(GameSession $session, User $user): void
     {
         if ($session->host_user_id === $user->id) {
-            $session->players()->delete();
-            $session->update(['status' => GameStatus::Abandoned]);
-        } else {
-            $session->players()->where('user_id', $user->id)->delete();
+            $this->abandonPendingRoomByHost($session, $user);
+
+            return;
         }
+
+        $session->players()->where('user_id', $user->id)->delete();
 
         PlayerLeftLobby::dispatch($session->game->slug, $user->id, $user->name);
     }
