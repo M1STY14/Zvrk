@@ -21,12 +21,20 @@ final class GameEnded implements ShouldBroadcast
 
     public array $state;
 
-    public function __construct(string $sessionId, ?string $winner, bool $draw, GameState $state)
-    {
+    public ?string $reason;
+
+    public function __construct(
+        string $sessionId,
+        ?string $winner,
+        bool $draw,
+        GameState $state,
+        ?string $reason = null,
+    ) {
         $this->sessionId = $sessionId;
         $this->winner = $winner;
         $this->draw = $draw;
         $this->state = $state->toArray();
+        $this->reason = $reason;
     }
 
     public function broadcastOn(): PresenceChannel
@@ -46,6 +54,7 @@ final class GameEnded implements ShouldBroadcast
             'winner' => $this->winner,
             'draw' => $this->draw,
             'state' => $this->state,
+            'reason' => $this->reason,
         ];
     }
 }

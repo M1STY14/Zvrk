@@ -48,6 +48,7 @@ final class GameSessionController extends Controller
                         'id' => $player->id,
                         'user_id' => $player->user_id,
                         'player_number' => $player->player_number,
+                        'is_connected' => $player->is_connected,
                         'user' => [
                             'id' => $player->user->id,
                             'name' => $player->user->name,

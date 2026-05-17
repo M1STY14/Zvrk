@@ -36,7 +36,25 @@ final class LobbyController extends Controller
 
         return Inertia::render('Lobby/Show', [
             'game' => $game,
-            'session' => $gameSession,
+            'session' => [
+                'id' => $gameSession->id,
+                'name' => $gameSession->name,
+                'host_user_id' => $gameSession->host_user_id,
+                'max_players' => $gameSession->max_players,
+                'players' => $gameSession->players
+                    ->sortBy('player_number')
+                    ->values()
+                    ->map(fn ($player) => [
+                        'id' => $player->id,
+                        'user_id' => $player->user_id,
+                        'player_number' => $player->player_number,
+                        'is_connected' => $player->is_connected,
+                        'user' => [
+                            'id' => $player->user->id,
+                            'name' => $player->user->name,
+                        ],
+                    ]),
+            ],
         ]);
     }
 
