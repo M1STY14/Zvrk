@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Events\GameEnded;
 use App\Events\LobbyRoomClosed;
+use App\Events\MoveMade;
 use App\Events\PlayerConnectionChanged;
 use App\Events\PlayerLeftLobby;
+use App\Games\Ludo\LudoEngine;
 use App\Jobs\ForfeitDisconnectedPlayerJob;
 use App\Models\Game;
 use App\Models\GameSession;
@@ -53,8 +56,8 @@ final class PlayerConnectionTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->actingAs($host)
-            ->post(route('game.presence.disconnect', [$session, $guest]))
+        $this->actingAs($guest)
+            ->post(route('game.presence.disconnect', $session))
             ->assertOk();
 
         $this->assertDatabaseHas('game_players', [
@@ -98,8 +101,8 @@ final class PlayerConnectionTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->actingAs($host)
-            ->post(route('game.presence.disconnect', [$session, $guest]))
+        $this->actingAs($guest)
+            ->post(route('game.presence.disconnect', $session))
             ->assertOk();
 
         Event::assertDispatched(PlayerConnectionChanged::class, function (PlayerConnectionChanged $event) use ($session, $guest) {
@@ -136,7 +139,7 @@ final class PlayerConnectionTest extends TestCase
         ]);
 
         $this->actingAs($guest)
-            ->post(route('game.presence.connect', [$session, $guest]))
+            ->post(route('game.presence.connect', $session))
             ->assertOk();
 
         $this->assertDatabaseHas('game_players', [
@@ -175,7 +178,7 @@ final class PlayerConnectionTest extends TestCase
         ]);
 
         $this->actingAs($guest)
-            ->post(route('game.presence.connect', [$session, $guest]))
+            ->post(route('game.presence.connect', $session))
             ->assertOk();
 
         Event::assertDispatched(PlayerConnectionChanged::class, function (PlayerConnectionChanged $event) use ($session, $guest) {
@@ -214,8 +217,8 @@ final class PlayerConnectionTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->actingAs($host)
-            ->post(route('game.presence.disconnect', [$session, $guest]))
+        $this->actingAs($guest)
+            ->post(route('game.presence.disconnect', $session))
             ->assertOk();
 
         Queue::assertPushed(ForfeitDisconnectedPlayerJob::class, function (ForfeitDisconnectedPlayerJob $job) use ($session, $guest) {
@@ -251,8 +254,8 @@ final class PlayerConnectionTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->actingAs($host)
-            ->post(route('game.presence.disconnect', [$session, $guest]))
+        $this->actingAs($guest)
+            ->post(route('game.presence.disconnect', $session))
             ->assertOk();
 
         Queue::assertNotPushed(ForfeitDisconnectedPlayerJob::class);
@@ -331,13 +334,14 @@ final class PlayerConnectionTest extends TestCase
 
         $session->refresh();
 
-        $this->assertTrue($session->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->status->is(GameStatus::Forfeited));
         $this->assertSame($host->id, $session->winner_user_id);
+        $this->assertTrue($session->end_reason->is(GameEndReason::Disconnect));
 
         Event::assertDispatched(GameEnded::class, function (GameEnded $event) use ($session, $host) {
             return $event->sessionId === $session->id
                 && $event->winner === $host->id
-                && $event->reason === 'forfeit';
+                && $event->reason === GameEndReason::Disconnect;
         });
     }
 
@@ -373,7 +377,7 @@ final class PlayerConnectionTest extends TestCase
 
         $this->artisan('game:process-disconnections')->assertSuccessful();
 
-        $this->assertTrue($session->fresh()->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->fresh()->status->is(GameStatus::Forfeited));
         $this->assertSame($host->id, $session->fresh()->winner_user_id);
 
         Event::assertDispatched(GameEnded::class);
@@ -408,12 +412,13 @@ final class PlayerConnectionTest extends TestCase
         ]);
 
         $this->actingAs($host)
-            ->post(route('game.presence.disconnect', [$session, $host]))
+            ->post(route('game.presence.disconnect', $session))
             ->assertOk();
 
         $session->refresh();
 
-        $this->assertTrue($session->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->status->is(GameStatus::Canceled));
+        $this->assertTrue($session->end_reason->is(GameEndReason::HostLeft));
         $this->assertDatabaseMissing('game_players', ['game_session_id' => $session->id]);
 
         Event::assertDispatched(PlayerLeftLobby::class);
@@ -450,8 +455,8 @@ final class PlayerConnectionTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->actingAs($host)
-            ->post(route('game.presence.disconnect', [$session, $guest]))
+        $this->actingAs($guest)
+            ->post(route('game.presence.disconnect', $session))
             ->assertOk();
 
         $this->assertTrue($session->fresh()->status->is(GameStatus::Pending));
@@ -482,7 +487,8 @@ final class PlayerConnectionTest extends TestCase
 
         $this->artisan('game:process-disconnections')->assertSuccessful();
 
-        $this->assertTrue($session->fresh()->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->fresh()->status->is(GameStatus::Canceled));
+        $this->assertTrue($session->fresh()->end_reason->is(GameEndReason::HostLeft));
         Event::assertDispatched(LobbyRoomClosed::class);
     }
 
@@ -521,11 +527,12 @@ final class PlayerConnectionTest extends TestCase
 
         $session->refresh();
 
-        $this->assertTrue($session->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->status->is(GameStatus::Forfeited));
         $this->assertSame($host->id, $session->winner_user_id);
+        $this->assertTrue($session->end_reason->is(GameEndReason::PlayerLeft));
 
-        Event::assertDispatched(GameEnded::class, function (GameEnded $event) use ($session, $host) {
-            return $event->winner === $host->id && $event->reason === 'forfeit';
+        Event::assertDispatched(GameEnded::class, function (GameEnded $event) use ($host) {
+            return $event->winner === $host->id && $event->reason === GameEndReason::PlayerLeft;
         });
     }
 
@@ -555,7 +562,84 @@ final class PlayerConnectionTest extends TestCase
         ]);
 
         $this->actingAs($outsider)
-            ->post(route('game.presence.disconnect', [$session, $guest]))
+            ->post(route('game.presence.disconnect', $session))
             ->assertForbidden();
+    }
+
+    public function test_forfeit_in_multiplayer_game_continues_while_humans_remain(): void
+    {
+        Event::fake([GameEnded::class, MoveMade::class]);
+
+        $game = Game::factory()->create(['slug' => 'ludo', 'min_players' => 2, 'max_players' => 4]);
+        $players = User::factory()->count(3)->create();
+
+        $state = (new LudoEngine)->initialState($players->pluck('id'));
+
+        $session = GameSession::factory()->create([
+            'game_id' => $game->id,
+            'host_user_id' => $players[0]->id,
+            'status' => GameStatus::Playing,
+            'state' => $state->toArray(),
+            'max_players' => 4,
+        ]);
+
+        foreach ($players as $index => $player) {
+            $session->players()->create([
+                'user_id' => $player->id,
+                'player_number' => $index + 1,
+                'is_connected' => true,
+                'joined_at' => now(),
+            ]);
+        }
+
+        app(GameSessionService::class)->forfeit($session->load('game'), $players[0], GameEndReason::PlayerLeft);
+
+        $session->refresh();
+
+        $this->assertTrue($session->status->is(GameStatus::Playing), 'Game continues with two humans left.');
+        $this->assertNull($session->winner_user_id);
+        $this->assertContains(1, $session->state['forfeited']);
+        Event::assertNotDispatched(GameEnded::class);
+        Event::assertDispatched(MoveMade::class);
+    }
+
+    public function test_forfeit_reducing_to_single_human_ends_multiplayer_game(): void
+    {
+        Event::fake([GameEnded::class]);
+
+        $game = Game::factory()->create(['slug' => 'ludo', 'min_players' => 2, 'max_players' => 4]);
+        $players = User::factory()->count(3)->create();
+
+        $state = (new LudoEngine)->initialState($players->pluck('id'));
+
+        $session = GameSession::factory()->create([
+            'game_id' => $game->id,
+            'host_user_id' => $players[0]->id,
+            'status' => GameStatus::Playing,
+            'state' => $state->toArray(),
+            'max_players' => 4,
+        ]);
+
+        foreach ($players as $index => $player) {
+            $session->players()->create([
+                'user_id' => $player->id,
+                'player_number' => $index + 1,
+                'is_connected' => true,
+                'joined_at' => now(),
+            ]);
+        }
+
+        $service = app(GameSessionService::class);
+        $service->forfeit($session->load('game'), $players[0], GameEndReason::PlayerLeft);
+        $service->forfeit($session->fresh()->load('game'), $players[1], GameEndReason::PlayerLeft);
+
+        $session->refresh();
+
+        $this->assertTrue($session->status->is(GameStatus::Forfeited));
+        $this->assertSame($players[2]->id, $session->winner_user_id);
+
+        Event::assertDispatched(GameEnded::class, function (GameEnded $event) use ($players) {
+            return $event->winner === $players[2]->id && $event->reason === GameEndReason::PlayerLeft;
+        });
     }
 }

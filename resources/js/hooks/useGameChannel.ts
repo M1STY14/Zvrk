@@ -75,7 +75,7 @@ export function useGameChannel<TState>(
         const channelName = `game.${sessionId}`;
         const channel = window.Echo.join(channelName);
 
-        bindGamePresenceHandlers(channel, sessionId, currentUserId, onPlayerConnectionChanged);
+        const detachPresence = bindGamePresenceHandlers(channel, sessionId, currentUserId, onPlayerConnectionChanged);
 
         channel
             .listen('.move.made', (event: MoveMadeEvent<TState>) => handlersRef.current.onMoveMade?.(event))
@@ -86,6 +86,7 @@ export function useGameChannel<TState>(
             });
 
         return () => {
+            detachPresence();
             window.Echo.leave(channelName);
         };
     }, [sessionId, currentUserId, onPlayerConnectionChanged]);

@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignUlid('user_id')->constrained('users');
             $table->unsignedTinyInteger('player_number');
             $table->boolean('is_connected')->default(true);
+            $table->timestamp('disconnected_at')->nullable();
             $table->timestamp('joined_at');
 
             $table->unique(['game_session_id', 'user_id']);

@@ -22,4 +22,17 @@ interface GameContract
     public function checkGameOver(GameState $state): ?GameResult;
 
     public function getCurrentTurn(GameState $state): int;
+
+    /**
+     * Remove a player from an in-progress game, advancing the turn off them if needed.
+     * The remaining players keep playing.
+     */
+    public function forfeitPlayer(GameState $state, int $playerNumber): GameState;
+
+    /**
+     * Player numbers still in the game (i.e. not forfeited).
+     *
+     * @return int[]
+     */
+    public function activePlayerNumbers(GameState $state): array;
 }

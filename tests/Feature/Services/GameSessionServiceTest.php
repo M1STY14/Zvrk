@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Services;
 
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Events\GameEnded;
 use App\Events\GameStarted;
@@ -437,7 +438,7 @@ class GameSessionServiceTest extends TestCase
         $this->assertTrue($session->status->is(GameStatus::Pending));
     }
 
-    public function test_remove_host_from_pending_session_sets_abandoned(): void
+    public function test_remove_host_from_pending_session_sets_cancelled(): void
     {
         Event::fake();
 
@@ -447,7 +448,8 @@ class GameSessionServiceTest extends TestCase
 
         $session->refresh();
 
-        $this->assertTrue($session->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->status->is(GameStatus::Canceled));
+        $this->assertTrue($session->end_reason->is(GameEndReason::RoomClosed));
     }
 
     public function test_remove_player_from_pending_session_dispatches_player_left_lobby(): void
@@ -475,7 +477,8 @@ class GameSessionServiceTest extends TestCase
 
         $session->refresh();
 
-        $this->assertTrue($session->status->is(GameStatus::Abandoned));
+        $this->assertTrue($session->status->is(GameStatus::Forfeited));
+        $this->assertTrue($session->end_reason->is(GameEndReason::PlayerLeft));
         $this->assertSame($host->id, $session->winner_user_id);
         $this->assertNotNull($session->finished_at);
         $this->assertDatabaseHas('game_players', [
@@ -503,7 +506,7 @@ class GameSessionServiceTest extends TestCase
             return $event->sessionId === $session->id
                 && $event->winner === $host->id
                 && $event->draw === false
-                && $event->reason === 'forfeit';
+                && $event->reason === GameEndReason::PlayerLeft;
         });
     }
 

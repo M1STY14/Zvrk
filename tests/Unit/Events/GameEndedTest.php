@@ -75,6 +75,7 @@ class GameEndedTest extends TestCase
             'winner' => 'player-1',
             'draw' => false,
             'state' => $state->toArray(),
+            'reason' => null,
         ], $event->broadcastWith());
     }
 
@@ -94,6 +95,7 @@ class GameEndedTest extends TestCase
             'winner' => null,
             'draw' => true,
             'state' => $state->toArray(),
+            'reason' => null,
         ], $event->broadcastWith());
     }
 }

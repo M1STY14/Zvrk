@@ -80,6 +80,7 @@ class LudoEngine implements GameContract
             phase: LudoPhase::from($data['phase']),
             consecutiveDoubles: $data['consecutiveDoubles'],
             players: collect($data['players']),
+            forfeited: $data['forfeited'] ?? [],
         );
     }
 
@@ -181,6 +182,57 @@ class LudoEngine implements GameContract
         return $state->currentTurn;
     }
 
+    public function forfeitPlayer(GameState $state, int $playerNumber): GameState
+    {
+        if (! $state instanceof LudoState) {
+            throw new InvalidArgumentException('LudoEngine expects LudoState.');
+        }
+
+        $tokens = $state->tokens;
+        $tokens[$playerNumber] = array_fill(0, self::TOKENS_PER_PLAYER, self::HOME);
+
+        $forfeited = array_values(array_unique([...$state->forfeited, $playerNumber]));
+
+        $wasTheirTurn = $state->currentTurn === $playerNumber;
+
+        $afterRemoval = new LudoState(
+            tokens: $tokens,
+            currentTurn: $state->currentTurn,
+            pendingDice: $wasTheirTurn ? [] : $state->pendingDice,
+            phase: $wasTheirTurn ? LudoPhase::Roll : $state->phase,
+            consecutiveDoubles: $wasTheirTurn ? 0 : $state->consecutiveDoubles,
+            players: $state->players,
+            forfeited: $forfeited,
+        );
+
+        if (! $wasTheirTurn) {
+            return $afterRemoval;
+        }
+
+        return new LudoState(
+            tokens: $tokens,
+            currentTurn: $this->nextPlayer($afterRemoval),
+            pendingDice: [],
+            phase: LudoPhase::Roll,
+            consecutiveDoubles: 0,
+            players: $state->players,
+            forfeited: $forfeited,
+        );
+    }
+
+    public function activePlayerNumbers(GameState $state): array
+    {
+        if (! $state instanceof LudoState) {
+            throw new InvalidArgumentException('LudoEngine expects LudoState.');
+        }
+
+        return $state->players->keys()
+            ->map(fn ($number): int => (int) $number)
+            ->reject(fn (int $number): bool => in_array($number, $state->forfeited, true))
+            ->values()
+            ->all();
+    }
+
     private function applyRoll(LudoState $state): LudoState
     {
         $d1 = ($this->diceRoller)();
@@ -202,6 +254,7 @@ class LudoEngine implements GameContract
                 phase: LudoPhase::Roll,
                 consecutiveDoubles: 0,
                 players: $state->players,
+                forfeited: $state->forfeited,
             );
         }
 
@@ -215,6 +268,7 @@ class LudoEngine implements GameContract
                 phase: LudoPhase::Roll,
                 consecutiveDoubles: 0,
                 players: $state->players,
+                forfeited: $state->forfeited,
             );
         }
 
@@ -225,6 +279,7 @@ class LudoEngine implements GameContract
             phase: LudoPhase::Move,
             consecutiveDoubles: $newDoubles,
             players: $state->players,
+            forfeited: $state->forfeited,
         );
     }
 
@@ -279,6 +334,7 @@ class LudoEngine implements GameContract
             phase: LudoPhase::Move,
             consecutiveDoubles: $state->consecutiveDoubles,
             players: $state->players,
+            forfeited: $state->forfeited,
         );
 
         if (count($pending) > 0 && $this->hasAnySpendableValue($nextState, $playerNumber, $pending)) {
@@ -294,6 +350,7 @@ class LudoEngine implements GameContract
             phase: LudoPhase::Roll,
             consecutiveDoubles: $extraTurn ? $state->consecutiveDoubles : 0,
             players: $state->players,
+            forfeited: $state->forfeited,
         );
     }
 
@@ -301,7 +358,14 @@ class LudoEngine implements GameContract
     {
         $count = $state->players->count();
 
-        return ($state->currentTurn % $count) + 1;
+        $next = ($state->currentTurn % $count) + 1;
+
+        // Skip players who have forfeited; the game ends elsewhere once one remains.
+        for ($guard = 0; $guard < $count && in_array($next, $state->forfeited, true); $guard++) {
+            $next = ($next % $count) + 1;
+        }
+
+        return $next;
     }
 
     private function canTokenMove(LudoState $state, int $playerNumber, int $tokenIndex, int $diceValue): bool

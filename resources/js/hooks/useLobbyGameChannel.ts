@@ -42,7 +42,7 @@ export function useLobbyGameChannel({ gameSlug, sessionId, players, currentUserI
 
         const gamePresenceChannel = window.Echo.join(gameChannel);
 
-        bindGamePresenceHandlers(gamePresenceChannel, sessionId, currentUserId, onPlayerConnectionChanged);
+        const detachPresence = bindGamePresenceHandlers(gamePresenceChannel, sessionId, currentUserId, onPlayerConnectionChanged);
 
         gamePresenceChannel
             .listen('.player.connection.changed', (event: { userId: string; isConnected: boolean }) => {
@@ -57,6 +57,7 @@ export function useLobbyGameChannel({ gameSlug, sessionId, players, currentUserI
             .error((err: unknown) => console.error('[game] channel error', err));
 
         return () => {
+            detachPresence();
             window.Echo.leave(lobbyChannel);
             window.Echo.leave(gameChannel);
         };

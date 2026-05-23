@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Enums\GameType;
 use App\Events\PlayerLeftLobby;
@@ -16,9 +17,9 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 final class GameSessionController extends Controller
 {
@@ -115,7 +116,7 @@ final class GameSessionController extends Controller
 
         $this->authorize('closeRoom', $gameSession);
 
-        $gameSession->update(['status' => GameStatus::Abandoned]);
+        $this->gameSessionService->cancel($gameSession, GameEndReason::RoomClosed);
 
         $gameSession->players()->where('user_id', $user->id)->delete();
 

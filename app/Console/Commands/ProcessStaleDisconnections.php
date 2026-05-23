@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Models\GamePlayer;
 use App\Models\GameSession;
@@ -40,7 +41,7 @@ final class ProcessStaleDisconnections extends Command
                 $host = User::query()->find($session->host_user_id);
 
                 if ($host !== null) {
-                    $gameSessionService->abandonPendingRoomByHost($session, $host);
+                    $gameSessionService->abandonPendingRoomByHost($session, $host, GameEndReason::HostLeft);
                 }
             });
 

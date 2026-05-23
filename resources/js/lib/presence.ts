@@ -6,9 +6,8 @@ export function getCsrfToken(): string {
 async function postPresence(
     routeName: 'game.presence.connect' | 'game.presence.disconnect',
     sessionId: string,
-    userId: string,
 ): Promise<void> {
-    await fetch(route(routeName, [sessionId, userId]), {
+    await fetch(route(routeName, [sessionId]), {
         method: 'POST',
         credentials: 'same-origin',
         keepalive: true,
@@ -21,12 +20,12 @@ async function postPresence(
     });
 }
 
-export function postPresenceConnect(sessionId: string, userId: string): Promise<void> {
-    return postPresence('game.presence.connect', sessionId, userId);
+export function postPresenceConnect(sessionId: string): Promise<void> {
+    return postPresence('game.presence.connect', sessionId);
 }
 
-export function postPresenceDisconnect(sessionId: string, userId: string): Promise<void> {
-    return postPresence('game.presence.disconnect', sessionId, userId);
+export function postPresenceDisconnect(sessionId: string): Promise<void> {
+    return postPresence('game.presence.disconnect', sessionId);
 }
 
 type PresenceChannel = {
@@ -35,32 +34,45 @@ type PresenceChannel = {
     leaving: (callback: (user: { id: string }) => void) => PresenceChannel;
 };
 
-/** Wire presence join/leave callbacks on a game session channel. */
+/**
+ * Wire presence join/leave callbacks on a game session channel.
+ *
+ * Each client only ever reports its OWN presence to the server (self-only):
+ * we mark ourselves connected when we join and fire a keepalive disconnect
+ * beacon on tab close / navigation away. A peer's join/leave only updates the
+ * local UI optimistically — the authoritative peer state arrives via the
+ * broadcast `player.connection.changed` event.
+ *
+ * @returns a cleanup function to detach the unload listener and report our own disconnect.
+ */
 export function bindGamePresenceHandlers(
     channel: PresenceChannel,
     sessionId: string,
     currentUserId: string,
     onLocalConnectionChanged: (userId: string, isConnected: boolean) => void,
-): void {
-    const markConnected = (userId: string) => {
-        void postPresenceConnect(sessionId, userId).then(() => {
-            onLocalConnectionChanged(userId, true);
-        });
-    };
-
-    const markDisconnected = (userId: string) => {
-        void postPresenceDisconnect(sessionId, userId);
-    };
-
+): () => void {
     channel.here(() => {
-        markConnected(currentUserId);
+        void postPresenceConnect(sessionId).then(() => {
+            onLocalConnectionChanged(currentUserId, true);
+        });
     });
 
     channel.joining((user: { id: string }) => {
-        markConnected(user.id);
+        onLocalConnectionChanged(user.id, true);
     });
 
     channel.leaving((user: { id: string }) => {
-        markDisconnected(user.id);
+        onLocalConnectionChanged(user.id, false);
     });
+
+    const reportSelfDisconnect = () => {
+        void postPresenceDisconnect(sessionId);
+    };
+
+    window.addEventListener('pagehide', reportSelfDisconnect);
+
+    return () => {
+        window.removeEventListener('pagehide', reportSelfDisconnect);
+        reportSelfDisconnect();
+    };
 }

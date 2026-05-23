@@ -16,9 +16,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/session/{gameSession}/close-room', [GameSessionController::class, 'closeRoom'])->name('game.close-room');
         Route::post('/session/{gameSession}/move', [GameSessionController::class, 'move'])->name('game.move');
         Route::post('/session/{gameSession}/leave', [GameSessionController::class, 'leave'])->name('game.leave');
-        Route::post('/session/{gameSession}/players/{user}/connect', [PlayerConnectionController::class, 'connect'])
+        Route::post('/session/{gameSession}/connect', [PlayerConnectionController::class, 'connect'])
             ->name('game.presence.connect');
-        Route::post('/session/{gameSession}/players/{user}/disconnect', [PlayerConnectionController::class, 'disconnect'])
+        Route::post('/session/{gameSession}/disconnect', [PlayerConnectionController::class, 'disconnect'])
             ->name('game.presence.disconnect');
         Route::post('/session/{gameSession}/chat', ChatController::class);
     });

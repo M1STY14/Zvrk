@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
+use App\StateMachines\GameSessionStatusStateMachine;
+use App\Support\StateMachines\HasStateMachines;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -17,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string $host_user_id
  * @property-read string $name
  * @property-read GameStatus $status
+ * @property-read GameEndReason|null $end_reason
  * @property-read array|null $state
  * @property-read string|null $winner_user_id
  * @property-read int $max_players
@@ -34,16 +38,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Collection<int, GamePlayer> $players
  * @property-read Collection<int, Move> $moves
  * @property-read Collection<int, ChatMessage> $chatMessages
+ *
+ * @method GameSessionStatusStateMachine status()
  */
 final class GameSession extends Model
 {
-    use HasFactory, HasUlids;
+    use HasFactory, HasStateMachines, HasUlids;
+
+    public array $stateMachines = [
+        'status' => GameSessionStatusStateMachine::class,
+    ];
 
     protected $fillable = [
         'game_id',
         'host_user_id',
         'name',
         'status',
+        'end_reason',
         'state',
         'winner_user_id',
         'max_players',
@@ -58,6 +69,7 @@ final class GameSession extends Model
         return [
             'state' => 'array',
             'status' => GameStatus::class,
+            'end_reason' => GameEndReason::class,
             'is_private' => 'boolean',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
