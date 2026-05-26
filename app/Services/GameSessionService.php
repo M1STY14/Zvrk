@@ -3,19 +3,30 @@
 namespace App\Services;
 
 use App\Ai\TicTacToeBot;
+use App\Contracts\GameContract;
 use App\Data\GameResult;
+use App\Data\GameState;
+use App\Data\TicTacToeState;
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Events\GameEnded;
 use App\Events\GameStarted;
+use App\Events\LobbyRoomClosed;
 use App\Events\MoveMade;
+use App\Events\PlayerConnectionChanged;
 use App\Events\PlayerJoinedLobby;
 use App\Events\PlayerLeftLobby;
 use App\Games\TicTacToeEngine;
+use App\Jobs\ForfeitDisconnectedPlayerJob;
+use App\Models\GamePlayer;
 use App\Models\GameSession;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+use Throwable;
 
 final readonly class GameSessionService
 {
@@ -53,7 +64,7 @@ final readonly class GameSessionService
 
     private function ensureAiUser(): User
     {
-        return User::firstOrCreate([
+        return User::query()->firstOrCreate([
             'email' => TicTacToeBot::EMAIL,
         ], [
             'name' => TicTacToeBot::NAME,
@@ -90,6 +101,9 @@ final readonly class GameSessionService
 
     /**
      * @throws ValidationException
+     * @throws ModelNotFoundException
+     * @throws InvalidArgumentException
+     * @throws Throwable
      */
     public function applyMove(GameSession $session, User $user, array $moveDataArray): array
     {
@@ -123,11 +137,7 @@ final readonly class GameSessionService
             $gameResult = $engine->checkGameOver($newState);
 
             if ($gameResult instanceof GameResult) {
-                $session->update([
-                    'status' => GameStatus::Finished,
-                    'winner_user_id' => $gameResult->winner,
-                    'finished_at' => now(),
-                ]);
+                $this->finish($session, $gameResult->winner);
             }
 
             return [$stateArray, $moveNumber, $gameResult];
@@ -147,13 +157,16 @@ final readonly class GameSessionService
         ];
     }
 
+    /**
+     * @throws Throwable
+     */
     private function playBotTurnIfNeeded(GameSession $session, mixed $engine, array $stateArray, int $previousMoveNumber): array
     {
         if (! $engine instanceof TicTacToeEngine) {
             return [$stateArray, $previousMoveNumber, null];
         }
 
-        $botUser = User::where('email', TicTacToeBot::EMAIL)->first();
+        $botUser = User::query()->where('email', TicTacToeBot::EMAIL)->first();
 
         if ($botUser === null) {
             return [$stateArray, $previousMoveNumber, null];
@@ -166,6 +179,11 @@ final readonly class GameSessionService
         }
 
         $state = $engine->makeState($stateArray);
+
+        if (! $state instanceof TicTacToeState) {
+            return [$stateArray, $previousMoveNumber, null];
+        }
+
         $currentTurn = $engine->getCurrentTurn($state);
         $nextPlayerId = $stateArray['players'][$currentTurn] ?? null;
 
@@ -198,11 +216,7 @@ final readonly class GameSessionService
             $gameResult = $engine->checkGameOver($newState);
 
             if ($gameResult instanceof GameResult) {
-                $session->update([
-                    'status' => GameStatus::Finished,
-                    'winner_user_id' => $gameResult->winner,
-                    'finished_at' => now(),
-                ]);
+                $this->finish($session, $gameResult->winner);
             }
         });
 
@@ -211,11 +225,234 @@ final readonly class GameSessionService
         return [$stateArray, $moveNumber, $gameResult];
     }
 
+    public function markPlayerConnected(GameSession $session, User $user): void
+    {
+        $updated = $session->players()
+            ->where('user_id', $user->id)
+            ->where('is_connected', false)
+            ->update([
+                'is_connected' => true,
+                'disconnected_at' => null,
+            ]);
+
+        if ($updated === 0) {
+            return;
+        }
+
+        broadcast(new PlayerConnectionChanged(
+            sessionId: $session->id,
+            userId: $user->id,
+            isConnected: true,
+        ))->toOthers();
+    }
+
+    public function markPlayerDisconnected(GameSession $session, User $user): void
+    {
+        $updated = $session->players()
+            ->where('user_id', $user->id)
+            ->where('is_connected', true)
+            ->update([
+                'is_connected' => false,
+                'disconnected_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            return;
+        }
+
+        broadcast(new PlayerConnectionChanged(
+            sessionId: $session->id,
+            userId: $user->id,
+            isConnected: false,
+        ))->toOthers();
+
+        $session->refresh();
+
+        if ($session->status->is(GameStatus::Pending) && $session->host_user_id === $user->id) {
+            $this->abandonPendingRoomByHost($session, $user, GameEndReason::HostLeft);
+
+            return;
+        }
+
+        if ($session->status->is(GameStatus::Playing) && ! $this->isAiUser($user)) {
+            ForfeitDisconnectedPlayerJob::dispatch($session->id, $user->id)
+                ->delay(now()->addSeconds(60));
+        }
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function abandonPendingRoomByHost(GameSession $session, User $host, GameEndReason $reason): void
+    {
+        $session->loadMissing('game');
+
+        $abandoned = DB::transaction(function () use ($session, $host, $reason) {
+            $session = GameSession::query()->lockForUpdate()->find($session->id);
+
+            if ($session === null
+                || $session->status->isNot(GameStatus::Pending)
+                || $session->host_user_id !== $host->id) {
+                return false;
+            }
+
+            $session->players()->delete();
+            $this->cancel($session, $reason);
+
+            return true;
+        });
+
+        if (! $abandoned) {
+            return;
+        }
+
+        PlayerLeftLobby::dispatch($session->game->slug, $host->id, $host->name);
+
+        broadcast(new LobbyRoomClosed(
+            sessionId: $session->id,
+            gameSlug: $session->game->slug,
+        ));
+    }
+
+    /**
+     * Pending -> Canceled. The game never started; no winner.
+     * Operates on the given (already-locked) session instance.
+     */
+    public function cancel(GameSession $session, GameEndReason $reason): void
+    {
+        $session->update(['end_reason' => $reason]);
+        $session->status()->transitionTo(GameStatus::Canceled);
+    }
+
+    /**
+     * Playing -> Finished. A normal win or draw decided by the engine.
+     * Operates on the given (already-locked) session instance.
+     */
+    public function finish(GameSession $session, ?string $winnerUserId): void
+    {
+        $session->update([
+            'winner_user_id' => $winnerUserId,
+            'finished_at' => now()
+        ]);
+        $session->status()->transitionTo(GameStatus::Finished);
+    }
+
+    public function forfeitDueToDisconnect(GameSession $session, User $disconnectedUser): void
+    {
+        $session->loadMissing(['game', 'players']);
+
+        $player = $session->players->firstWhere('user_id', $disconnectedUser->id);
+
+        if ($player === null || $player->is_connected || $player->disconnected_at === null) {
+            return;
+        }
+
+        if ($player->disconnected_at->diffInSeconds(now()) < 60) {
+            return;
+        }
+
+        $this->forfeit($session, $disconnectedUser, GameEndReason::Disconnect);
+    }
+
+    /**
+     * Remove a player from an in-progress game.
+     *
+     * The game only ends when a single human player is left standing; with more
+     * players still in (e.g. a 4-player Ludo match) the game continues and the
+     * forfeiting player is simply skipped.
+     */
+    public function forfeit(GameSession $session, User $loser, GameEndReason $reason): void
+    {
+        $session->loadMissing('game');
+
+        $engine = $this->engineManager->resolve($session->game->slug);
+
+        $outcome = DB::transaction(function () use ($session, $loser, $reason, $engine) {
+            $session = GameSession::query()
+                ->lockForUpdate()
+                ->with(['players.user', 'game'])
+                ->find($session->id);
+
+            if ($session === null || $session->status->isNot(GameStatus::Playing)) {
+                return null;
+            }
+
+            $loserPlayer = $session->players->firstWhere('user_id', $loser->id);
+
+            if ($loserPlayer === null) {
+                return null;
+            }
+
+            $state = $engine->makeState($session->state);
+            $newState = $engine->forfeitPlayer($state, $loserPlayer->player_number);
+
+            $remainingHumans = collect($engine->activePlayerNumbers($newState))
+                ->map(fn (int $number): ?GamePlayer => $session->players->firstWhere('player_number', $number))
+                ->filter()
+                ->reject(fn (GamePlayer $player): bool => $this->isAiUser($player->user))
+                ->values();
+
+            if ($remainingHumans->count() > 1) {
+                $session->update(['state' => $newState->toArray()]);
+
+                return ['ended' => false, 'state' => $newState];
+            }
+
+            $winnerUserId = $remainingHumans->first()?->user_id;
+
+            $session->update([
+                'state' => $newState->toArray(),
+                'end_reason' => $reason,
+                'winner_user_id' => $winnerUserId,
+                'finished_at' => now()
+            ]);
+            $session->status()->transitionTo(GameStatus::Forfeited);
+
+            return ['ended' => true, 'state' => $newState, 'winnerUserId' => $winnerUserId];
+        });
+
+        if ($outcome === null) {
+            return;
+        }
+
+        if ($outcome['ended']) {
+            broadcast(new GameEnded(
+                sessionId: $session->id,
+                winner: $outcome['winnerUserId'],
+                draw: false,
+                state: $outcome['state'],
+                reason: $reason,
+            ));
+
+            return;
+        }
+
+        $this->broadcastForfeitContinues($session, $engine, $outcome['state'], $loser);
+    }
+
+    private function broadcastForfeitContinues(GameSession $session, GameContract $engine, GameState $state, User $loser): void
+    {
+        $stateArray = $state->toArray();
+        $nextPlayerId = $stateArray['players'][$engine->getCurrentTurn($state)] ?? null;
+
+        broadcast(new MoveMade(
+            sessionId: $session->id,
+            playerId: $loser->id,
+            nextPlayerId: $nextPlayerId,
+            state: $state,
+        ));
+    }
+
+    private function isAiUser(User $user): bool
+    {
+        return $user->email === TicTacToeBot::EMAIL;
+    }
+
     public function removePlayer(GameSession $session, User $user): void
     {
         if ($session->status->is(GameStatus::Playing)) {
-            $this->handleGameAbandonment($session);
-        } elseif ($session->status->is(GameStatus::Finished) || $session->status->is(GameStatus::Abandoned)) {
+            $this->forfeit($session, $user, GameEndReason::PlayerLeft);
+        } elseif ($session->status->isFinished()) {
             $this->removeAllPlayers($session);
         } elseif ($session->status->is(GameStatus::Pending)) {
             $this->handlePendingGameRemoval($session, $user);
@@ -249,34 +486,15 @@ final readonly class GameSessionService
         }
     }
 
-    private function handleGameAbandonment(GameSession $session): void
-    {
-        $engine = $this->engineManager->resolve($session->game->slug);
-        $state = $engine->makeState($session->state);
-
-        $session->players()->delete();
-
-        $session->update([
-            'status' => GameStatus::Abandoned,
-            'finished_at' => now(),
-        ]);
-
-        broadcast(new GameEnded(
-            sessionId: $session->id,
-            winner: null,
-            draw: false,
-            state: $state,
-        ));
-    }
-
     private function handlePendingGameRemoval(GameSession $session, User $user): void
     {
         if ($session->host_user_id === $user->id) {
-            $session->players()->delete();
-            $session->update(['status' => GameStatus::Abandoned]);
-        } else {
-            $session->players()->where('user_id', $user->id)->delete();
+            $this->abandonPendingRoomByHost($session, $user, GameEndReason::RoomClosed);
+
+            return;
         }
+
+        $session->players()->where('user_id', $user->id)->delete();
 
         PlayerLeftLobby::dispatch($session->game->slug, $user->id, $user->name);
     }

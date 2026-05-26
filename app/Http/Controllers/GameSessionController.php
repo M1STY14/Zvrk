@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
+use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Enums\GameType;
 use App\Events\PlayerLeftLobby;
@@ -11,12 +12,14 @@ use App\Models\User;
 use App\Services\GameSessionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 final class GameSessionController extends Controller
 {
@@ -48,6 +51,7 @@ final class GameSessionController extends Controller
                         'id' => $player->id,
                         'user_id' => $player->user_id,
                         'player_number' => $player->player_number,
+                        'is_connected' => $player->is_connected,
                         'user' => [
                             'id' => $player->user->id,
                             'name' => $player->user->name,
@@ -112,7 +116,7 @@ final class GameSessionController extends Controller
 
         $this->authorize('closeRoom', $gameSession);
 
-        $gameSession->update(['status' => GameStatus::Abandoned]);
+        $this->gameSessionService->cancel($gameSession, GameEndReason::RoomClosed);
 
         $gameSession->players()->where('user_id', $user->id)->delete();
 
@@ -123,6 +127,8 @@ final class GameSessionController extends Controller
 
     /**
      * @throws ValidationException
+     * @throws ModelNotFoundException
+     * @throws InvalidArgumentException
      */
     public function move(MakeMoveRequest $makeMoveRequest, GameSession $gameSession, #[CurrentUser] User $user): JsonResponse
     {

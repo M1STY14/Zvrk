@@ -1,39 +1,21 @@
 import GameOverModal from '@/Components/Game/GameOverModal';
+import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBanner';
 import PlayerInfo from '@/Components/Game/PlayerInfo';
 import TurnIndicator from '@/Components/Game/TurnIndicator';
 import GameBoardWrapper from '@/GameBoards/GameBoardWrapper';
 import { TicTacToeState } from '@/GameBoards/TicTacToeBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import { useGameState } from '@/hooks/useGameState';
+import { isPlayerConnected } from '@/lib/playerConnection';
+import type { GameSessionBase } from '@/types/gameSession';
 import { PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 const MARKS: Record<number, string> = { 1: '❌', 2: '⭕' };
 
-type SessionPlayer = {
-    id: string;
-    user_id: string;
-    player_number: number;
-    user: {
-        id: string;
-        name: string;
-    };
-};
-
-type SessionGame = {
-    slug: string;
-    name: string;
-};
-
-type SessionProp = {
-    id: string;
-    name: string;
-    is_finished: boolean;
-    game: SessionGame;
+type SessionProp = GameSessionBase & {
     state: TicTacToeState | null;
-    players: SessionPlayer[];
-    winner_user_id: string | null;
 };
 
 type Props = PageProps<{ session: SessionProp }>;
@@ -43,6 +25,7 @@ function getCsrfToken(): string {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
+/** Default in-game page for board games (tic-tac-toe, checkers, four-in-a-row, …). */
 export default function Play({ auth, session }: Props) {
     const initialBoard = session.state?.board ?? [
         [0, 0, 0],
@@ -76,12 +59,36 @@ export default function Play({ auth, session }: Props) {
 
     const [showGameOver, setShowGameOver] = useState(isFinished);
 
+    const currentUserId = auth.user.id;
+
     const playerNames = useMemo(() => {
         return session.players.reduce<Record<string, string>>((acc, player) => {
             acc[player.user.id] = player.user.name;
             return acc;
         }, {});
     }, [session.players]);
+
+    const {
+        disconnectedUserIds,
+        showOpponentDisconnectedBanner,
+        usePluralDisconnectMessage,
+    } = useGameChannel<TicTacToeState>(
+        session.id,
+        { players: session.players, currentUserId, gameOver: state.gameOver },
+        {
+            onMoveMade: (event) => {
+                applyServerBoard(event.state.board, event.nextPlayerId);
+            },
+            onGameEnded: (event) => {
+                const winnerName = event.winner ? playerNames[event.winner] ?? null : null;
+                applyGameEnd(winnerName, event.draw, event.state.board);
+                setShowGameOver(true);
+            },
+            onGameStarted: (event) => {
+                applyServerBoard(event.state.board, event.startingPlayerId);
+            },
+        },
+    );
 
     const displayPlayers = useMemo(
         () =>
@@ -92,30 +99,16 @@ export default function Play({ auth, session }: Props) {
                     name: p.user.name,
                     player_number: p.player_number,
                     mark: MARKS[p.player_number] ?? '',
+                    isConnected: isPlayerConnected(disconnectedUserIds, p.user.id),
                 })),
-        [session.players],
+        [session.players, disconnectedUserIds],
     );
 
-    const currentUserId = auth.user.id;
     const currentUserNumber = getPlayerNumber(currentUserId);
     const isYourTurn = !state.gameOver && state.currentPlayerId === currentUserId;
     const currentMark = state.currentPlayerId
         ? MARKS[getPlayerNumber(state.currentPlayerId) ?? 0] ?? ''
         : '';
-
-    useGameChannel<TicTacToeState>(session.id, {
-        onMoveMade: (event) => {
-            applyServerBoard(event.state.board, event.nextPlayerId);
-        },
-        onGameEnded: (event) => {
-            const winnerName = event.winner ? playerNames[event.winner] ?? null : null;
-            applyGameEnd(winnerName, event.draw, event.state.board);
-            setShowGameOver(true);
-        },
-        onGameStarted: (event) => {
-            applyServerBoard(event.state.board, event.startingPlayerId);
-        },
-    });
 
     const handleMove = async (row: number, col: number) => {
         if (!isYourTurn || currentUserNumber === null) return;
@@ -160,7 +153,7 @@ export default function Play({ auth, session }: Props) {
                 applyGameEnd(winnerName, data.result.draw, data.state.board);
                 setShowGameOver(true);
             }
-        } catch (error) {
+        } catch {
             revertOptimisticMove();
         }
     };
@@ -200,6 +193,11 @@ export default function Play({ auth, session }: Props) {
                     </div>
 
                     <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                        <OpponentDisconnectedBanner
+                            show={showOpponentDisconnectedBanner}
+                            multiple={usePluralDisconnectMessage}
+                        />
+
                         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <TurnIndicator
                                 currentPlayerId={state.currentPlayerId}

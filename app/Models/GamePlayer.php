@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read string $user_id
  * @property-read int $player_number
  * @property-read bool $is_connected
+ * @property-read Carbon|null $disconnected_at
  * @property-read Carbon $joined_at
  *
  * Relationships
@@ -30,6 +31,7 @@ final class GamePlayer extends Model
         'user_id',
         'player_number',
         'is_connected',
+        'disconnected_at',
         'joined_at',
     ];
 
@@ -37,6 +39,7 @@ final class GamePlayer extends Model
     {
         return [
             'is_connected' => 'boolean',
+            'disconnected_at' => 'datetime',
             'joined_at' => 'datetime',
         ];
     }

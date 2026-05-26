@@ -1,29 +1,14 @@
 import GameOverModal from '@/Components/Game/GameOverModal';
+import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBanner';
 import GameBoardWrapper from '@/GameBoards/GameBoardWrapper';
 import { useGameChannel } from '@/hooks/useGameChannel';
+import type { GameSessionBase } from '@/types/gameSession';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { LudoState } from '@/GameBoards/LudoBoard';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type SessionPlayer = {
-    id: string;
-    user_id: string;
-    player_number: number;
-    user: { id: string; name: string };
-};
-
-type SessionGame = { slug: string; name: string };
-
-type SessionProp = {
-    id: string;
-    name: string;
-    is_finished: boolean;
-    game: SessionGame;
+type SessionProp = GameSessionBase & {
     state: LudoState | null;
-    players: SessionPlayer[];
-    winner_user_id: string | null;
 };
 
 type Props = {
@@ -103,22 +88,26 @@ export default function LudoPlay({ auth, session }: Props) {
         playerNumber !== null &&
         ludoState.currentTurn === playerNumber;
 
-    // Real-time updates from other players via WebSocket
-    useGameChannel<LudoState>(session.id, {
-        onMoveMade: (event) => {
-            setLudoState(event.state);
-        },
-        onGameEnded: (event) => {
-            const winnerName = event.winner ? playerNames[event.winner] ?? null : null;
-            setWinner(winnerName);
-            setGameOver(true);
-            setShowGameOver(true);
-            setLudoState(event.state);
-        },
-        onGameStarted: (event) => {
-            setLudoState(event.state);
-        },
-    });
+    const { isPlayerDisconnected, showOpponentDisconnectedBanner, usePluralDisconnectMessage } =
+        useGameChannel<LudoState>(
+            session.id,
+            { players: session.players, currentUserId: auth.user.id, gameOver },
+            {
+                onMoveMade: (event) => {
+                    setLudoState(event.state);
+                },
+                onGameEnded: (event) => {
+                    const winnerName = event.winner ? playerNames[event.winner] ?? null : null;
+                    setWinner(winnerName);
+                    setGameOver(true);
+                    setShowGameOver(true);
+                    setLudoState(event.state);
+                },
+                onGameStarted: (event) => {
+                    setLudoState(event.state);
+                },
+            },
+        );
 
     // Handle a move response from the server
     type MoveResponse = {
@@ -272,6 +261,11 @@ export default function LudoPlay({ auth, session }: Props) {
                     )}
 
                     {/* Board + player avatars */}
+                    <OpponentDisconnectedBanner
+                        show={showOpponentDisconnectedBanner}
+                        multiple={usePluralDisconnectMessage}
+                    />
+
                     <style>{`
                         @keyframes avatarPulse {
                             0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0.3); }
@@ -286,6 +280,7 @@ export default function LudoPlay({ auth, session }: Props) {
                                 const pc = PLAYER_COLORS[p.player_number];
                                 const isActive = p.player_number === currentTurn;
                                 const isMe = p.user.id === auth.user.id;
+                                const disconnected = isPlayerDisconnected(p.user.id);
                                 const initials = p.user.name.slice(0, 2).toUpperCase();
 
                                 const corner: Record<number, React.CSSProperties> = {
@@ -310,14 +305,20 @@ export default function LudoPlay({ auth, session }: Props) {
                                         alignItems: 'center', justifyContent: 'center',
                                         color: 'white', fontWeight: 700, fontSize: 13,
                                         zIndex: 30,
-                                        animation: isActive ? 'avatarPulse 1s ease-in-out infinite' : 'none',
-                                        transition: 'box-shadow 0.3s',
+                                        opacity: disconnected ? 0.45 : 1,
+                                        animation: isActive && !disconnected ? 'avatarPulse 1s ease-in-out infinite' : 'none',
+                                        transition: 'box-shadow 0.3s, opacity 0.3s',
                                         cursor: 'default',
                                         userSelect: 'none',
                                     }}
-                                    title={p.user.name}>
+                                    title={disconnected ? `${p.user.name} (odspojen)` : p.user.name}>
                                         <span>{initials}</span>
                                         {isMe && <span style={{ fontSize: 8, opacity: 0.85, lineHeight: 1 }}>ti</span>}
+                                        {disconnected && (
+                                            <span style={{ fontSize: 7, fontWeight: 800, lineHeight: 1, marginTop: 1 }}>
+                                                OFF
+                                            </span>
+                                        )}
                                     </div>
                                 );
                             })}

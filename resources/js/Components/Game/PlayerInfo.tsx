@@ -1,8 +1,11 @@
+import PlayerConnectionBadge from '@/Components/Game/PlayerConnectionBadge';
+
 type Player = {
     id: string;
     name: string;
     player_number: number;
     mark: string;
+    isConnected?: boolean;
 };
 
 type Props = {
@@ -17,17 +20,21 @@ export default function PlayerInfo({ players, currentPlayerId }: Props) {
             <div className="mt-4 space-y-2 text-slate-700">
                 {players.map((player) => {
                     const isActive = player.id === currentPlayerId;
+                    const isDisconnected = player.isConnected === false;
                     return (
                         <p
                             key={player.id}
-                            className={`flex items-center justify-between rounded-2xl px-3 py-2 font-semibold transition ${
+                            className={`flex items-center justify-between gap-2 rounded-2xl px-3 py-2 font-semibold transition ${
                                 isActive ? 'bg-white text-slate-900 shadow-sm' : ''
-                            }`}
+                            } ${isDisconnected ? 'opacity-60' : ''}`}
                         >
-                            <span>
-                                {player.mark} {player.name}
+                            <span className="flex min-w-0 items-center gap-2">
+                                <span className="truncate">
+                                    {player.mark} {player.name}
+                                </span>
+                                {isDisconnected && <PlayerConnectionBadge />}
                             </span>
-                            <span className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                            <span className="shrink-0 text-xs uppercase tracking-[0.2em] text-slate-500">
                                 Igrač {player.player_number}
                             </span>
                         </p>

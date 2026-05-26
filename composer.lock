@@ -4,8 +4,68 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fd138718de020777e105c40c7f806dd6",
+    "content-hash": "beded0e3cbca254e35528f6844154843",
     "packages": [
+        {
+            "name": "asantibanez/laravel-eloquent-state-machines",
+            "version": "v6.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/asantibanez/laravel-eloquent-state-machines.git",
+                "reference": "34fb8857de4a4f8711e5141aadac2a10d26c2631"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/asantibanez/laravel-eloquent-state-machines/zipball/34fb8857de4a4f8711e5141aadac2a10d26c2631",
+                "reference": "34fb8857de4a4f8711e5141aadac2a10d26c2631",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "javoscript/laravel-macroable-models": "^1.0",
+                "php": "^7.3|^7.4|^8.0"
+            },
+            "require-dev": {
+                "laravel/legacy-factories": "^1.0.4",
+                "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0|^9.0|^10.0",
+                "phpunit/phpunit": "^8.0|^9.0|^10.5|^11.5.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Asantibanez\\LaravelEloquentStateMachines\\LaravelEloquentStateMachinesServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Asantibanez\\LaravelEloquentStateMachines\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrés Santibáñez",
+                    "email": "santibanez.andres@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "State machines for your Laravel Eloquent models",
+            "homepage": "https://github.com/asantibanez/laravel-eloquent-state-machines",
+            "keywords": [
+                "asantibanez",
+                "laravel-eloquent-state-machines"
+            ],
+            "support": {
+                "issues": "https://github.com/asantibanez/laravel-eloquent-state-machines/issues",
+                "source": "https://github.com/asantibanez/laravel-eloquent-state-machines/tree/v6.1.0"
+            },
+            "time": "2025-08-15T14:11:31+00:00"
+        },
         {
             "name": "brick/math",
             "version": "0.14.8",
@@ -1350,6 +1410,57 @@
                 "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.22"
             },
             "time": "2026-03-11T15:51:16+00:00"
+        },
+        {
+            "name": "javoscript/laravel-macroable-models",
+            "version": "1.0.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/javoscript/laravel-macroable-models.git",
+                "reference": "95edd3ae7e567bd940f9fdbdacd262d162a443b2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/javoscript/laravel-macroable-models/zipball/95edd3ae7e567bd940f9fdbdacd262d162a443b2",
+                "reference": "95edd3ae7e567bd940f9fdbdacd262d162a443b2",
+                "shasum": ""
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8",
+                "phpunit/phpunit": "^10"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "MacroableModels": "Javoscript\\MacroableModels\\Facades\\MacroableModels"
+                    },
+                    "providers": [
+                        "Javoscript\\MacroableModels\\MacroableModelsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Javoscript\\MacroableModels\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Javier Ugarte",
+                    "email": "javougarte@gmail.com"
+                }
+            ],
+            "description": "A package for adding methods to Laravel models on the fly",
+            "support": {
+                "issues": "https://github.com/javoscript/laravel-macroable-models/issues",
+                "source": "https://github.com/javoscript/laravel-macroable-models/tree/1.0.7"
+            },
+            "time": "2024-10-21T10:34:15+00:00"
         },
         {
             "name": "laravel/framework",
@@ -10276,5 +10387,5 @@
         "php": "^8.2"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }

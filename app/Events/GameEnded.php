@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Data\GameState;
+use App\Enums\GameEndReason;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -21,12 +22,20 @@ final class GameEnded implements ShouldBroadcast
 
     public array $state;
 
-    public function __construct(string $sessionId, ?string $winner, bool $draw, GameState $state)
-    {
+    public ?GameEndReason $reason;
+
+    public function __construct(
+        string $sessionId,
+        ?string $winner,
+        bool $draw,
+        GameState $state,
+        ?GameEndReason $reason = null,
+    ) {
         $this->sessionId = $sessionId;
         $this->winner = $winner;
         $this->draw = $draw;
         $this->state = $state->toArray();
+        $this->reason = $reason;
     }
 
     public function broadcastOn(): PresenceChannel
@@ -46,6 +55,7 @@ final class GameEnded implements ShouldBroadcast
             'winner' => $this->winner,
             'draw' => $this->draw,
             'state' => $this->state,
+            'reason' => $this->reason?->value,
         ];
     }
 }

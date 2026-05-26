@@ -859,4 +859,81 @@ class LudoEngineTest extends TestCase
         $this->assertSame($this->players->get(1), $result->winner);
         $this->assertFalse($result->draw);
     }
+
+    public function test_forfeit_player_sends_tokens_home_and_advances_off_their_turn(): void
+    {
+        $engine = new LudoEngine;
+        $state = $this->makeState(
+            tokens: [1 => [5, 10, -1, -1], 2 => [3, -1, -1, -1], 3 => [-1, -1, -1, -1]],
+            currentTurn: 1,
+            players: collect([
+                1 => $this->players->get(1),
+                2 => $this->players->get(2),
+                3 => $this->players->get(3),
+            ]),
+        );
+
+        /** @var LudoState $newState */
+        $newState = $engine->forfeitPlayer($state, 1);
+
+        $this->assertSame([-1, -1, -1, -1], $newState->tokens[1], 'Forfeited tokens are sent home.');
+        $this->assertContains(1, $newState->forfeited);
+        $this->assertSame(2, $newState->currentTurn, 'Turn advances off the forfeiting player.');
+    }
+
+    public function test_forfeit_player_keeps_current_turn_when_not_theirs(): void
+    {
+        $engine = new LudoEngine;
+        $state = $this->makeState(
+            tokens: $this->homeTokens(3),
+            currentTurn: 2,
+            players: collect([
+                1 => $this->players->get(1),
+                2 => $this->players->get(2),
+                3 => $this->players->get(3),
+            ]),
+        );
+
+        /** @var LudoState $newState */
+        $newState = $engine->forfeitPlayer($state, 1);
+
+        $this->assertSame(2, $newState->currentTurn);
+        $this->assertContains(1, $newState->forfeited);
+    }
+
+    public function test_next_player_skips_forfeited_players(): void
+    {
+        // P2 has forfeited; rolling a non-spendable value from P1 should pass to P3, not P2.
+        $engine = $this->engineWithDice([1, 2]);
+        $state = new LudoState(
+            tokens: $this->homeTokens(3),
+            currentTurn: 1,
+            pendingDice: [],
+            phase: LudoPhase::Roll,
+            consecutiveDoubles: 0,
+            players: collect([
+                1 => $this->players->get(1),
+                2 => $this->players->get(2),
+                3 => $this->players->get(3),
+            ]),
+            forfeited: [2],
+        );
+
+        /** @var LudoState $newState */
+        $newState = $engine->applyMove($state, 1, $this->rollMove());
+
+        $this->assertSame(3, $newState->currentTurn);
+    }
+
+    public function test_active_player_numbers_excludes_forfeited(): void
+    {
+        $engine = new LudoEngine;
+
+        $state = $engine->forfeitPlayer(
+            $this->makeState($this->homeTokens(4), players: $this->players),
+            2,
+        );
+
+        $this->assertSame([1, 3, 4], $engine->activePlayerNumbers($state));
+    }
 }

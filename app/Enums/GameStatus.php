@@ -14,10 +14,13 @@ enum GameStatus: string
     case Pending = 'pending';
     case Playing = 'playing';
     case Finished = 'finished';
-    case Abandoned = 'abandoned';
+    case Canceled = 'canceled';
+    case Forfeited = 'forfeited';
 
     public function isFinished(): bool
     {
-        return $this->is(GameStatus::Finished) || $this->is(GameStatus::Abandoned);
+        return $this->is(GameStatus::Finished)
+            || $this->is(GameStatus::Canceled)
+            || $this->is(GameStatus::Forfeited);
     }
 }
