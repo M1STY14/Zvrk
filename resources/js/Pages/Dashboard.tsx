@@ -105,11 +105,6 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <div className="border-t border-gray-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-gray-700">👥 Players: 2v2</p>
                                 </div>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
-                                        COMING SOON
-                                    </span>
-                                </div>
                             </div>
 
                             {/* 4 in a Row */}
