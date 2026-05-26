@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\GameType;
+use App\Games\Checkers\CheckersEngine;
 use App\Games\Ludo\LudoEngine;
 use App\Games\TicTacToeEngine;
 use App\Services\GameEngineManager;
@@ -32,5 +33,6 @@ class AppServiceProvider extends ServiceProvider
         $manager = $this->app->make(GameEngineManager::class);
         $manager->register(GameType::TicTacToe->value, TicTacToeEngine::class);
         $manager->register(GameType::Ludo->value, LudoEngine::class);
+        $manager->register(GameType::Checkers->value, CheckersEngine::class);
     }
 }
