@@ -242,8 +242,7 @@ export default function CheckersPlay({ auth, session }: Props) {
                         return (
                             <div className="flex gap-1 mb-3 justify-center flex-wrap">
                                 {Array.from({ length: lostByMe }).map((_, i) => (
-                                    <img key={i} src={mySrc} width={44} height={44} style={{ 
-                                        opacity: 0.55, filter: 'grayscale(0.3)' 
+                                    <img key={i} src={mySrc} width={50} height={50} style={{ opacity: 0.85, filter: 'grayscale(0.3)' 
                                     }} />
                                 ))}
                             </div>
@@ -272,7 +271,7 @@ export default function CheckersPlay({ auth, session }: Props) {
                         return (
                             <div className="flex gap-1 mt-12 justify-center flex-wrap">
                                 {Array.from({ length: capturedByMe }).map((_, i) => (
-                                    <img key={i} src={oppSrc} width={44} height={44} style={{ opacity: 0.75,
+                                    <img key={i} src={oppSrc} width={50} height={50} style={{ opacity: 0.85,
                                             animation: i === newlyCapturedIdx ? 'capturePopIn 0.5s cubic-bezier(0.22,0.61,0.36,1) forwards' : undefined,
                                         }}
                                     />
@@ -282,7 +281,7 @@ export default function CheckersPlay({ auth, session }: Props) {
                     })()}
 
                     {/* Players */}
-                    <div className="mt-6 flex gap-4 justify-center">
+                    {/* <div className="mt-12 flex gap-4 justify-center">
                         {session.players.map((p) => {
                             const pc = PLAYER_COLORS[p.player_number];
                             const isActive = checkersState.currentTurn === p.player_number;
@@ -303,7 +302,7 @@ export default function CheckersPlay({ auth, session }: Props) {
                                 </div>
                             );
                         })}
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
