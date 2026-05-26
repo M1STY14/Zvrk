@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type CheckersState = {
     board: number[][];
@@ -194,11 +194,11 @@ export default function CheckersBoard({ board, isYourTurn, disabled, playerNumbe
     // Flip board so current player's pieces are always at the bottom
     const flip = player === 2;
 
-    function toDisplay(row: number, col: number): { dRow: number; dCol: number } {
+    const toDisplay = useCallback((row: number, col: number): { dRow: number; dCol: number } => {
         return flip
             ? { dRow: BOARD_SIZE - 1 - row, dCol: BOARD_SIZE - 1 - col }
             : { dRow: row, dCol: col };
-    }
+    }, [flip]);
 
     function fromDisplay(dRow: number, dCol: number): Square {
         return flip
@@ -247,15 +247,17 @@ export default function CheckersBoard({ board, isYourTurn, disabled, playerNumbe
                 }
             }
             if (newParticles.length > 0) {
-                setSmokeParticles(prev => [...prev, ...newParticles]);
                 const ids = newParticles.map(p => p.id);
                 setTimeout(() => {
-                    setSmokeParticles(prev => prev.filter(p => !ids.includes(p.id)));
-                }, 1400);
+                    setSmokeParticles(prev => [...prev, ...newParticles]);
+                    setTimeout(() => {
+                        setSmokeParticles(prev => prev.filter(p => !ids.includes(p.id)));
+                    }, 1400);
+                }, 0);
             }
         }
         prevBoardRef.current = board.map(r => [...r]);
-    }, [board]);
+    }, [board, toDisplay]);
 
     function handleSquareClick(dRow: number, dCol: number) {
         if (!isYourTurn || disabled) return;

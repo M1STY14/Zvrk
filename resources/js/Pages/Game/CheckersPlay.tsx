@@ -93,7 +93,7 @@ export default function CheckersPlay({ auth, session }: Props) {
             setTimeout(() => setNewlyCapturedIdx(null), 700);
         }
         prevCapturedRef.current = captured;
-    }, [checkersState]);
+    }, [checkersState, playerNumber]);
 
     const isYourTurn =
         !gameOver &&
