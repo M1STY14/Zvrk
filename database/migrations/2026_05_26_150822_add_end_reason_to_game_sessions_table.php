@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('game_sessions', function (Blueprint $table) {
-            $table->string('end_reason')->nullable()->after('winner_user_id');
+            if (!Schema::hasColumn('game_sessions', 'end_reason')) {
+                $table->string('end_reason')->nullable()->after('winner_user_id');
+            }
         });
     }
 
