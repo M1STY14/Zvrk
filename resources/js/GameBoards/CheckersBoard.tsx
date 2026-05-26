@@ -317,9 +317,13 @@ export default function CheckersBoard({ board, isYourTurn, disabled, playerNumbe
                                 const isDest = destSet.has(`${row},${col}`);
                                 const isEmpty = piece === 0;
 
+                                const selectedPiece = selected ? (board[selected.row]?.[selected.col] ?? 0) : 0;
+                                const selectedPlayer = (selectedPiece === 1 || selectedPiece === 3) ? 1 : 2;
+                                const validMoveColor = selectedPlayer === 1 ? 'rgba(255,29,37,0.38)' : 'rgba(63,169,245,0.38)';
+
                                 let bg = isDark ? COLORS.dark : COLORS.light;
-                                if (isSelected) bg = COLORS.selected;
-                                else if (isDest && isDark) bg = COLORS.validMove;
+                                if (isSelected) bg = selectedPlayer === 1 ? 'rgba(255,29,37,0.55)' : 'rgba(63,169,245,0.55)';
+                                else if (isDest && isDark) bg = validMoveColor;
 
                                 return (
                                     <div
@@ -379,7 +383,7 @@ export default function CheckersBoard({ board, isYourTurn, disabled, playerNumbe
                                                 transition: 'transform 0.15s',
                                                 transform: isSelected ? 'scale(1.1) translateY(-4px)' : 'scale(1) translateY(0)',
                                                 filter: isSelected
-                                                    ? 'drop-shadow(0 0 6px rgba(255,255,100,0.8)) drop-shadow(0 4px 6px rgba(0,0,0,0.5))'
+                                                    ? `drop-shadow(0 0 6px ${isOwned(piece, 1) ? 'rgba(255,29,37,0.9)' : 'rgba(63,169,245,0.9)'}) drop-shadow(0 4px 6px rgba(0,0,0,0.5))`
                                                     : 'drop-shadow(0 4px 6px rgba(0,0,0,0.4))',
                                                 marginTop: -6,
                                             }}>
