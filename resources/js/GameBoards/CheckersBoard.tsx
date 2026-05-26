@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type CheckersState = {
     board: number[][];
     currentTurn: number;
@@ -26,8 +24,6 @@ type SmokeParticle = {
     color: string;
 };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const CELL = 72; // px
 const BOARD_SIZE = 8;
 
@@ -42,8 +38,6 @@ const COLORS = {
     p1King: { bg: '#ff1d25', border: '#b71c1c', crown: '#ffd700' },
     p2King: { bg: '#3fa9f5', border: '#1976d2', crown: '#ffd700' },
 };
-
-// ─── Engine helpers (client-side move computation) ────────────────────────────
 
 function isKing(piece: number): boolean {
     return piece === 3 || piece === 4;
@@ -157,14 +151,12 @@ function validDestinations(board: number[][], fromRow: number, fromCol: number, 
     return results;
 }
 
-// ─── Piece SVG ────────────────────────────────────────────────────────────────
-
 function Piece({ piece, size = 56 }: { piece: number; size?: number }) {
     const king = isKing(piece);
     const isP1 = piece === 1 || piece === 3;
     const src = isP1
-        ? '/images/about_us_team_profiles/team_profile_Fran.svg'
-        : '/images/about_us_team_profiles/team_profile_Leo.svg';
+        ? '/images/checkers_game_props/checkers_buds_red.svg'
+        : '/images/checkers_game_props/checkers_buds_blue.svg';
 
     return (
         <div style={{ position: 'relative', width: size, height: size }}>
@@ -188,8 +180,6 @@ function Piece({ piece, size = 56 }: { piece: number; size?: number }) {
         </div>
     );
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 let smokeIdCounter = 0;
 
@@ -315,7 +305,7 @@ export default function CheckersBoard({ board, isYourTurn, disabled, playerNumbe
                 }
             `}</style>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <div style={{ position: 'relative', width: boardPx, height: boardPx, borderRadius: 4, overflow: 'visible', boxShadow: '0 24px 48px rgba(0,0,0,0.35)', transform: 'perspective(900px) rotateX(25deg)' }}>
+                <div style={{ position: 'relative', width: boardPx, height: boardPx, borderRadius: 4, overflow: 'visible', boxShadow: '0 24px 48px rgba(0,0,0,0.35)', transform: 'perspective(1200px) rotateX(12deg)' }}>
                     {/* Background squares — clipped so colors don't bleed outside rounded corners */}
                     <div style={{ position: 'absolute', inset: 0, borderRadius: 4, overflow: 'hidden', zIndex: 1, pointerEvents: 'none' }}>
                         {Array.from({ length: BOARD_SIZE }, (_, dRow) =>
@@ -402,7 +392,7 @@ export default function CheckersBoard({ board, isYourTurn, disabled, playerNumbe
                         )}
                     </div>
 
-                    {/* Board corner overlay — same as Ludo */}
+                    {/* Board corner — same as Ludo */}
                     <img
                         src="/images/ludo_game_props/ludo_board_corner.svg"
                         alt=""

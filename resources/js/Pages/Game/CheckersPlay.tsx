@@ -2,9 +2,7 @@ import GameOverModal from '@/Components/Game/GameOverModal';
 import CheckersBoard, { CheckersState } from '@/GameBoards/CheckersBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import { Head, Link, router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type SessionPlayer = {
     id: string;
@@ -37,8 +35,6 @@ type MoveResponse = {
     result: { winner: string | null; draw: boolean } | null;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function getCsrfToken(): string {
     const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
     return match ? decodeURIComponent(match[1]) : '';
@@ -59,8 +55,6 @@ async function postMove(sessionId: string, moveData: Record<string, unknown>): P
         body: JSON.stringify({ move_data: moveData }),
     });
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CheckersPlay({ auth, session }: Props) {
     const isFinished = session.is_finished;
@@ -85,6 +79,21 @@ export default function CheckersPlay({ auth, session }: Props) {
 
     const myPlayer = session.players.find((p) => p.user.id === auth.user.id);
     const playerNumber = myPlayer?.player_number ?? null;
+
+    const prevCapturedRef = useRef<number>(0);
+    const [newlyCapturedIdx, setNewlyCapturedIdx] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (!checkersState || !playerNumber) return;
+        const oppNumber = playerNumber === 1 ? 2 : 1;
+        const oppRemaining = checkersState.board.flat().filter(v => v === oppNumber || v === oppNumber + 2).length;
+        const captured = 12 - oppRemaining;
+        if (captured > prevCapturedRef.current) {
+            setNewlyCapturedIdx(captured - 1);
+            setTimeout(() => setNewlyCapturedIdx(null), 700);
+        }
+        prevCapturedRef.current = captured;
+    }, [checkersState]);
 
     const isYourTurn =
         !gameOver &&
@@ -159,6 +168,13 @@ export default function CheckersPlay({ auth, session }: Props) {
 
     return (
         <>
+            <style>{`
+                @keyframes capturePopIn {
+                    0%   { opacity: 0; transform: scale(0.2) translateY(10px); }
+                    60%  { opacity: 1; transform: scale(1.2) translateY(-4px); }
+                    100% { opacity: 1; transform: scale(1) translateY(0); }
+                }
+            `}</style>
             <Head title={`${session.game.name} — ${session.name}`} />
 
             <div
@@ -196,7 +212,7 @@ export default function CheckersPlay({ auth, session }: Props) {
                     </div>
 
                     {/* Turn indicator */}
-                    <div className="flex items-center gap-3 mb-6 mt-4">
+                    <div className="flex items-center gap-3 mb-3 mt-4">
                         <div
                             style={{ background: currentTurnColor.bg }}
                             className="w-4 h-4 rounded-full"
@@ -214,6 +230,26 @@ export default function CheckersPlay({ auth, session }: Props) {
                         )}
                     </div>
 
+                    {/* Opponent's captured pieces (my pieces that the opponent has captured) — above the board */}
+                    {playerNumber && (() => {
+                        const myPieceVal1 = playerNumber;
+                        const myPieceVal2 = playerNumber + 2;
+                        const mySrc = playerNumber === 1 ? '/images/checkers_game_props/checkers_buds_red.svg' : '/images/checkers_game_props/checkers_buds_blue.svg';
+                        const myRemaining = checkersState.board.flat().filter(v => v === myPieceVal1 || v === myPieceVal2).length;
+                        const lostByMe = 12 - myRemaining;
+                        if (lostByMe === 0) return null;
+
+                        return (
+                            <div className="flex gap-1 mb-3 justify-center flex-wrap">
+                                {Array.from({ length: lostByMe }).map((_, i) => (
+                                    <img key={i} src={mySrc} width={44} height={44} style={{ 
+                                        opacity: 0.55, filter: 'grayscale(0.3)' 
+                                    }} />
+                                ))}
+                            </div>
+                        );
+                    })()}
+
                     {/* Board */}
                     <CheckersBoard
                         board={checkersState.board}
@@ -223,8 +259,30 @@ export default function CheckersPlay({ auth, session }: Props) {
                         onMove={handleMove}
                     />
 
+                    {/* My captured pieces (opponent's pieces I've captured) — below board */}
+                    {playerNumber && (() => {
+                        const oppNumber = playerNumber === 1 ? 2 : 1;
+                        const oppPieceVal1 = oppNumber;
+                        const oppPieceVal2 = oppNumber + 2;
+                        const oppSrc = oppNumber === 1 ? '/images/checkers_game_props/checkers_buds_red.svg' : '/images/checkers_game_props/checkers_buds_blue.svg';
+                        const oppRemaining = checkersState.board.flat().filter(v => v === oppPieceVal1 || v === oppPieceVal2).length;
+                        const capturedByMe = 12 - oppRemaining;
+                        if (capturedByMe === 0) return null;
+
+                        return (
+                            <div className="flex gap-1 mt-12 justify-center flex-wrap">
+                                {Array.from({ length: capturedByMe }).map((_, i) => (
+                                    <img key={i} src={oppSrc} width={44} height={44} style={{ opacity: 0.75,
+                                            animation: i === newlyCapturedIdx ? 'capturePopIn 0.5s cubic-bezier(0.22,0.61,0.36,1) forwards' : undefined,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        );
+                    })()}
+
                     {/* Players */}
-                    <div className="mt-14 flex gap-4 justify-center">
+                    <div className="mt-6 flex gap-4 justify-center">
                         {session.players.map((p) => {
                             const pc = PLAYER_COLORS[p.player_number];
                             const isActive = checkersState.currentTurn === p.player_number;
