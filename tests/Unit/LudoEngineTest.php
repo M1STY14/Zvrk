@@ -285,7 +285,7 @@ class LudoEngineTest extends TestCase
     {
         $engine = $this->engineWithDice([6, 6]);
         $state = $this->makeState(
-            [1 => [-1, 25, 50, 74], 2 => [-1, -1, -1, -1]],
+            [1 => [-1, 25, 50, 58], 2 => [-1, -1, -1, -1]],
             currentTurn: 1,
             consecutiveDoubles: 2,
         );
@@ -293,10 +293,10 @@ class LudoEngineTest extends TestCase
         /** @var LudoState $newState */
         $newState = $engine->applyMove($state, 1, $this->rollMove());
 
-        // Index 2 (pos 50) is most-advanced (74 is finished, ignored).
+        // Index 2 (pos 50) is most-advanced (58 is finished, ignored).
         $this->assertSame(-1, $newState->tokens[1][2]);
         $this->assertSame(25, $newState->tokens[1][1], 'Other tokens unchanged.');
-        $this->assertSame(74, $newState->tokens[1][3]);
+        $this->assertSame(58, $newState->tokens[1][3]);
         $this->assertSame(2, $newState->currentTurn);
         $this->assertSame(0, $newState->consecutiveDoubles);
         $this->assertSame([], $newState->pendingDice);
@@ -439,10 +439,10 @@ class LudoEngineTest extends TestCase
     public function test_capture_sends_opponent_home_and_pushes_twenty_bonus(): void
     {
         $engine = new LudoEngine;
-        // P1 at 11 + 3 = 14, abs (0+14)%68 = 14 (not safe).
-        // P2 at 65, abs (17+65)%68 = 14. Captured.
+        // P1 at 11 + 3 = 14, abs (39+14)%52 = 1 (not safe).
+        // P2 at 40, abs (13+40)%52 = 1. Captured.
         $state = $this->makeState(
-            [1 => [11, -1, -1, -1], 2 => [65, -1, -1, -1]],
+            [1 => [11, -1, -1, -1], 2 => [40, -1, -1, -1]],
             pendingDice: [3, 1],
             phase: LudoPhase::Move,
         );
@@ -460,7 +460,7 @@ class LudoEngineTest extends TestCase
     {
         $engine = new LudoEngine;
         $state = $this->makeState(
-            [1 => [11, -1, -1, -1], 2 => [65, 65, -1, -1]],
+            [1 => [11, -1, -1, -1], 2 => [40, 40, -1, -1]],
             pendingDice: [3, 1],
             phase: LudoPhase::Move,
         );
@@ -510,7 +510,7 @@ class LudoEngineTest extends TestCase
     {
         $engine = new LudoEngine;
         $state = $this->makeState(
-            [1 => [72, 10, -1, -1], 2 => [-1, -1, -1, -1]],
+            [1 => [56, 10, -1, -1], 2 => [-1, -1, -1, -1]],
             pendingDice: [2, 4],
             phase: LudoPhase::Move,
         );
@@ -518,7 +518,7 @@ class LudoEngineTest extends TestCase
         /** @var LudoState $newState */
         $newState = $engine->applyMove($state, 1, $this->tokenMove(0, 2));
 
-        $this->assertSame(74, $newState->tokens[1][0]);
+        $this->assertSame(58, $newState->tokens[1][0]);
         $this->assertContains(10, $newState->pendingDice, 'Finish pushes 10 bonus.');
         $this->assertContains(4, $newState->pendingDice);
     }
@@ -526,9 +526,9 @@ class LudoEngineTest extends TestCase
     public function test_blockade_prevents_landing_on_blockaded_square(): void
     {
         $engine = new LudoEngine;
-        // P2 has two tokens at relative 1 (abs 18). P1 wants to land on abs 18 (relative 18).
+        // P2 has two tokens at relative 44 (abs (13+44)%52 = 5). P1 at 15, dice 3 -> abs (39+18)%52 = 5.
         $state = $this->makeState(
-            [1 => [15, -1, -1, -1], 2 => [1, 1, -1, -1]],
+            [1 => [15, -1, -1, -1], 2 => [44, 44, -1, -1]],
             pendingDice: [3, 1],
             phase: LudoPhase::Move,
         );
@@ -539,9 +539,9 @@ class LudoEngineTest extends TestCase
     public function test_blockade_prevents_passing_through_blockaded_square(): void
     {
         $engine = new LudoEngine;
-        // Blockade at abs 18 (P2 has two tokens at relative 1). P1 at 15, dice 5 -> would land at 20 but passes 18.
+        // Blockade at abs 5 (P2 has two tokens at relative 44). P1 at 15, dice 5 -> would land at 20 but passes 18 (abs 5).
         $state = $this->makeState(
-            [1 => [15, -1, -1, -1], 2 => [1, 1, -1, -1]],
+            [1 => [15, -1, -1, -1], 2 => [44, 44, -1, -1]],
             pendingDice: [5, 1],
             phase: LudoPhase::Move,
         );
@@ -705,7 +705,7 @@ class LudoEngineTest extends TestCase
     public function test_check_game_over_returns_winner_when_all_tokens_finish(): void
     {
         $engine = new LudoEngine;
-        $state = $this->makeState([1 => [74, 74, 74, 74], 2 => [10, -1, -1, -1]]);
+        $state = $this->makeState([1 => [58, 58, 58, 58], 2 => [10, -1, -1, -1]]);
 
         $result = $engine->checkGameOver($state);
 
@@ -795,9 +795,9 @@ class LudoEngineTest extends TestCase
         // Place P1 at four positions just shy of finish; drive scripted dice to walk them home.
         // Each turn P1 rolls a non-doubles pair, spends both dice on the lead token to finish it (with finish bonus).
         // The bonus 10 from finishing is forfeited (no other token can use it), turn passes.
-        // Use rolls that avoid doubles: [3, 4] = sums to 7; we'll position tokens at 67 so 67+3+4=74.
-        // Setup tokens at [67, 67, 67, 67]. P2 stays home. 4 turns to finish all.
-        $tokens = [1 => [67, 67, 67, 67], 2 => [-1, -1, -1, -1]];
+        // Use rolls that avoid doubles: [3, 4] = sums to 7; we'll position tokens at 51 so 51+3+4=58.
+        // Setup tokens at [51, 51, 51, 51]. P2 stays home. 4 turns to finish all.
+        $tokens = [1 => [51, 51, 51, 51], 2 => [-1, -1, -1, -1]];
 
         // Each P1 turn: roll [3, 4]. Move token from 67 -> 70 (with 3), then 70 -> 74 (with 4, finishes).
         // After finishing, pendingDice gets +10 bonus. But no other token can use 10 (all at 67/finished/etc).
@@ -828,7 +828,7 @@ class LudoEngineTest extends TestCase
             // Find the next not-yet-finished token.
             $tokenToMove = null;
             foreach ($state->tokens[1] as $idx => $pos) {
-                if ($pos !== 74) {
+                if ($pos !== 58) {
                     $tokenToMove = $idx;
                     break;
                 }
@@ -852,7 +852,7 @@ class LudoEngineTest extends TestCase
             }
         }
 
-        $this->assertSame([74, 74, 74, 74], $state->tokens[1]);
+        $this->assertSame([58, 58, 58, 58], $state->tokens[1]);
 
         $result = $engine->checkGameOver($state);
         $this->assertNotNull($result);

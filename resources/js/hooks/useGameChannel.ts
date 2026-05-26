@@ -57,7 +57,9 @@ export function useGameChannel<TState>(
     handlers: GameChannelHandlers<TState>,
 ) {
     const handlersRef = useRef(handlers);
-    handlersRef.current = handlers;
+    useEffect(() => {
+        handlersRef.current = handlers;
+    });
 
     const { disconnectedUserIds, onPlayerConnectionChanged } = useDisconnectedPlayers(players);
 

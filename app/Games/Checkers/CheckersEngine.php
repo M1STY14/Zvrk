@@ -47,6 +47,7 @@ class CheckersEngine implements GameContract
             board: $data['board'],
             currentTurn: $data['currentTurn'],
             players: collect($data['players']),
+            forfeited: $data['forfeited'] ?? [],
         );
     }
 
@@ -198,6 +199,7 @@ class CheckersEngine implements GameContract
             board: $board,
             currentTurn: $playerNumber === 1 ? 2 : 1,
             players: $state->players,
+            forfeited: $state->forfeited,
         );
     }
 
@@ -235,6 +237,33 @@ class CheckersEngine implements GameContract
         }
 
         return null;
+    }
+
+    public function forfeitPlayer(GameState $state, int $playerNumber): GameState
+    {
+        if (! $state instanceof CheckersState) {
+            throw new InvalidArgumentException('CheckersEngine expects CheckersState.');
+        }
+
+        return new CheckersState(
+            board: $state->board,
+            currentTurn: $state->currentTurn,
+            players: $state->players,
+            forfeited: array_values(array_unique([...$state->forfeited, $playerNumber])),
+        );
+    }
+
+    public function activePlayerNumbers(GameState $state): array
+    {
+        if (! $state instanceof CheckersState) {
+            throw new InvalidArgumentException('CheckersEngine expects CheckersState.');
+        }
+
+        return $state->players->keys()
+            ->map(fn ($number): int => (int) $number)
+            ->reject(fn (int $number): bool => in_array($number, $state->forfeited, true))
+            ->values()
+            ->all();
     }
 
     private function inBounds(int $row, int $col): bool

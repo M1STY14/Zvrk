@@ -332,7 +332,7 @@ final readonly class GameSessionService
     {
         $session->update([
             'winner_user_id' => $winnerUserId,
-            'finished_at' => now()
+            'finished_at' => now(),
         ]);
         $session->status()->transitionTo(GameStatus::Finished);
     }
@@ -404,7 +404,7 @@ final readonly class GameSessionService
                 'state' => $newState->toArray(),
                 'end_reason' => $reason,
                 'winner_user_id' => $winnerUserId,
-                'finished_at' => now()
+                'finished_at' => now(),
             ]);
             $session->status()->transitionTo(GameStatus::Forfeited);
 
