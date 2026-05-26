@@ -38,6 +38,7 @@ class GameSeeder extends Seeder
                 'slug' => GameType::Checkers->value,
                 'name' => 'Checkers',
                 'description' => 'Move your pieces diagonally and jump over opponents to capture them. King your pieces to move in any direction!',
+                'image' => '/images/homepage_games_thumbnails/dama_ko_dashboard.svg',
                 'min_players' => 2,
                 'max_players' => 2,
                 'is_active' => true,
