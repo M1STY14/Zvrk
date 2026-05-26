@@ -228,7 +228,7 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
             }
             setRolling(false);
             setRollingDice([]);
-            if (finalDice) setShownDice(finalDice);
+            setShownDice(finalDice ?? []);
         };
 
         if (remaining > 0) {
@@ -245,7 +245,6 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
             stopRollingAnimation(pendingDice.slice(0, 2));
         } else if (phase === 'roll') {
             stopRollingAnimation();
-            setShownDice([]);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [phase, currentTurn]);
@@ -322,25 +321,34 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
         animationTimeoutRef.current = setTimeout(tick, STEP_MS);
     }, [tokens]);
 
-    // Reset selection when turn or phase changes
-    useEffect(() => {
+    // Reset selection when turn or phase changes (render-phase update — React docs pattern)
+    const [prevSelectionContext, setPrevSelectionContext] = useState({ currentTurn, phase });
+    if (prevSelectionContext.currentTurn !== currentTurn || prevSelectionContext.phase !== phase) {
+        setPrevSelectionContext({ currentTurn, phase });
         setSelectedToken(null);
-    }, [currentTurn, phase]);
+    }
 
-    // Auto-select token if only one is movable
-    useEffect(() => {
-        if (!isYourTurn || phase !== 'move' || playerNumber === null) return;
-        const myTokens = tokens[playerNumber] ?? [];
-        const movable: number[] = [];
-        myTokens.forEach((_, idx) => {
+    // Compute which of my tokens are movable with any pending die
+    const movableTokens = new Set<number>();
+    if (isYourTurn && phase === 'move' && playerNumber !== null) {
+        (tokens[playerNumber] ?? []).forEach((_, idx) => {
             if (pendingDice.some(d => canMove(tokens, playerNumber, idx, d))) {
-                movable.push(idx);
+                movableTokens.add(idx);
             }
         });
-        if (movable.length === 1) {
-            setSelectedToken(movable[0]);
+    }
+
+    // Auto-select when exactly one token is movable. Tracked via render-phase update so
+    // the user can still deselect by clicking — selectedToken stays null until the
+    // movable set actually changes.
+    const movableKey = `${currentTurn}|${[...movableTokens].sort().join(',')}`;
+    const [prevMovableKey, setPrevMovableKey] = useState<string | null>(null);
+    if (movableKey !== prevMovableKey) {
+        setPrevMovableKey(movableKey);
+        if (movableTokens.size === 1) {
+            setSelectedToken([...movableTokens][0]);
         }
-    }, [phase, pendingDice, isYourTurn, playerNumber, tokens]);
+    }
 
     const handleRoll = () => {
         if (!isYourTurn || phase !== 'roll' || disabled) return;
@@ -355,22 +363,12 @@ export default function LudoBoard({ ludoState, isYourTurn, disabled, playerNumbe
         setSelectedToken(prev => (prev === tokenIdx ? null : tokenIdx));
     };
 
-    const handleDiceClick = (diceValue: number, diceIndex: number) => {
+    const handleDiceClick = (diceValue: number, _diceIndex: number) => {
         if (selectedToken === null || !isYourTurn || phase !== 'move' || playerNumber === null) return;
         if (!canMove(tokens, playerNumber, selectedToken, diceValue)) return;
         onMove(selectedToken, diceValue);
         setSelectedToken(null);
     };
-
-    // Which of my tokens are movable with any pending die
-    const movableTokens = new Set<number>();
-    if (isYourTurn && phase === 'move' && playerNumber !== null) {
-        (tokens[playerNumber] ?? []).forEach((_, idx) => {
-            if (pendingDice.some(d => canMove(tokens, playerNumber, idx, d))) {
-                movableTokens.add(idx);
-            }
-        });
-    }
 
     // Collect all tokens on board cells using displayTokens (animated positions)
     type BoardToken = { player: number; idx: number };

@@ -46,7 +46,10 @@ function useTypewriter(lines: string[], speed = 55, pauseMs = 1200) {
                 setCharIndex(i => i + 1);
             }, speed);
             return () => clearTimeout(t);
-        } else { setPausing(true); setCharIndex(0); }
+        } else {
+            const t = setTimeout(() => { setPausing(true); setCharIndex(0); }, 0);
+            return () => clearTimeout(t);
+        }
     }, [charIndex, lineIndex, pausing, lines, speed, pauseMs]);
 
     return { displayed, currentLine: lineIndex, done: lineIndex >= lines.length };

@@ -12,7 +12,6 @@ declare global {
         Echo: Echo;
     }
 
-    /* eslint-disable no-var */
     var route: typeof ziggyRoute;
 }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Data\TicTacToeState;
 use App\Events\GameEnded;
 use App\Listeners\UpdatePlayerStats;
 use App\Models\Game;
@@ -9,6 +10,7 @@ use App\Models\GamePlayer;
 use App\Models\GameSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 final class UpdatePlayerStatsTest extends TestCase
@@ -27,7 +29,7 @@ final class UpdatePlayerStatsTest extends TestCase
             sessionId: $session->id,
             winner: $winner->id,
             draw: false,
-            board: [],
+            state: $this->makeState(),
         ));
 
         $this->assertDatabaseHas('player_stats', [
@@ -61,7 +63,7 @@ final class UpdatePlayerStatsTest extends TestCase
             sessionId: $session->id,
             winner: null,
             draw: true,
-            board: [],
+            state: $this->makeState(),
         ));
 
         foreach ([$playerOne, $playerTwo] as $player) {
@@ -88,7 +90,7 @@ final class UpdatePlayerStatsTest extends TestCase
             sessionId: $session->id,
             winner: $winner->id,
             draw: false,
-            board: [],
+            state: $this->makeState(),
         ));
 
         $this->assertDatabaseCount('player_stats', 2);
@@ -109,7 +111,7 @@ final class UpdatePlayerStatsTest extends TestCase
                 sessionId: $session->id,
                 winner: $winner->id,
                 draw: false,
-                board: [],
+                state: $this->makeState(),
             ));
         }
 
@@ -130,6 +132,15 @@ final class UpdatePlayerStatsTest extends TestCase
             'losses' => 2,
             'draws' => 0,
         ]);
+    }
+
+    private function makeState(): TicTacToeState
+    {
+        return new TicTacToeState(
+            board: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+            currentTurn: 1,
+            players: new Collection(['1' => 'player-1', '2' => 'player-2']),
+        );
     }
 
     private function createSessionWithPlayers(Game $game, User $playerOne, User $playerTwo, ?User $winner): GameSession
