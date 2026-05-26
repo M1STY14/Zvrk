@@ -1,4 +1,13 @@
 import GameOverModal from '@/Components/Game/GameOverModal';
+
+const RULES = [
+    { label: 'Kretanje', text: 'Žetoni se kreću dijagonalno unaprijed po tamnim poljima. Kralj se može kretati i unazad.' },
+    { label: 'Uzimanje', text: 'Preskočiš protivničkog žetona ako je polje iza njega prazno. Uzimanje je obavezno!' },
+    { label: 'Višestruko', text: 'Ako možeš uzeti više žetona odjednom, nastavi niz skokova u istom potezu.' },
+    { label: 'Kralj', text: 'Dođeš li žetonom do zadnjeg reda protivnika, postaje kralj i dobiva oznaku ♛.' },
+    { label: 'Kraj igre', text: 'Pobijedi ako protivnik ostane bez žetona ili nema nijedan legalan potez.' },
+    { label: 'Obaveza', text: 'Ako ijedan tvoj žeton može uzeti, moraš uzeti — ne možeš igrati drugog žetona.' },
+];
 import CheckersBoard, { CheckersState } from '@/GameBoards/CheckersBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import { Head, Link, router } from '@inertiajs/react';
@@ -67,6 +76,7 @@ export default function CheckersPlay({ auth, session }: Props) {
     const [winner, setWinner] = useState<string | null>(initialWinnerName);
     const [gameOver, setGameOver] = useState(isFinished);
     const [showGameOver, setShowGameOver] = useState(isFinished);
+    const [showRules, setShowRules] = useState(false);
 
     const playerNames = useMemo(
         () =>
@@ -195,6 +205,15 @@ export default function CheckersPlay({ auth, session }: Props) {
                             <p className="mt-1 text-sm text-slate-500">{session.name}</p>
                         </div>
                         <div className="flex gap-3 items-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowRules(r => !r)}
+                                title="Pravila igre"
+                                className="rounded-full border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
+                                style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            >
+                                ?
+                            </button>
                             <Link
                                 href={route('lobby.index', session.game.slug)}
                                 className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
@@ -210,6 +229,38 @@ export default function CheckersPlay({ auth, session }: Props) {
                             </button>
                         </div>
                     </div>
+
+                    {/* Rules popup */}
+                    {showRules && (
+                        <div style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.35)', zIndex: 100,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }} onClick={() => setShowRules(false)}>
+                            <div style={{
+                                background: 'white', borderRadius: 20, padding: '28px 36px',
+                                maxWidth: 620, width: '90%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
+                            }} onClick={e => e.stopPropagation()}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Pravila igre</h2>
+                                    <button type="button" onClick={() => setShowRules(false)} style={{
+                                        background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#94a3b8', lineHeight: 1,
+                                    }}>✕</button>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    {RULES.map((r, i) => (
+                                        <div key={i}>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.label}</span>
+                                            <p style={{ margin: '2px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{r.text}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                                    <img src="/images/game_rules_explanation.svg" alt="Pravila igre" style={{ width: 300, height: 150 }} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Turn indicator */}
                     <div className="flex items-center gap-3 mb-3 mt-4">
