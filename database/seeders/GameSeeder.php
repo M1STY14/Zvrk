@@ -40,7 +40,7 @@ class GameSeeder extends Seeder
                 'description' => 'Move your pieces diagonally and jump over opponents to capture them. King your pieces to move in any direction!',
                 'min_players' => 2,
                 'max_players' => 2,
-                'is_active' => false, // TODO: need to implement game engine
+                'is_active' => true,
             ],
             [
                 'slug' => GameType::FourInARow->value,
