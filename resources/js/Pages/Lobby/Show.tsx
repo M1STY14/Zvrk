@@ -30,7 +30,7 @@ export default function Show({ game, session }: Props) {
     const { auth } = usePage<Props>().props;
     const isHost = auth.user.id === session.host_user_id;
     const canStartGame = session.players.length >= game.min_players;
-    const canStartAi = isHost && session.players.length === 1;
+    const canStartAi = game.slug === 'tic-tac-toe' && isHost && session.players.length === 1;
     const canCloseRoom = isHost && session.players.length === 1;
 
     const { isPlayerDisconnected, showDisconnectedBanner } = useLobbyGameChannel({
@@ -88,7 +88,7 @@ export default function Show({ game, session }: Props) {
                                     <PrimaryButton onClick={handleStart} disabled={!canStartGame}>
                                         Pokreni igru
                                     </PrimaryButton>
-                                    {game.slug === 'tic-tac-toe' && (
+                                    {canStartAi && (
                                         <PrimaryButton onClick={handleStartAi} disabled={!canStartAi}>
                                             Igraj protiv AI
                                         </PrimaryButton>

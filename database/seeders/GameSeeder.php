@@ -48,7 +48,7 @@ class GameSeeder extends Seeder
                 'description' => 'Drop your colored pieces into a vertical grid. Connect four in a row horizontally, vertically, or diagonally to win!',
                 'min_players' => 2,
                 'max_players' => 2,
-                'is_active' => false, // TODO: need to implement game engine
+                'is_active' => true,
             ],
         ];
 
