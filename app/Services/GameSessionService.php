@@ -453,15 +453,10 @@ final readonly class GameSessionService
         if ($session->status->is(GameStatus::Playing)) {
             $this->forfeit($session, $user, GameEndReason::PlayerLeft);
         } elseif ($session->status->isFinished()) {
-            $this->removeAllPlayers($session);
+            $session->players()->where('user_id', $user->id)->delete();
         } elseif ($session->status->is(GameStatus::Pending)) {
             $this->handlePendingGameRemoval($session, $user);
         }
-    }
-
-    private function removeAllPlayers(GameSession $session): void
-    {
-        $session->players()->delete();
     }
 
     private function broadcastMoveResult(GameSession $session, User $user, mixed $engine, array $stateArray, mixed $gameResult): void
