@@ -453,7 +453,7 @@ final readonly class GameSessionService
         if ($session->status->is(GameStatus::Playing)) {
             $this->forfeit($session, $user, GameEndReason::PlayerLeft);
         } elseif ($session->status->isFinished()) {
-            $session->players()->where('user_id', $user->id)->delete();
+            $session->players()->delete();
         } elseif ($session->status->is(GameStatus::Pending)) {
             $this->handlePendingGameRemoval($session, $user);
         }
