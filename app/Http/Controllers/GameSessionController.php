@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
+use App\Data\UnoState;
 use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Enums\GameType;
 use App\Events\PlayerLeftLobby;
 use App\Models\GameSession;
 use App\Models\User;
+use App\Services\GameEngineManager;
 use App\Services\GameSessionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -27,6 +29,7 @@ final class GameSessionController extends Controller
 
     public function __construct(
         private readonly GameSessionService $gameSessionService,
+        private readonly GameEngineManager $engineManager,
     ) {}
 
     public function show(GameSession $gameSession): Response
@@ -38,7 +41,7 @@ final class GameSessionController extends Controller
                 'id' => $gameSession->id,
                 'name' => $gameSession->name,
                 'is_finished' => $gameSession->status->isFinished(),
-                'state' => $gameSession->state,
+                'state' => $this->stateForCurrentPlayer($gameSession, auth()->id()),
                 'winner_user_id' => $gameSession->winner_user_id,
                 'game' => [
                     'slug' => $gameSession->game->slug,
@@ -136,9 +139,43 @@ final class GameSessionController extends Controller
             return response()->json(['message' => 'Game is not in progress.'], 422);
         }
 
-        return response()->json(
-            $this->gameSessionService->applyMove($gameSession->load('game'), $user, $makeMoveRequest->move_data)
-        );
+        $gameSession->load('game');
+        $result = $this->gameSessionService->applyMove($gameSession, $user, $makeMoveRequest->move_data);
+
+        // For hidden-state games, replace full state with player-specific view
+        $engine = $this->engineManager->resolve($gameSession->game->slug);
+        $state = $engine->makeState($result['state']);
+
+        if ($state instanceof UnoState) {
+            $player = $gameSession->players->firstWhere('user_id', $user->id);
+            $result['state'] = $player
+                ? $state->stateForPlayer($player->player_number)
+                : $state->publicBroadcast();
+        }
+
+        return response()->json($result);
+    }
+
+    private function stateForCurrentPlayer(GameSession $gameSession, ?string $userId): ?array
+    {
+        if ($gameSession->state === null) {
+            return null;
+        }
+
+        $engine = $this->engineManager->resolve($gameSession->game->slug);
+        $state = $engine->makeState($gameSession->state);
+
+        if (! $state instanceof UnoState) {
+            return $gameSession->state;
+        }
+
+        $player = $gameSession->players->firstWhere('user_id', $userId);
+
+        if ($player === null) {
+            return $state->publicBroadcast();
+        }
+
+        return $state->stateForPlayer($player->player_number);
     }
 
     public function leave(GameSession $gameSession, #[CurrentUser] User $user): RedirectResponse

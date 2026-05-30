@@ -47,8 +47,18 @@ class GameSeeder extends Seeder
                 'slug' => GameType::FourInARow->value,
                 'name' => '4 in a Row',
                 'description' => 'Drop your colored pieces into a vertical grid. Connect four in a row horizontally, vertically, or diagonally to win!',
+                'image' => '/images/homepage_games_thumbnails/4_u_nizu_left_side.svg',
                 'min_players' => 2,
                 'max_players' => 2,
+                'is_active' => true,
+            ],
+            [
+                'slug' => GameType::Uno->value,
+                'name' => 'UNO',
+                'description' => 'Be the first to get rid of all your cards. Play smart, use special cards, and defeat your opponents!',
+                'image' => '/images/homepage_games_thumbnails/uno_left_side.svg',
+                'min_players' => 2,
+                'max_players' => 4,
                 'is_active' => true,
             ],
         ];
