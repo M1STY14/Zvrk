@@ -73,6 +73,41 @@ export function useGameState({
         [getPlayerNumber, players],
     );
 
+    const applyOptimisticDrop = useCallback(
+        (col: number, userId: string) => {
+            const playerNumber = getPlayerNumber(userId);
+            if (playerNumber === null) return;
+
+            setState((current) => {
+                snapshotRef.current = current;
+
+                const board = cloneBoard(current.board);
+                let targetRow = -1;
+
+                for (let row = board.length - 1; row >= 0; row--) {
+                    if (board[row][col] === 0) {
+                        targetRow = row;
+                        break;
+                    }
+                }
+
+                if (targetRow === -1) {
+                    return current;
+                }
+
+                board[targetRow][col] = playerNumber;
+                const nextNumber = playerNumber === 1 ? 2 : 1;
+
+                return {
+                    ...current,
+                    board,
+                    currentPlayerId: players[String(nextNumber)] ?? current.currentPlayerId,
+                };
+            });
+        },
+        [getPlayerNumber, players],
+    );
+
     const revertOptimisticMove = useCallback(() => {
         if (snapshotRef.current) {
             setState(snapshotRef.current);
@@ -102,6 +137,7 @@ export function useGameState({
     return {
         state,
         applyOptimisticMove,
+        applyOptimisticDrop,
         revertOptimisticMove,
         applyServerBoard,
         applyGameEnd,

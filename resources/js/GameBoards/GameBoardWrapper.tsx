@@ -1,8 +1,9 @@
 import CheckersBoard, { CheckersBoardProps } from './CheckersBoard';
+import ConnectFourBoard, { ConnectFourBoardProps } from './ConnectFourBoard';
 import LudoBoard, { LudoBoardProps } from './LudoBoard';
 import TicTacToeBoard, { TicTacToeBoardProps } from './TicTacToeBoard';
 
-type BoardProps = TicTacToeBoardProps | LudoBoardProps | CheckersBoardProps;
+type BoardProps = TicTacToeBoardProps | LudoBoardProps | CheckersBoardProps | ConnectFourBoardProps;
 
 type Props = {
     gameSlug: string;
@@ -12,6 +13,7 @@ const BOARDS: Record<string, (props: BoardProps) => JSX.Element> = {
     'tic-tac-toe': TicTacToeBoard as (props: BoardProps) => JSX.Element,
     'ludo': LudoBoard as (props: BoardProps) => JSX.Element,
     'checkers': CheckersBoard as (props: BoardProps) => JSX.Element,
+    'four-in-a-row': ConnectFourBoard as (props: BoardProps) => JSX.Element,
 };
 
 export default function GameBoardWrapper({ gameSlug, ...boardProps }: Props) {
