@@ -16,4 +16,3 @@ final class ConnectFourState extends GameState
         public array $forfeited = [],
     ) {}
 }
-

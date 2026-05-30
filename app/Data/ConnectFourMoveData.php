@@ -8,4 +8,3 @@ final class ConnectFourMoveData extends MoveData
         public int $col,
     ) {}
 }
-
