@@ -44,6 +44,7 @@ final class UnoEngine implements GameContract
                 // Put wild back at random position and try again
                 $pos = random_int(0, count($deck));
                 array_splice($deck, $pos, 0, [$card]);
+
                 continue;
             }
             $discardPile[] = $card;
