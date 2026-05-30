@@ -30,6 +30,8 @@ final class UnoState extends GameState
         $data = $this->toArray();
         $data['hands'] = array_map('count', $this->hands);
         $data['drawPile'] = count($this->drawPile);
+        $data['discardPileTop'] = ! empty($this->discardPile) ? $this->discardPile[array_key_last($this->discardPile)] : null;
+        $data['discardPileRecent'] = array_values(array_slice($this->discardPile, -3));
 
         return $data;
     }
@@ -47,6 +49,7 @@ final class UnoState extends GameState
         $data['drawPileCount'] = count($this->drawPile);
         unset($data['drawPile']);
         $data['discardPileTop'] = ! empty($this->discardPile) ? $this->discardPile[array_key_last($this->discardPile)] : null;
+        $data['discardPileRecent'] = array_values(array_slice($this->discardPile, -3));
         unset($data['discardPile']);
 
         return $data;
