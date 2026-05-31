@@ -579,7 +579,7 @@ class UnoEngineTest extends TestCase
             drawPile: array_fill(0, 10, $this->numberCard('green', 1)),
         );
 
-        $broadcast = $state->publicBroadcast();
+        $broadcast = $state->toBroadcastArray();
 
         $this->assertIsInt($broadcast['hands'][1]);
         $this->assertIsInt($broadcast['hands'][2]);
