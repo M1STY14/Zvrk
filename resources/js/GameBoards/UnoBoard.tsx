@@ -250,7 +250,7 @@ function PlayerFan({
     const spacing = Math.min(W * 0.38, 380 / Math.max(count, 1));
     const totalW = count > 1 ? (count - 1) * spacing + W : W;
     const containerW = totalW + 80;
-    const containerH = H + 180;
+    const containerH = H + 130;
 
     return (
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -349,7 +349,17 @@ export default function UnoBoard({
     const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
     const [wildPendingIdx, setWildPendingIdx] = useState<number | null>(null);
     // draw fly: poleđina leti, pa flip reveal na odredištu
-    const [flyCard, setFlyCard] = useState<{ fromX: number; fromY: number; toX: number; toY: number; w: number; h: number; deg: number; drawnCard: UnoCard | null } | null>(null);
+    const [flyCard, setFlyCard] = useState<{
+        fromX: number;
+        fromY: number;
+        toX: number;
+        toY: number;
+        w: number;
+        h: number;
+        deg: number;
+        drawnCard: UnoCard | null;
+        previousHandLength: number;
+    } | null>(null);
     const [hidingLastCard, setHidingLastCard] = useState(false);
     const flyCardTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
     const playFlyTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -368,16 +378,11 @@ export default function UnoBoard({
 
     const { ownHand, opponentHandSizes, discardPileTop, discardPileRecent, drawPileCount, currentColor, currentTurn, drewThisTurn } = unoState;
 
-    // Kad ownHand se ažurira dok flyCard je aktivan, snimi novu zadnju kartu za flip reveal
-    useEffect(() => {
-        if (!flyCard || flyCard.drawnCard !== null) return;
-        const newCard = ownHand[ownHand.length - 1] ?? null;
-        if (newCard) {
-            setFlyCard(prev => prev ? { ...prev, drawnCard: newCard } : null);
-        }
-    // flyCard namjerno nije u deps — čitamo ga samo kao guard, ne želimo re-run kad se flyCard promijeni
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ownHand]);
+    // Kad se ownHand ažurira nakon draw HTTP responsea, za flip reveal uzimamo novu zadnju kartu bez dodatnog setStatea u useEffectu.
+    const flyDrawnCard =
+        flyCard && flyCard.drawnCard === null && ownHand.length > flyCard.previousHandLength
+            ? ownHand[ownHand.length - 1] ?? null
+            : flyCard?.drawnCard ?? null;
 
     // Trigger opponent draw animation
     useEffect(() => {
@@ -400,31 +405,42 @@ export default function UnoBoard({
             const t = setTimeout(() => setOppFlyCard(null), 750);
             return () => clearTimeout(t);
         }
-    }, [opponentDrawAnim]);
+    }, [opponentDrawAnim, opponentHandSizes]);
 
-    const runNextOppPlay = useRef<() => void>(null as unknown as () => void);
-    runNextOppPlay.current = () => {
-        const next = oppPlayQueue.current.shift();
-        if (!next) { oppPlayRunning.current = false; return; }
-        oppPlayRunning.current = true;
-        const from = opponentLastCardRefs.current[next.player]?.getBoundingClientRect();
-        const to = discardRef.current?.getBoundingClientRect();
-        if (from && to) {
-            setOppPlayFlyCard({
-                fromX: from.left + from.width / 2,
-                fromY: from.top + from.height / 2,
-                toX: to.left + to.width / 2,
-                toY: to.top + to.height / 2,
-            });
-            setTimeout(() => setDiscardPopKey(k => k + 1), 480);
-            setTimeout(() => {
-                setOppPlayFlyCard(null);
+    const runNextOppPlay = useRef<() => void>(() => undefined);
+
+    useEffect(() => {
+        runNextOppPlay.current = () => {
+            const next = oppPlayQueue.current.shift();
+
+            if (!next) {
+                oppPlayRunning.current = false;
+                return;
+            }
+
+            oppPlayRunning.current = true;
+
+            const from = opponentLastCardRefs.current[next.player]?.getBoundingClientRect();
+            const to = discardRef.current?.getBoundingClientRect();
+
+            if (from && to) {
+                setOppPlayFlyCard({
+                    fromX: from.left + from.width / 2,
+                    fromY: from.top + from.height / 2,
+                    toX: to.left + to.width / 2,
+                    toY: to.top + to.height / 2,
+                });
+
+                setTimeout(() => setDiscardPopKey(k => k + 1), 480);
+                setTimeout(() => {
+                    setOppPlayFlyCard(null);
+                    runNextOppPlay.current();
+                }, 680);
+            } else {
                 runNextOppPlay.current();
-            }, 680);
-        } else {
-            runNextOppPlay.current();
-        }
-    };
+            }
+        };
+    }, []);
 
     // Trigger opponent play animation — queue so rapid plays don't skip
     useEffect(() => {
@@ -454,7 +470,7 @@ export default function UnoBoard({
                 fromY: from.top + from.height / 2,
                 toX: to.left + to.width / 2,
                 toY: to.top + to.height / 2,
-                w: W, h: H, deg, drawnCard: null,
+                w: W, h: H, deg, drawnCard: null, previousHandLength: ownHand.length,
             });
             flyCardTimers.current.forEach(clearTimeout);
             flyCardTimers.current = [
@@ -780,7 +796,8 @@ export default function UnoBoard({
 
             {/* Draw animation — poleđina leti do ruke, pa flip reveal */}
             {flyCard && (() => {
-                const { w, h, deg, drawnCard } = flyCard;
+                const { w, h, deg } = flyCard;
+                const drawnCard = flyDrawnCard;
                 const dx = flyCard.toX - flyCard.fromX;
                 const dy = flyCard.toY - flyCard.fromY;
                 return (

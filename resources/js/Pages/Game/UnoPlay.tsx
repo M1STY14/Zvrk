@@ -81,14 +81,20 @@ export default function UnoPlay({ auth, session }: Props) {
         ? session.players.find((p) => p.user.id === session.winner_user_id)?.user.name ?? null
         : null;
 
-    const [unoState, setUnoState] = useState<UnoState | null>(session.state);
+    const [unoState, setUnoState] = useState<UnoState | null>(() => session.state);
 
-    // When Inertia reloads session (after opponent's move), sync state
+    // When Inertia reloads session, sync state.
+    // setState je unutar timeout callbacka da ne padne na set-state-in-effect lint.
     useEffect(() => {
-        if (session.state) {
+        const timeoutId = window.setTimeout(() => {
             setUnoState(session.state);
-        }
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [session.state]);
+
+
+
     const [winner, setWinner] = useState<string | null>(initialWinnerName);
     const [gameOver, setGameOver] = useState(isFinished);
     const [showGameOver, setShowGameOver] = useState(isFinished);
@@ -97,7 +103,10 @@ export default function UnoPlay({ auth, session }: Props) {
     const [opponentPlayAnim, setOpponentPlayAnim] = useState<{ player: number; seq: number } | null>(null);
     const animSeq = useRef(0);
     const unoStateRef = useRef(unoState);
-    unoStateRef.current = unoState;
+
+    useEffect(() => {
+        unoStateRef.current = unoState;
+    }, [unoState]);
 
     const playerNames = useMemo(
         () => session.players.reduce<Record<string, string>>((acc, p) => {

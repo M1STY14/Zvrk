@@ -27,9 +27,11 @@ function getCsrfToken(): string {
 /** Default in-game page for board games (tic-tac-toe, checkers, four-in-a-row, …). */
 export default function Play({ auth, session }: Props) {
     const isConnectFour = session.game.slug === 'four-in-a-row';
-    const marks: Record<number, string> = isConnectFour
+    const marks = useMemo<Record<number, string>>(() => {
+    return isConnectFour
         ? { 1: '🔴', 2: '🟡' }
         : { 1: '❌', 2: '⭕' };
+    }, [isConnectFour]);
     const initialBoard = session.state?.board ?? (
         isConnectFour
             ? [
