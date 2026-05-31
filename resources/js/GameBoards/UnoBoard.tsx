@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type UnoCard = {
     color: string;
@@ -28,6 +28,8 @@ export type UnoBoardProps = {
     onPlayCard: (cardIndex: number, wildColor?: string) => void;
     onDraw: () => void;
     onPass: () => void;
+    opponentDrawAnim?: { player: number; seq: number } | null;
+    opponentPlayAnim?: { player: number; seq: number } | null;
 };
 
 const COLOR_BG: Record<string, string> = {
@@ -135,17 +137,19 @@ function CardBack({ w = 54, h = 80, rotation = 0 }: { w?: number; h?: number; ro
 }
 
 /** Fan of opponent's card backs — cards face inward (rotated 180°), arc opens upward */
-function OpponentFan({ count, name, isActive }: { count: number; name: string; isActive: boolean }) {
+function OpponentFan({ count, name, isActive, lastCardRef }: {
+    count: number;
+    name: string;
+    isActive: boolean;
+    lastCardRef?: (el: HTMLDivElement | null) => void;
+}) {
     const visible = Math.min(count, 12);
     const W = 80;
     const H = 120;
-    // Each card is offset enough so its edge is clearly visible
     const spacing = Math.min(36, 440 / Math.max(visible, 1));
     const totalW = visible > 1 ? (visible - 1) * spacing + W : W;
     const containerW = totalW + 60;
-    // Max tilt angle for the outermost card
     const maxTilt = Math.min(visible * 6, 50);
-    // Arc: middle card at top (y=0), edge cards dip down
     const arcDepth = 28;
     const containerH = H + arcDepth + 8;
 
@@ -153,11 +157,16 @@ function OpponentFan({ count, name, isActive }: { count: number; name: string; i
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             {/* Name + count */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{
-                    fontSize: 13, fontWeight: 700,
-                    color: isActive ? '#fbbf24' : '#94a3b8',
-                    textShadow: isActive ? '0 0 8px rgba(251,191,36,0.5)' : 'none',
-                }}>{name}</span>
+                <span
+                    key={isActive ? 'active' : 'inactive'}
+                    style={{
+                        fontSize: 13, fontWeight: 700,
+                        color: isActive ? '#fbbf24' : '#94a3b8',
+                        textShadow: isActive ? '0 0 8px rgba(251,191,36,0.5)' : 'none',
+                        animation: isActive ? 'playerActivePulse 0.55s ease-out forwards' : 'none',
+                        display: 'inline-block',
+                    }}
+                >{name}</span>
                 <span style={{
                     fontSize: 12, fontWeight: 700,
                     background: 'transparent',
@@ -171,24 +180,24 @@ function OpponentFan({ count, name, isActive }: { count: number; name: string; i
             {/* Fan container */}
             <div style={{ position: 'relative', width: containerW, height: containerH }}>
                 {Array.from({ length: visible }).map((_, i) => {
-                    // t goes -0.5 (leftmost) to +0.5 (rightmost)
                     const t = visible > 1 ? i / (visible - 1) - 0.5 : 0;
-                    // X: evenly spaced
                     const xPx = t * (visible - 1) * spacing;
-                    // Y: inverted parabola — edges at y=0 (top), middle dips down
                     const yPx = (0.25 - t * t) * arcDepth * 4;
-                    // Tilt: left cards lean left, right cards lean right
-                    // Then add 180° so cards face inward (toward center of table)
                     const tilt = -t * maxTilt * 2;
+                    const isLast = i === visible - 1;
                     return (
-                        <div key={i} style={{
-                            position: 'absolute',
-                            left: '50%',
-                            top: yPx,
-                            zIndex: i,
-                            transform: `translateX(calc(-50% + ${xPx}px)) rotate(${180 + tilt}deg)`,
-                            transformOrigin: 'center center',
-                        }}>
+                        <div
+                            key={i}
+                            ref={isLast ? lastCardRef : undefined}
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: yPx,
+                                zIndex: i,
+                                transform: `translateX(calc(-50% + ${xPx}px)) rotate(${180 + tilt}deg)`,
+                                transformOrigin: 'center center',
+                            }}
+                        >
                             <CardBack w={W} h={H} />
                         </div>
                     );
@@ -216,6 +225,8 @@ function PlayerFan({
     isPlayable,
     onCardClick,
     onWildColor,
+    lastCardRef,
+    hideLastCard = false,
 }: {
     hand: UnoCard[];
     selectedIdx: number | null;
@@ -225,6 +236,8 @@ function PlayerFan({
     isPlayable: (card: UnoCard, idx?: number) => boolean;
     onCardClick: (idx: number) => void;
     onWildColor: (color: string) => void;
+    lastCardRef?: React.Ref<HTMLDivElement>;
+    hideLastCard?: boolean;
 }) {
     const count = hand.length;
     if (count === 0) return <span style={{ color: '#64748b', fontSize: 14 }}>Nema karata!</span>;
@@ -237,7 +250,7 @@ function PlayerFan({
     const spacing = Math.min(W * 0.38, 380 / Math.max(count, 1));
     const totalW = count > 1 ? (count - 1) * spacing + W : W;
     const containerW = totalW + 80;
-    const containerH = H + 180; // extra room for color picker above
+    const containerH = H + 180;
 
     return (
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -251,16 +264,20 @@ function PlayerFan({
                     const selected = selectedIdx === idx;
                     const isWildPending = wildPendingIdx === idx;
 
+                    const isLast = idx === count - 1;
+
                     return (
                         <div
                             key={idx}
+                            ref={isLast ? lastCardRef : undefined}
                             style={{
                                 position: 'absolute',
                                 left: '50%',
                                 bottom: 0,
                                 transform: `translateX(calc(-50% + ${xPx}px)) translateY(${yPx}px)`,
                                 zIndex: selected ? 200 : idx,
-                                opacity: !isYourTurn || disabled ? 0.75 : playable ? 1 : 0.4,
+                                opacity: (isLast && hideLastCard) ? 0 : !isYourTurn || disabled ? 0.75 : playable ? 1 : 0.4,
+                                transition: (isLast && hideLastCard) ? 'none' : 'opacity 0.15s',
                             }}
                             onClick={() => onCardClick(idx)}
                         >
@@ -272,14 +289,12 @@ function PlayerFan({
                                 playable={playable && !selected}
                                 rotation={deg * 0.5}
                             />
-                            {/* Color picker — same fan logic as main hand, above wild card */}
+                            {/* Color picker — above wild card */}
                             {isWildPending && (
                                 <div style={{ position: 'absolute', bottom: H + 48, left: '50%', transform: 'translateX(calc(-50% + 55px))', zIndex: 300, width: containerW, pointerEvents: 'none' }}>
                                     <div style={{ position: 'relative', width: containerW, height: H + 60, pointerEvents: 'auto' }}>
                                         {Object.keys(COLOR_LABEL).map((color, ci) => {
-                                            // Position each color card as if it were at idx position in the full hand fan
-                                            // Center them around the wild card's position (idx)
-                                            const offset = ci - 1.5; // -1.5, -0.5, +0.5, +1.5
+                                            const offset = ci - 1.5;
                                             const virtualIdx = idx + offset;
                                             const vt = count > 1 ? virtualIdx / (count - 1) - 0.5 : offset / 4;
                                             const cxPx = vt * (count - 1) * spacing - xPx;
@@ -328,11 +343,127 @@ export default function UnoBoard({
     onPlayCard,
     onDraw,
     onPass: _onPass,
+    opponentDrawAnim,
+    opponentPlayAnim,
 }: UnoBoardProps) {
     const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
     const [wildPendingIdx, setWildPendingIdx] = useState<number | null>(null);
+    // draw fly: poleđina leti, pa flip reveal na odredištu
+    const [flyCard, setFlyCard] = useState<{ fromX: number; fromY: number; toX: number; toY: number; w: number; h: number; deg: number; drawnCard: UnoCard | null } | null>(null);
+    const [hidingLastCard, setHidingLastCard] = useState(false);
+    const flyCardTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const playFlyTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const [playFlyCard, setPlayFlyCard] = useState<{ fromX: number; fromY: number; toX: number; toY: number; card: UnoCard } | null>(null);
+    // opponent draw fly per playerNumber
+    const [oppFlyCard, setOppFlyCard] = useState<{ fromX: number; fromY: number; toX: number; toY: number; deg: number } | null>(null);
+    const [oppPlayFlyCard, setOppPlayFlyCard] = useState<{ fromX: number; fromY: number; toX: number; toY: number } | null>(null);
+    const oppPlayQueue = useRef<{ player: number; seq: number }[]>([]);
+    const oppPlayRunning = useRef(false);
+    const [discardPopKey, setDiscardPopKey] = useState(0);
+    const drawPileRef = useRef<HTMLDivElement>(null);
+    const discardRef = useRef<HTMLDivElement>(null);
+    const handRef = useRef<HTMLDivElement>(null);
+    const lastPlayerCardRef = useRef<HTMLDivElement>(null);
+    const opponentLastCardRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
     const { ownHand, opponentHandSizes, discardPileTop, discardPileRecent, drawPileCount, currentColor, currentTurn, drewThisTurn } = unoState;
+
+    // Kad ownHand se ažurira dok flyCard je aktivan, snimi novu zadnju kartu za flip reveal
+    useEffect(() => {
+        if (!flyCard || flyCard.drawnCard !== null) return;
+        const newCard = ownHand[ownHand.length - 1] ?? null;
+        if (newCard) {
+            setFlyCard(prev => prev ? { ...prev, drawnCard: newCard } : null);
+        }
+    // flyCard namjerno nije u deps — čitamo ga samo kao guard, ne želimo re-run kad se flyCard promijeni
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ownHand]);
+
+    // Trigger opponent draw animation
+    useEffect(() => {
+        if (opponentDrawAnim == null) return;
+        const { player } = opponentDrawAnim;
+        const from = drawPileRef.current?.getBoundingClientRect();
+        const to = opponentLastCardRefs.current[player]?.getBoundingClientRect();
+        if (from && to) {
+            const count = opponentHandSizes[player] ?? 1;
+            const visible = Math.min(count, 12);
+            const maxTilt = Math.min(visible * 6, 50);
+            const deg = 180 + (-0.5 * maxTilt * 2);
+            setOppFlyCard({
+                fromX: from.left + from.width / 2,
+                fromY: from.top + from.height / 2,
+                toX: to.left + to.width / 2,
+                toY: to.top + to.height / 2,
+                deg,
+            });
+            const t = setTimeout(() => setOppFlyCard(null), 750);
+            return () => clearTimeout(t);
+        }
+    }, [opponentDrawAnim]);
+
+    const runNextOppPlay = useRef<() => void>(null as unknown as () => void);
+    runNextOppPlay.current = () => {
+        const next = oppPlayQueue.current.shift();
+        if (!next) { oppPlayRunning.current = false; return; }
+        oppPlayRunning.current = true;
+        const from = opponentLastCardRefs.current[next.player]?.getBoundingClientRect();
+        const to = discardRef.current?.getBoundingClientRect();
+        if (from && to) {
+            setOppPlayFlyCard({
+                fromX: from.left + from.width / 2,
+                fromY: from.top + from.height / 2,
+                toX: to.left + to.width / 2,
+                toY: to.top + to.height / 2,
+            });
+            setTimeout(() => setDiscardPopKey(k => k + 1), 480);
+            setTimeout(() => {
+                setOppPlayFlyCard(null);
+                runNextOppPlay.current();
+            }, 680);
+        } else {
+            runNextOppPlay.current();
+        }
+    };
+
+    // Trigger opponent play animation — queue so rapid plays don't skip
+    useEffect(() => {
+        if (opponentPlayAnim == null) return;
+        oppPlayQueue.current.push(opponentPlayAnim);
+        if (!oppPlayRunning.current) runNextOppPlay.current();
+    }, [opponentPlayAnim]);
+
+
+
+    const handleDraw = () => {
+        if (!isYourTurn || disabled || drewThisTurn || flyCard) return;
+        const from = drawPileRef.current?.getBoundingClientRect();
+        const to = (lastPlayerCardRef.current ?? handRef.current)?.getBoundingClientRect();
+        if (from && to) {
+            const newCount = ownHand.length + 1;
+            const W = newCount > 9 ? Math.max(84, Math.round(116 * (9 / newCount))) : 116;
+            const H = Math.round(W * 1.5);
+            const maxSpreadDeg = Math.min(newCount * 9, 130);
+            const startDeg = -maxSpreadDeg / 2;
+            const stepDeg = newCount > 1 ? maxSpreadDeg / (newCount - 1) : 0;
+            const deg = (startDeg + (newCount - 1) * stepDeg) * 0.5;
+            setHidingLastCard(true);
+            // drawnCard se popunjava naknadno kad HTTP response ažurira ownHand
+            setFlyCard({
+                fromX: from.left + from.width / 2,
+                fromY: from.top + from.height / 2,
+                toX: to.left + to.width / 2,
+                toY: to.top + to.height / 2,
+                w: W, h: H, deg, drawnCard: null,
+            });
+            flyCardTimers.current.forEach(clearTimeout);
+            flyCardTimers.current = [
+                setTimeout(() => setHidingLastCard(false), 1230),
+                setTimeout(() => setFlyCard(null), 1450),
+            ];
+        }
+        onDraw();
+    };
 
     const isPlayable = (card: UnoCard, cardIdx?: number): boolean => {
         if (!isYourTurn || disabled) return false;
@@ -358,6 +489,22 @@ export default function UnoBoard({
         }
 
         if (selectedIdx === idx) {
+            const from = handRef.current?.getBoundingClientRect();
+            const to = discardRef.current?.getBoundingClientRect();
+            if (from && to) {
+                setPlayFlyCard({
+                    fromX: from.left + from.width / 2,
+                    fromY: from.top + from.height / 2,
+                    toX: to.left + to.width / 2,
+                    toY: to.top + to.height / 2,
+                    card,
+                });
+                playFlyTimers.current.forEach(clearTimeout);
+                playFlyTimers.current = [
+                    setTimeout(() => setDiscardPopKey(k => k + 1), 375),
+                    setTimeout(() => setPlayFlyCard(null), 520),
+                ];
+            }
             onPlayCard(idx);
             setSelectedIdx(null);
         } else {
@@ -365,8 +512,25 @@ export default function UnoBoard({
         }
     };
 
-const handleWildColor = (color: string) => {
+    const handleWildColor = (color: string) => {
         if (wildPendingIdx === null) return;
+        const card = ownHand[wildPendingIdx];
+        const from = handRef.current?.getBoundingClientRect();
+        const to = discardRef.current?.getBoundingClientRect();
+        if (from && to) {
+            setPlayFlyCard({
+                fromX: from.left + from.width / 2,
+                fromY: from.top + from.height / 2,
+                toX: to.left + to.width / 2,
+                toY: to.top + to.height / 2,
+                card,
+            });
+            playFlyTimers.current.forEach(clearTimeout);
+            playFlyTimers.current = [
+                setTimeout(() => setDiscardPopKey(k => k + 1), 375),
+                setTimeout(() => setPlayFlyCard(null), 520),
+            ];
+        }
         onPlayCard(wildPendingIdx, color);
         setWildPendingIdx(null);
         setSelectedIdx(null);
@@ -385,13 +549,73 @@ const handleWildColor = (color: string) => {
                 0%, 100% { box-shadow: 0 0 0 2px #fff176, 0 12px 32px rgba(0,0,0,0.55); }
                 50%       { box-shadow: 0 0 0 6px rgba(255,241,118,0.4), 0 12px 32px rgba(0,0,0,0.55); }
             }
+            @keyframes cardFlyToHand {
+                0%   { transform: translate(var(--fly-x0), var(--fly-y0)) rotate(45deg) scale(1); opacity: 1; }
+                40%  { transform: translate(calc(var(--fly-x0) * 0.5 + var(--fly-x1) * 0.5), calc(var(--fly-y0) * 0.7 + var(--fly-y1) * 0.3 - 60px)) rotate(20deg) scale(1.1); opacity: 1; }
+                60%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scale(1); opacity: 1; }
+                85%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scale(1); opacity: 1; }
+                100% { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scale(1); opacity: 0; }
+            }
+            @keyframes cardFlyToOpponent {
+                0%   { transform: translate(var(--fly-x0), var(--fly-y0)) rotate(-45deg) scale(1); opacity: 1; }
+                40%  { transform: translate(calc(var(--fly-x0) * 0.5 + var(--fly-x1) * 0.5), calc(var(--fly-y0) * 0.7 + var(--fly-y1) * 0.3 - 50px)) rotate(90deg) scale(1.1); opacity: 1; }
+                78%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scale(1); opacity: 1; }
+                90%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scale(1); opacity: 1; }
+                100% { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scale(0.85); opacity: 0; }
+            }
+            @keyframes cardFlyBack {
+                0%   { transform: translate(var(--fly-x0), var(--fly-y0)) rotate(45deg) scaleX(1); opacity: 1; }
+                25%  { transform: translate(var(--fly-x0), calc(var(--fly-y0) - 160px)) rotate(20deg) scaleX(1); opacity: 1; }
+                55%  { transform: translate(var(--fly-x1), calc(var(--fly-y1) - 80px)) rotate(var(--fly-deg)) scaleX(1); opacity: 1; }
+                65%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(1); opacity: 1; }
+                72%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(0); opacity: 1; }
+                100% { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(0); opacity: 0; }
+            }
+            @keyframes cardFlyFront {
+                0%   { transform: translate(var(--fly-x0), var(--fly-y0)) rotate(45deg) scaleX(0); opacity: 0; }
+                25%  { transform: translate(var(--fly-x0), calc(var(--fly-y0) - 160px)) rotate(20deg) scaleX(0); opacity: 0; }
+                55%  { transform: translate(var(--fly-x1), calc(var(--fly-y1) - 80px)) rotate(var(--fly-deg)) scaleX(0); opacity: 0; }
+                65%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(0); opacity: 0; }
+                71%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(0); opacity: 1; }
+                80%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(1); opacity: 1; }
+                88%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(1); opacity: 1; }
+                100% { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(var(--fly-deg)) scaleX(1); opacity: 0; }
+            }
+            @keyframes cardFlyToDiscard {
+                0%   { transform: translate(var(--fly-x0), var(--fly-y0)) rotate(0deg) scale(1); opacity: 1; }
+                40%  { transform: translate(calc(var(--fly-x0) * 0.4 + var(--fly-x1) * 0.6), calc(var(--fly-y0) * 0.4 + var(--fly-y1) * 0.6 - 55px)) rotate(-18deg) scale(1.1); opacity: 1; }
+                85%  { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(-30deg) scale(1); opacity: 1; }
+                100% { transform: translate(var(--fly-x1), var(--fly-y1)) rotate(-30deg) scale(1); opacity: 0; }
+            }
+            @keyframes discardPop {
+                0%   { transform: rotate(-2deg) translateZ(2px) scale(0.72); opacity: 0.7; }
+                60%  { transform: rotate(-2deg) translateZ(2px) scale(1.06); opacity: 1; }
+                100% { transform: rotate(-2deg) translateZ(2px) scale(1); opacity: 1; }
+            }
+            @keyframes playerActivePulse {
+                0%   { transform: scale(1); }
+                45%  { transform: scale(1.18); }
+                100% { transform: scale(1); }
+            }
+            @keyframes colorAppear {
+                0%   { transform: scale(0.6) rotate(-25deg); opacity: 0.5; }
+                65%  { transform: scale(1.08) rotate(3deg); opacity: 1; }
+                100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
         `}</style>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
 
             {/* Opponents */}
             <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', justifyContent: 'center', paddingTop: 4 }}>
                 {opponents.map(({ playerNumber: pn, count, name }) => (
-                    <OpponentFan key={pn} count={count} name={name} isActive={currentTurn === pn} />
+                    <div key={pn}>
+                        <OpponentFan
+                            count={count}
+                            name={name}
+                            isActive={currentTurn === pn}
+                            lastCardRef={el => { opponentLastCardRefs.current[pn] = el; }}
+                        />
+                    </div>
                 ))}
             </div>
 
@@ -404,24 +628,21 @@ const handleWildColor = (color: string) => {
                 padding: '43px 72px',
             }}>
 
-                {/* Discard pile with scattered cards underneath */}
+                {/* Discard pile */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                         Odbačeno
                     </span>
                     <div style={{
-                        position: 'relative', width: 120, height: 180,
+                        position: 'relative', width: 140, height: 210,
                         transform: 'perspective(600px) rotateX(12deg) rotateY(-4deg) rotate(-30deg)',
                         transformStyle: 'preserve-3d',
                     }}>
-                        {/* Previous cards in pile — show real cards, offset behind top */}
                         {[
                             { rot: -11, x: -6, y: 5 },
                             { rot:   7, x:  5, y: 3 },
                             { rot:  -3, x: -1, y: 1 },
                         ].map((s, i) => {
-                            // discardPileRecent = [oldest, ..., newest] — show from bottom up
-                            // i=0 is the furthest back, i=2 is just below top
                             const card = discardPileRecent[i];
                             return card ? (
                                 <div key={i} style={{
@@ -429,11 +650,11 @@ const handleWildColor = (color: string) => {
                                     transform: `rotate(${s.rot}deg) translate(${s.x}px, ${s.y}px) translateZ(${-8 * (3 - i)}px)`,
                                     pointerEvents: 'none',
                                 }}>
-                                    <CardFace card={card} w={120} h={180} />
+                                    <CardFace card={card} w={140} h={210} />
                                 </div>
                             ) : (
                                 <div key={i} style={{
-                                    position: 'absolute', inset: 0, borderRadius: 10,
+                                    position: 'absolute', inset: 0, borderRadius: 12,
                                     background: 'rgba(0,0,0,0.14)',
                                     border: '1.5px solid rgba(255,255,255,0.06)',
                                     transform: `rotate(${s.rot}deg) translate(${s.x}px, ${s.y}px) translateZ(${-8 * (3 - i)}px)`,
@@ -441,17 +662,27 @@ const handleWildColor = (color: string) => {
                                 }} />
                             );
                         })}
-                        {/* Top card */}
-                        <div style={{ position: 'absolute', inset: 0, zIndex: 4, transform: 'rotate(-2deg) translateZ(2px)' }}>
+                        {/* Top card — ref here for fly-to-discard target, key triggers discardPop */}
+                        <div
+                            ref={discardRef}
+                            style={{ position: 'absolute', inset: 0, zIndex: 4 }}
+                        >
                             {discardPileTop
-                                ? <CardFace card={discardPileTop} w={120} h={180} />
-                                : <div style={{ width: 120, height: 180, borderRadius: 10, border: '2px dashed rgba(255,255,255,0.15)' }} />
+                                ? (
+                                    <div
+                                        key={discardPopKey}
+                                        style={{ animation: 'discardPop 0.32s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+                                    >
+                                        <CardFace card={discardPileTop} w={140} h={210} />
+                                    </div>
+                                )
+                                : <div style={{ width: 140, height: 210, borderRadius: 12, border: '2px dashed rgba(255,255,255,0.15)' }} />
                             }
                         </div>
                     </div>
                 </div>
 
-                {/* Current color — UNO color title SVG */}
+                {/* Current color indicator */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                     <span style={{
                         fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
@@ -463,16 +694,21 @@ const handleWildColor = (color: string) => {
                     <div style={{ width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {currentColor !== 'wild'
                             ? <img
+                                key={currentColor}
                                 src={`/images/UNO_cards/uno_title_colors/UNO_COLOR_${currentColor}.svg`}
                                 width={120}
                                 height={120}
-                                style={{ display: 'block' }}
+                                style={{ display: 'block', animation: 'colorAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
                                 draggable={false}
                             />
-                            : <div style={{
-                                width: 90, height: 90, borderRadius: '50%',
-                                background: 'conic-gradient(#e53935 0deg 90deg, #43a047 90deg 180deg, #1e88e5 180deg 270deg, #fdd835 270deg 360deg)',
-                            }} />
+                            : <div
+                                key={currentColor}
+                                style={{
+                                    width: 90, height: 90, borderRadius: '50%',
+                                    background: 'conic-gradient(#e53935 0deg 90deg, #43a047 90deg 180deg, #1e88e5 180deg 270deg, #fdd835 270deg 360deg)',
+                                    animation: 'colorAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards',
+                                }}
+                            />
                         }
                     </div>
                     <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
@@ -485,41 +721,44 @@ const handleWildColor = (color: string) => {
                     <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                         Špil ({drawPileCount})
                     </span>
-                    <div
-                        onClick={() => { if (isYourTurn && !disabled && !drewThisTurn) onDraw(); }}
-                        style={{
-                            position: 'relative',
-                            cursor: isYourTurn && !disabled && !drewThisTurn ? 'pointer' : 'default',
-                            transition: 'transform 0.15s',
-                            transform: 'rotate(45deg)',
-                        }}
-                        onMouseEnter={e => { if (isYourTurn && !disabled && !drewThisTurn) (e.currentTarget as HTMLElement).style.transform = 'rotate(45deg) translateY(-6px)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'rotate(45deg)'; }}
-                    >
+                    {/* Wrapper — ne rotira se, samo pozicionira */}
+                    <div style={{ position: 'relative', width: 112, height: 164, transform: 'rotate(45deg)' }}>
+                        {/* Statične karte ispod — ne miču se */}
                         {[2, 1].map(i => (
                             <div key={i} style={{
                                 position: 'absolute',
                                 top: i * 2, left: i * 1.5,
-                                width: 90, height: 135,
-                                borderRadius: 9,
+                                width: 105, height: 157,
+                                borderRadius: 10,
                                 background: 'radial-gradient(ellipse at 30% 30%, #1a3a6e 0%, #0d1b35 100%)',
                                 border: '1.5px solid rgba(255,255,255,0.09)',
                             }} />
                         ))}
-                        <div style={{ position: 'relative', zIndex: 3 }}>
-                            <CardBack w={90} h={135} />
+                        {/* Top karta — jedina se hover-ira i iz nje leti animacija */}
+                        <div
+                            ref={drawPileRef}
+                            onClick={handleDraw}
+                            style={{
+                                position: 'absolute', top: 0, left: 0,
+                                zIndex: 3,
+                                cursor: isYourTurn && !disabled && !drewThisTurn ? 'pointer' : 'default',
+                                transition: 'transform 0.2s ease',
+                            }}
+                            onMouseEnter={e => { if (isYourTurn && !disabled && !drewThisTurn) (e.currentTarget as HTMLElement).style.transform = 'translateY(-6px)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
+                        >
+                            <CardBack w={105} h={157} />
+                            {isYourTurn && !disabled && !drewThisTurn && (
+                                <div style={{
+                                    position: 'absolute', inset: 0, zIndex: 4, borderRadius: 8,
+                                    boxShadow: '0 0 0 2px #fff176, 0 0 14px rgba(255,241,118,0.4)',
+                                    pointerEvents: 'none',
+                                }} />
+                            )}
                         </div>
-                        {isYourTurn && !disabled && !drewThisTurn && (
-                            <div style={{
-                                position: 'absolute', inset: 0, zIndex: 4, borderRadius: 7,
-                                boxShadow: '0 0 0 2px #fff176, 0 0 14px rgba(255,241,118,0.4)',
-                                pointerEvents: 'none',
-                            }} />
-                        )}
                     </div>
                 </div>
             </div>
-
 
             {/* Player's hand label */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: -50 }}>
@@ -539,17 +778,124 @@ const handleWildColor = (color: string) => {
                 }}>{ownHand.length}</span>
             </div>
 
+            {/* Draw animation — poleđina leti do ruke, pa flip reveal */}
+            {flyCard && (() => {
+                const { w, h, deg, drawnCard } = flyCard;
+                const dx = flyCard.toX - flyCard.fromX;
+                const dy = flyCard.toY - flyCard.fromY;
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        left: flyCard.fromX - w / 2,
+                        top: flyCard.fromY - h / 2,
+                        width: w, height: h,
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                        ['--fly-x0' as string]: '0px',
+                        ['--fly-y0' as string]: '0px',
+                        ['--fly-x1' as string]: `${dx}px`,
+                        ['--fly-y1' as string]: `${dy}px`,
+                        ['--fly-deg' as string]: `${deg}deg`,
+                    }}>
+                        {/* poleđina leti, na odredištu se scaleX→0 (flip out) */}
+                        <div style={{ position: 'absolute', inset: 0, animation: 'cardFlyBack 1.4s ease-in-out forwards', transformOrigin: 'center' }}>
+                            <CardBack w={w} h={h} />
+                        </div>
+                        {/* lice čeka na odredištu, pa scaleX 0→1 (flip in), pa nestaje */}
+                        {drawnCard && (
+                            <div style={{ position: 'absolute', inset: 0, animation: 'cardFlyFront 1.4s ease-in-out forwards', transformOrigin: 'center' }}>
+                                <CardFace card={drawnCard} w={w} h={h} />
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
+
+            {/* Opponent draw animation — poleđina leti prema protivniku */}
+            {oppFlyCard && (() => {
+                const dx = oppFlyCard.toX - oppFlyCard.fromX;
+                const dy = oppFlyCard.toY - oppFlyCard.fromY;
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        left: oppFlyCard.fromX - 40,
+                        top: oppFlyCard.fromY - 60,
+                        width: 80, height: 120,
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                        animation: 'cardFlyToOpponent 0.65s cubic-bezier(0.25,0.46,0.45,0.94) forwards',
+                        ['--fly-x0' as string]: '0px',
+                        ['--fly-y0' as string]: '0px',
+                        ['--fly-x1' as string]: `${dx}px`,
+                        ['--fly-y1' as string]: `${dy}px`,
+                        ['--fly-deg' as string]: `${oppFlyCard.deg}deg`,
+                    }}>
+                        <CardBack w={80} h={120} />
+                    </div>
+                );
+            })()}
+
+            {/* Play animation — card flies from hand to discard pile */}
+            {playFlyCard && (() => {
+                const dx = playFlyCard.toX - playFlyCard.fromX;
+                const dy = playFlyCard.toY - playFlyCard.fromY;
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        left: playFlyCard.fromX - 70,
+                        top: playFlyCard.fromY - 105,
+                        width: 140, height: 210,
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                        animation: 'cardFlyToDiscard 0.5s cubic-bezier(0.25,0.46,0.45,0.94) forwards',
+                        ['--fly-x0' as string]: '0px',
+                        ['--fly-y0' as string]: '0px',
+                        ['--fly-x1' as string]: `${dx}px`,
+                        ['--fly-y1' as string]: `${dy}px`,
+                    }}>
+                        <CardFace card={playFlyCard.card} w={140} h={210} />
+                    </div>
+                );
+            })()}
+
+            {/* Opponent play animation — karta leti s fana na discard, iste vel i rotacije kao discard */}
+            {oppPlayFlyCard && (() => {
+                const dx = oppPlayFlyCard.toX - oppPlayFlyCard.fromX;
+                const dy = oppPlayFlyCard.toY - oppPlayFlyCard.fromY;
+                return (
+                    <div style={{
+                        position: 'fixed',
+                        left: oppPlayFlyCard.fromX - 70,
+                        top: oppPlayFlyCard.fromY - 105,
+                        width: 140, height: 210,
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                        animation: 'cardFlyToDiscard 0.6s cubic-bezier(0.25,0.46,0.45,0.94) forwards',
+                        ['--fly-x0' as string]: '0px',
+                        ['--fly-y0' as string]: '0px',
+                        ['--fly-x1' as string]: `${dx}px`,
+                        ['--fly-y1' as string]: `${dy}px`,
+                    }}>
+                        <CardBack w={140} h={210} />
+                    </div>
+                );
+            })()}
+
             {/* Player fan */}
-            <PlayerFan
-                hand={ownHand}
-                selectedIdx={selectedIdx}
-                wildPendingIdx={wildPendingIdx}
-                isYourTurn={isYourTurn}
-                disabled={disabled}
-                isPlayable={isPlayable}
-                onCardClick={handleCardClick}
-                onWildColor={handleWildColor}
-            />
+            <div ref={handRef}>
+                <PlayerFan
+                    hand={ownHand}
+                    selectedIdx={selectedIdx}
+                    wildPendingIdx={wildPendingIdx}
+                    isYourTurn={isYourTurn}
+                    disabled={disabled}
+                    isPlayable={isPlayable}
+                    onCardClick={handleCardClick}
+                    onWildColor={handleWildColor}
+                    lastCardRef={lastPlayerCardRef}
+                    hideLastCard={hidingLastCard}
+                />
+            </div>
         </div>
         </>
     );

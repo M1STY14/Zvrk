@@ -3,7 +3,7 @@ import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBa
 import UnoBoard, { UnoState } from '@/GameBoards/UnoBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const RULES = [
     { label: 'Igranje', text: 'Odigraj kartu koja odgovara boji ili broju vrha odbačenog špila.' },
@@ -86,13 +86,18 @@ export default function UnoPlay({ auth, session }: Props) {
     // When Inertia reloads session (after opponent's move), sync state
     useEffect(() => {
         if (session.state) {
-            setTimeout(() => setUnoState(session.state), 0);
+            setUnoState(session.state);
         }
     }, [session.state]);
     const [winner, setWinner] = useState<string | null>(initialWinnerName);
     const [gameOver, setGameOver] = useState(isFinished);
     const [showGameOver, setShowGameOver] = useState(isFinished);
     const [showRules, setShowRules] = useState(false);
+    const [opponentDrawAnim, setOpponentDrawAnim] = useState<{ player: number; seq: number } | null>(null);
+    const [opponentPlayAnim, setOpponentPlayAnim] = useState<{ player: number; seq: number } | null>(null);
+    const animSeq = useRef(0);
+    const unoStateRef = useRef(unoState);
+    unoStateRef.current = unoState;
 
     const playerNames = useMemo(
         () => session.players.reduce<Record<string, string>>((acc, p) => {
@@ -163,11 +168,33 @@ export default function UnoPlay({ auth, session }: Props) {
         {
             onMoveMade: (event) => {
                 if (event.playerId === auth.user.id) {
-                    // Own move — already handled by HTTP response, just sync public fields
                     mergePublicUpdate(event.state);
                 } else {
-                    // Opponent's move — fetch player-specific state from server so ownHand is correct
-                    router.reload({ only: ['session'] });
+                    const opponentPlayer = session.players.find(p => p.user.id === event.playerId);
+                    let animDelay = 0;
+                    if (opponentPlayer && typeof event.state === 'object' && event.state !== null) {
+                        const st = event.state as Record<string, unknown>;
+                        const seq = ++animSeq.current;
+                        if (st.drewThisTurn === true) {
+                            setOpponentDrawAnim({ player: opponentPlayer.player_number, seq });
+                            setTimeout(() => setOpponentDrawAnim(null), 700);
+                            animDelay = 700;
+                        } else {
+                            const newTop = st.discardPileTop as { color?: string; type?: string; value?: number | null } | null | undefined;
+                            const oldTop = unoStateRef.current?.discardPileTop;
+                            const discardChanged = newTop != null && (
+                                newTop.color !== oldTop?.color ||
+                                newTop.type !== oldTop?.type ||
+                                newTop.value !== oldTop?.value
+                            );
+                            if (discardChanged) {
+                                setOpponentPlayAnim({ player: opponentPlayer.player_number, seq });
+                                setTimeout(() => setOpponentPlayAnim(null), 650);
+                                animDelay = 650;
+                            }
+                        }
+                    }
+                    setTimeout(() => router.reload({ only: ['session'] }), animDelay);
                 }
             },
             onGameEnded: (event) => {
@@ -238,6 +265,18 @@ export default function UnoPlay({ auth, session }: Props) {
     return (
         <>
             <Head title={`${session.game.name} — ${session.name}`} />
+            <style>{`
+                @keyframes turnPulse {
+                    0%   { transform: scale(1); }
+                    35%  { transform: scale(1.12); }
+                    100% { transform: scale(1); }
+                }
+                @keyframes dotPulse {
+                    0%   { transform: scale(1); }
+                    40%  { transform: scale(1.6); box-shadow: 0 0 0 5px ${currentColorMeta.bg}35; }
+                    100% { transform: scale(1); box-shadow: none; }
+                }
+            `}</style>
 
             <div
                 style={{
@@ -320,9 +359,16 @@ export default function UnoPlay({ auth, session }: Props) {
                     />
 
                     {/* Turn indicator */}
-                    <div className="flex items-center gap-3 mb-6">
+                    <div
+                        key={String(isYourTurn)}
+                        className="flex items-center gap-3 mb-6"
+                        style={{ animation: isYourTurn ? 'turnPulse 0.5s ease-out both' : 'none' }}
+                    >
                         <div
-                            style={{ background: currentColorMeta.bg }}
+                            style={{
+                                background: currentColorMeta.bg,
+                                animation: isYourTurn ? 'dotPulse 0.5s ease-out both' : 'none',
+                            }}
                             className="w-4 h-4 rounded-full"
                         />
                         <span className="text-sm font-semibold text-slate-700">
@@ -344,6 +390,8 @@ export default function UnoPlay({ auth, session }: Props) {
                         onPlayCard={handlePlayCard}
                         onDraw={handleDraw}
                         onPass={handlePass}
+                        opponentDrawAnim={opponentDrawAnim}
+                        opponentPlayAnim={opponentPlayAnim}
                     />
                 </div>
             </div>
