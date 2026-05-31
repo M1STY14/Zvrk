@@ -66,12 +66,42 @@ async function postMove(sessionId: string, moveData: Record<string, unknown>): P
     });
 }
 
-const UNO_COLORS: Record<string, { bg: string; light: string; name: string }> = {
-    red:    { bg: '#ef4444', light: '#fff1f1', name: 'Crvena' },
-    green:  { bg: '#22c55e', light: '#f0fdf4', name: 'Zelena' },
-    blue:   { bg: '#3b82f6', light: '#eff6ff', name: 'Plava' },
-    yellow: { bg: '#eab308', light: '#fefce8', name: 'Žuta' },
-    wild:   { bg: '#1e293b', light: '#f8fafc', name: 'Wild' },
+const UNO_COLORS: Record<string, { bg: string; mid: string; dark: string; light: string; name: string }> = {
+    red: {
+        bg: '#ef4444',
+        mid: '#dc2626',
+        dark: '#7f1d1d',
+        light: '#fee2e2',
+        name: 'Crvena',
+    },
+    green: {
+        bg: '#22c55e',
+        mid: '#16a34a',
+        dark: '#14532d',
+        light: '#dcfce7',
+        name: 'Zelena',
+    },
+    blue: {
+        bg: '#3b82f6',
+        mid: '#2563eb',
+        dark: '#1e3a8a',
+        light: '#dbeafe',
+        name: 'Plava',
+    },
+    yellow: {
+        bg: '#facc15',
+        mid: '#eab308',
+        dark: '#854d0e',
+        light: '#fef9c3',
+        name: 'Žuta',
+    },
+    wild: {
+        bg: '#334155',
+        mid: '#1e293b',
+        dark: '#020617',
+        light: '#e2e8f0',
+        name: 'Wild',
+    },
 };
 
 export default function UnoPlay({ auth, session }: Props) {
@@ -262,8 +292,8 @@ export default function UnoPlay({ auth, session }: Props) {
         return (
             <>
                 <Head title={`${session.game.name} — ${session.name}`} />
-                <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                    <p className="text-slate-500">Čekanje na početak igre...</p>
+                <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(circle at 50% 35%, #475569 0%, #1e293b 55%, #020617 100%)' }}>
+                    <p className="text-slate-300">Čekanje na početak igre...</p>
                 </div>
             </>
         );
@@ -290,40 +320,52 @@ export default function UnoPlay({ auth, session }: Props) {
             <div
                 style={{
                     minHeight: '100vh',
-                    background: currentColorMeta.light,
+                    background: `
+                        radial-gradient(circle at 50% 34%,
+                            rgba(255,255,255,0.26) 0%,
+                            ${currentColorMeta.bg} 22%,
+                            ${currentColorMeta.mid} 52%,
+                            ${currentColorMeta.dark} 100%
+                        )
+                    `,
                     transition: 'background 0.6s ease',
-                    color: '#0f172a',
+                    color: '#cbd5e1',
                     paddingBottom: 40,
+                    overflowX: 'hidden',
                 }}
                 className="px-6 py-8"
             >
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-6xl mx-auto">
                     {/* Header */}
                     <div className="flex items-center justify-between flex-wrap gap-3 mb-8">
                         <div>
-                            <h1 className="text-3xl font-extrabold tracking-tight">{session.game.name}</h1>
-                            <p className="mt-1 text-sm text-slate-500">{session.name}</p>
+                            <h1 className="text-3xl font-extrabold tracking-tight text-slate-200 drop-shadow">
+                                {session.game.name}
+                            </h1>
+                            <p className="mt-1 text-sm text-slate-300/90 drop-shadow-sm">{session.name}</p>
                         </div>
                         <div className="flex gap-3 items-center">
                             <button
                                 type="button"
                                 onClick={() => setShowRules(r => !r)}
                                 title="Pravila igre"
-                                className="rounded-full border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
-                                style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                className="rounded-full border text-sm font-semibold transition"
+                                style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#cbd5e1', borderColor: 'rgba(203,213,225,0.55)', background: 'rgba(15,23,42,0.22)' }}
                             >
                                 ?
                             </button>
                             <Link
                                 href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
+                                className="rounded-full border px-5 py-2 text-sm font-semibold transition"
+                                style={{ color: '#cbd5e1', borderColor: 'rgba(203,213,225,0.55)', background: 'rgba(15,23,42,0.22)' }}
                             >
                                 Natrag u predvorje
                             </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}
-                                className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition"
+                                className="rounded-full px-5 py-2 text-sm font-semibold transition"
+                                style={{ color: '#cbd5e1', background: 'rgba(15,23,42,0.62)', border: '1px solid rgba(203,213,225,0.35)' }}
                             >
                                 Napusti igru
                             </button>
@@ -376,15 +418,16 @@ export default function UnoPlay({ auth, session }: Props) {
                         <div
                             style={{
                                 background: currentColorMeta.bg,
+                                border: '1px solid rgba(203,213,225,0.65)',
                                 animation: isYourTurn ? 'dotPulse 0.5s ease-out both' : 'none',
                             }}
                             className="w-4 h-4 rounded-full"
                         />
-                        <span className="text-sm font-semibold text-slate-700">
+                        <span className="text-sm font-semibold text-slate-300 drop-shadow-sm">
                             {isYourTurn ? 'Tvoj red' : 'Protivnik igra...'}
                         </span>
                         {playerNumber && (
-                            <span className="ml-auto text-sm text-slate-500">
+                            <span className="ml-auto text-sm text-slate-300/90 drop-shadow-sm">
                                 Ti si igrač {playerNumber}
                             </span>
                         )}

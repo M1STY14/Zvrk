@@ -33,12 +33,14 @@ export type UnoBoardProps = {
 };
 
 const COLOR_BG: Record<string, string> = {
-    red: '#e53935',
-    green: '#43a047',
-    blue: '#1e88e5',
-    yellow: '#fdd835',
-    wild: '#212121',
+    red: '#dc2626',
+    green: '#16a34a',
+    blue: '#2563eb',
+    yellow: '#eab308',
+    wild: '#1f2937',
 };
+
+
 
 const COLOR_LABEL: Record<string, string> = {
     red: 'Crvena',
@@ -84,16 +86,18 @@ function CardFace({
         <div
             onClick={onClick}
             style={{
+                position: 'relative',
                 width: w,
                 height: h,
                 borderRadius: Math.round(w * 0.13),
                 boxShadow: selected
-                    ? `0 0 0 3px ${bg}, 0 0 16px ${bg}80, 0 12px 32px rgba(0,0,0,0.55)`
+                    ? `0 0 0 3px ${bg}, 0 0 18px ${bg}88, 0 18px 34px rgba(0,0,0,0.55)`
                     : playable
-                      ? '0 0 0 2px rgba(255,255,255,0.55), 0 8px 20px rgba(0,0,0,0.4)'
-                      : 'none',
+                      ? '0 0 0 2px rgba(255,255,255,0.55), 0 12px 24px rgba(0,0,0,0.42)'
+                      : '0 10px 18px rgba(0,0,0,0.28)',
                 cursor: onClick ? 'pointer' : 'default',
-                transform: `rotate(${rotation}deg) translateY(${lift}px) scale(${selected ? 1.12 : 1})`,
+                transform: `perspective(900px) rotateX(10deg) rotateY(${rotation * 0.18}deg) rotate(${rotation}deg) translateY(${lift}px) scale(${selected ? 1.12 : 1})`,
+                transformStyle: 'preserve-3d',
                 transition: 'transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s',
                 animation: selected ? 'cardPulse 1.2s ease-in-out infinite' : 'none',
                 userSelect: 'none',
@@ -110,6 +114,14 @@ function CardFace({
                 style={{ display: 'block', userSelect: 'none', pointerEvents: 'none' }}
                 draggable={false}
             />
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.08) 24%, rgba(255,255,255,0) 55%)',
+                    pointerEvents: 'none',
+                }}
+            />
         </div>
     );
 }
@@ -117,11 +129,14 @@ function CardFace({
 function CardBack({ w = 54, h = 80, rotation = 0 }: { w?: number; h?: number; rotation?: number }) {
     return (
         <div style={{
+            position: 'relative',
             width: w,
             height: h,
             borderRadius: Math.round(w * 0.12),
             flexShrink: 0,
             transform: `rotate(${rotation}deg)`,
+            transformStyle: 'preserve-3d',
+            boxShadow: '0 10px 20px rgba(0,0,0,0.32)',
             overflow: 'hidden',
             display: 'block',
         }}>
@@ -132,9 +147,84 @@ function CardBack({ w = 54, h = 80, rotation = 0 }: { w?: number; h?: number; ro
                 style={{ display: 'block', userSelect: 'none', pointerEvents: 'none' }}
                 draggable={false}
             />
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.05) 35%, rgba(255,255,255,0) 70%)',
+                    pointerEvents: 'none',
+                }}
+            />
         </div>
     );
 }
+
+function TurnRing({ active }: { active: boolean; currentColor: string }) {
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                width: 'clamp(300px, 52vw, 470px)',
+                height: 'clamp(300px, 52vw, 470px)',
+                transform: 'translate(-50%, -50%)',
+                pointerEvents: 'none',
+                zIndex: 0,
+                opacity: active ? 1 : 0.45,
+            }}
+        >
+            {/* Tilt wrapper — nakosi cijeli krug, a unutarnji dio se i dalje normalno vrti */}
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    transform: 'perspective(900px) rotateX(54deg) rotateZ(-5deg)',
+                    transformStyle: 'preserve-3d',
+                }}
+            >
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 'clamp(18px, 4vw, 30px)',
+                        borderRadius: '50%',
+                        border: 'none',
+                        animation: active ? 'turnRingSpin 8s linear infinite' : 'none',
+                        transformOrigin: 'center center',
+                    }}
+                >
+                    {[45, 135, 225, 315].map((deg) => (
+                        <div
+                            key={deg}
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: '50%',
+                                transform: `translate(-50%, -50%) rotate(${deg}deg) translateY(clamp(-205px, -22vw, -130px))`,
+                            }}
+                        >
+                            <img
+                                src="/images/UNO_cards/spin_arrow.svg"
+                                alt=""
+                                draggable={false}
+                                style={{
+                                    display: 'block',
+                                    width: 'clamp(104px, 12vw, 150px)',
+                                    height: 'auto',
+                                    userSelect: 'none',
+                                    pointerEvents: 'none',
+                                    transform: 'rotate(-45deg)',
+                                    transformOrigin: 'center center',
+                                }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 
 /** Fan of opponent's card backs — cards face inward (rotated 180°), arc opens upward */
 function OpponentFan({ count, name, isActive, lastCardRef }: {
@@ -161,8 +251,7 @@ function OpponentFan({ count, name, isActive, lastCardRef }: {
                     key={isActive ? 'active' : 'inactive'}
                     style={{
                         fontSize: 13, fontWeight: 700,
-                        color: isActive ? '#fbbf24' : '#94a3b8',
-                        textShadow: isActive ? '0 0 8px rgba(251,191,36,0.5)' : 'none',
+                        color: '#111827',
                         animation: isActive ? 'playerActivePulse 0.55s ease-out forwards' : 'none',
                         display: 'inline-block',
                     }}
@@ -170,11 +259,11 @@ function OpponentFan({ count, name, isActive, lastCardRef }: {
                 <span style={{
                     fontSize: 12, fontWeight: 700,
                     background: 'transparent',
-                    border: `1.5px solid ${isActive ? '#fbbf24' : '#94a3b8'}`,
+                    border: '1.5px solid rgba(17,24,39,0.42)',
                     borderRadius: 100,
                     width: 28, height: 28,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    color: isActive ? '#fbbf24' : '#94a3b8',
+                    color: '#111827',
                 }}>{count}</span>
             </div>
             {/* Fan container */}
@@ -240,25 +329,33 @@ function PlayerFan({
     hideLastCard?: boolean;
 }) {
     const count = hand.length;
-    if (count === 0) return <span style={{ color: '#64748b', fontSize: 14 }}>Nema karata!</span>;
+    if (count === 0) return <span style={{ color: '#111827', fontSize: 14 }}>Nema karata!</span>;
 
     const W = count > 9 ? Math.max(84, Math.round(116 * (9 / count))) : 116;
     const H = Math.round(W * 1.5);
-    const maxSpreadDeg = Math.min(count * 9, 130);
+    const maxSpreadDeg = Math.min(count * 10.5, 150);
     const startDeg = -maxSpreadDeg / 2;
     const stepDeg = count > 1 ? maxSpreadDeg / (count - 1) : 0;
-    const spacing = Math.min(W * 0.38, 380 / Math.max(count, 1));
+    const spacing = Math.min(W * 0.34, 360 / Math.max(count, 1));
     const totalW = count > 1 ? (count - 1) * spacing + W : W;
-    const containerW = totalW + 80;
-    const containerH = H + 130;
+    const containerW = totalW + 90;
+    const containerH = H + 150;
 
     return (
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', width: containerW, height: containerH }}>
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', perspective: '1600px' }}>
+            <div
+                style={{
+                    position: 'relative',
+                    width: containerW,
+                    height: containerH,
+                    transform: 'rotateX(14deg)',
+                    transformStyle: 'preserve-3d',
+                }}
+            >
                 {hand.map((card, idx) => {
                     const t = count > 1 ? idx / (count - 1) - 0.5 : 0;
                     const xPx = t * (count - 1) * spacing;
-                    const yPx = (t * t) * 30;
+                    const yPx = Math.abs(t) * 12 + (t * t) * 46;
                     const deg = startDeg + idx * stepDeg;
                     const playable = isPlayable(card, idx);
                     const selected = selectedIdx === idx;
@@ -287,7 +384,7 @@ function PlayerFan({
                                 h={H}
                                 selected={selected}
                                 playable={playable && !selected}
-                                rotation={deg * 0.5}
+                                rotation={deg * 0.72}
                             />
                             {/* Color picker — above wild card */}
                             {isWildPending && (
@@ -299,7 +396,7 @@ function PlayerFan({
                                             const vt = count > 1 ? virtualIdx / (count - 1) - 0.5 : offset / 4;
                                             const cxPx = vt * (count - 1) * spacing - xPx;
                                             const cyPx = (vt * vt) * 30 - yPx;
-                                            const cdeg = (startDeg + virtualIdx * stepDeg) * 0.5;
+                                            const cdeg = (startDeg + virtualIdx * stepDeg) * 0.72;
                                             return (
                                                 <button
                                                     key={color}
@@ -459,10 +556,10 @@ export default function UnoBoard({
             const newCount = ownHand.length + 1;
             const W = newCount > 9 ? Math.max(84, Math.round(116 * (9 / newCount))) : 116;
             const H = Math.round(W * 1.5);
-            const maxSpreadDeg = Math.min(newCount * 9, 130);
+            const maxSpreadDeg = Math.min(newCount * 10.5, 150);
             const startDeg = -maxSpreadDeg / 2;
             const stepDeg = newCount > 1 ? maxSpreadDeg / (newCount - 1) : 0;
-            const deg = (startDeg + (newCount - 1) * stepDeg) * 0.5;
+            const deg = (startDeg + (newCount - 1) * stepDeg) * 0.72;
             setHidingLastCard(true);
             // drawnCard se popunjava naknadno kad HTTP response ažurira ownHand
             setFlyCard({
@@ -618,11 +715,39 @@ export default function UnoBoard({
                 65%  { transform: scale(1.08) rotate(3deg); opacity: 1; }
                 100% { transform: scale(1) rotate(0deg); opacity: 1; }
             }
+            @keyframes turnRingSpin {
+                from { transform: rotate(0deg); }
+                to   { transform: rotate(-360deg); }
+            }
+            @keyframes turnRingPulse {
+                0%, 100% {
+                    opacity: 0.65;
+                    transform: scale(1);
+                }
+                50% {
+                    opacity: 1;
+                    transform: scale(1.04);
+                }
+            }
         `}</style>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: 'clamp(16px, 3vw, 24px) clamp(8px, 2vw, 18px) 12px',
+                borderRadius: 0,
+                background: 'transparent',
+                boxShadow: 'none',
+                overflow: 'visible',
+                transition: 'none',
+            }}
+        >
 
             {/* Opponents */}
-            <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap', justifyContent: 'center', paddingTop: 4 }}>
+            <div style={{ position: 'relative', zIndex: 3, display: 'flex', gap: 40, flexWrap: 'wrap', justifyContent: 'center', paddingTop: 4 }}>
                 {opponents.map(({ playerNumber: pn, count, name }) => (
                     <div key={pn}>
                         <OpponentFan
@@ -640,13 +765,19 @@ export default function UnoBoard({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 78,
-                padding: '43px 72px',
+                gap: 'clamp(28px, 7vw, 78px)',
+                padding: 'clamp(30px, 6vw, 52px) clamp(10px, 5vw, 72px)',
+                position: 'relative',
+                minHeight: 'clamp(280px, 42vw, 360px)',
+                isolation: 'isolate',
+                width: '100%',
+                flexWrap: 'wrap',
             }}>
+                <TurnRing active={isYourTurn} currentColor={currentColor} />
 
                 {/* Discard pile */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: '#111827', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                         Odbačeno
                     </span>
                     <div style={{
@@ -699,27 +830,57 @@ export default function UnoBoard({
                 </div>
 
                 {/* Current color indicator */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                     <span style={{
                         fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
-                        color: COLOR_BG[currentColor] ?? '#94a3b8',
-                        textShadow: `0 0 8px ${COLOR_BG[currentColor] ?? '#888'}80`,
+                        color: '#111827',
                     }}>
                         Boja
                     </span>
-                    <div style={{ width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                        style={{
+                            position: 'relative',
+                            width: 250,
+                            height: 170,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <div
+                            style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: '50%',
+                                width: 290,
+                                height: 220,
+                                transform: 'translate(-50%, -50%)',
+                                borderRadius: '50%',
+                                background: `radial-gradient(circle,
+                                    rgba(255,255,255,0.78) 0%,
+                                    rgba(255,255,255,0.54) 28%,
+                                    rgba(255,255,255,0.26) 50%,
+                                    rgba(255,255,255,0.10) 68%,
+                                    rgba(255,255,255,0) 84%)`,
+                                filter: 'blur(2px)',
+                                pointerEvents: 'none',
+                                zIndex: 0,
+                            }}
+                        />
                         {currentColor !== 'wild'
                             ? <img
                                 key={currentColor}
                                 src={`/images/UNO_cards/uno_title_colors/UNO_COLOR_${currentColor}.svg`}
                                 width={120}
                                 height={120}
-                                style={{ display: 'block', animation: 'colorAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+                                style={{ position: 'relative', zIndex: 1, display: 'block', animation: 'colorAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
                                 draggable={false}
                             />
                             : <div
                                 key={currentColor}
                                 style={{
+                                    position: 'relative',
+                                    zIndex: 1,
                                     width: 90, height: 90, borderRadius: '50%',
                                     background: 'conic-gradient(#e53935 0deg 90deg, #43a047 90deg 180deg, #1e88e5 180deg 270deg, #fdd835 270deg 360deg)',
                                     animation: 'colorAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards',
@@ -727,70 +888,82 @@ export default function UnoBoard({
                             />
                         }
                     </div>
-                    <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>
+                    <span style={{ fontSize: 11, color: '#111827', fontWeight: 700 }}>
                         {COLOR_LABEL[currentColor] ?? '—'}
                     </span>
                 </div>
 
                 {/* Draw pile */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: '#111827', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                         Špil ({drawPileCount})
                     </span>
-                    {/* Wrapper — ne rotira se, samo pozicionira */}
-                    <div style={{ position: 'relative', width: 112, height: 164, transform: 'rotate(45deg)' }}>
-                        {/* Statične karte ispod — ne miču se */}
-                        {[2, 1].map(i => (
+                    {/* Wrapper — špil je spušten niže i složen u 3D slojeve */}
+                    <div
+                        style={{
+                            position: 'relative',
+                            width: 116,
+                            height: 170,
+                            transform: 'translateY(24px) perspective(900px) rotateX(18deg) rotateY(8deg) rotate(-18deg)',
+                            transformStyle: 'preserve-3d',
+                        }}
+                    >
+                        {/* Statične karte ispod — sve su pravi back.svg slojevi za 3D špil */}
+                        {[3, 2, 1].map(i => (
                             <div key={i} style={{
                                 position: 'absolute',
-                                top: i * 2, left: i * 1.5,
-                                width: 105, height: 157,
-                                borderRadius: 10,
-                                background: 'radial-gradient(ellipse at 30% 30%, #1a3a6e 0%, #0d1b35 100%)',
-                                border: '1.5px solid rgba(255,255,255,0.09)',
-                            }} />
+                                top: i * 3,
+                                left: i * 2,
+                                width: 105,
+                                height: 157,
+                                transform: `translateZ(${-i * 8}px)`,
+                                filter: `brightness(${1 - i * 0.045})`,
+                                pointerEvents: 'none',
+                            }}>
+                                <CardBack w={105} h={157} />
+                            </div>
                         ))}
                         {/* Top karta — jedina se hover-ira i iz nje leti animacija */}
                         <div
                             ref={drawPileRef}
                             onClick={handleDraw}
                             style={{
-                                position: 'absolute', top: 0, left: 0,
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
                                 zIndex: 3,
                                 cursor: isYourTurn && !disabled && !drewThisTurn ? 'pointer' : 'default',
                                 transition: 'transform 0.2s ease',
+                                transform: 'translateZ(16px)',
                             }}
-                            onMouseEnter={e => { if (isYourTurn && !disabled && !drewThisTurn) (e.currentTarget as HTMLElement).style.transform = 'translateY(-6px)'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
+                            onMouseEnter={e => {
+                                if (isYourTurn && !disabled && !drewThisTurn) {
+                                    (e.currentTarget as HTMLElement).style.transform = 'translateZ(20px) translateY(-8px)';
+                                }
+                            }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateZ(16px)'; }}
                         >
                             <CardBack w={105} h={157} />
-                            {isYourTurn && !disabled && !drewThisTurn && (
-                                <div style={{
-                                    position: 'absolute', inset: 0, zIndex: 4, borderRadius: 8,
-                                    boxShadow: '0 0 0 2px #fff176, 0 0 14px rgba(255,241,118,0.4)',
-                                    pointerEvents: 'none',
-                                }} />
-                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Player's hand label */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: -50 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: -50, position: 'relative', zIndex: 3 }}>
                 <span style={{
-                    fontSize: 12, fontWeight: 600,
-                    color: isYourTurn ? '#fbbf24' : '#94a3b8',
-                    textShadow: isYourTurn ? '0 0 8px rgba(251,191,36,0.5)' : 'none',
+                    fontSize: 12, fontWeight: 700,
+                    color: '#111827',
                 }}>Tvoje karte</span>
                 <span style={{
                     fontSize: 12, fontWeight: 700,
                     background: 'transparent',
-                    border: `1.5px solid ${isYourTurn ? '#fbbf24' : '#94a3b8'}`,
+                    border: '1.5px solid rgba(17,24,39,0.42)',
                     borderRadius: 100,
                     width: 28, height: 28,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    color: isYourTurn ? '#fbbf24' : '#94a3b8',
+                    color: '#111827',
+                    boxShadow: isYourTurn ? '0 0 14px rgba(251,191,36,0.35)' : 'none',
                 }}>{ownHand.length}</span>
             </div>
 
@@ -899,7 +1072,7 @@ export default function UnoBoard({
             })()}
 
             {/* Player fan */}
-            <div ref={handRef}>
+            <div ref={handRef} style={{ position: 'relative', zIndex: 3 }}>
                 <PlayerFan
                     hand={ownHand}
                     selectedIdx={selectedIdx}
