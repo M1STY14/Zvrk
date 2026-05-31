@@ -34,6 +34,7 @@ const steps = [
 
 function ZvrkModel() {
     const { scene } = useGLTF('/models/welcome_zvrk.glb');
+    // @ts-ignore: temporary - react-three primitive typing shim
     return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
