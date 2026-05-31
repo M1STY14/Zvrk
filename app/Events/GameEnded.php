@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use App\Data\GameState;
-use App\Data\UnoState;
 use App\Enums\GameEndReason;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -35,9 +34,7 @@ final class GameEnded implements ShouldBroadcast
         $this->sessionId = $sessionId;
         $this->winner = $winner;
         $this->draw = $draw;
-        $this->state = $state instanceof UnoState
-            ? $state->publicBroadcast()
-            : $state->toArray();
+        $this->state = $state->toBroadcastArray();
         $this->reason = $reason;
     }
 

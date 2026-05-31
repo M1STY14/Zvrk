@@ -24,8 +24,7 @@ final class UnoState extends GameState
         public bool $drewThisTurn = false,
     ) {}
 
-    /** Returns only the public view — used for WebSocket broadcasts. */
-    public function publicBroadcast(): array
+    public function toBroadcastArray(): array
     {
         $data = $this->toArray();
         $data['hands'] = array_map('count', $this->hands);
@@ -34,6 +33,12 @@ final class UnoState extends GameState
         $data['discardPileRecent'] = array_values(array_slice($this->discardPile, -3));
 
         return $data;
+    }
+
+    /** @deprecated Use toBroadcastArray() */
+    public function publicBroadcast(): array
+    {
+        return $this->toBroadcastArray();
     }
 
     /** Returns a player-specific view — used for HTTP responses and page loads. */

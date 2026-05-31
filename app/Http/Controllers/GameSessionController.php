@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Data\MakeMoveRequest;
-use App\Data\UnoState;
 use App\Enums\GameEndReason;
 use App\Enums\GameStatus;
 use App\Enums\GameType;
@@ -142,16 +141,12 @@ final class GameSessionController extends Controller
         $gameSession->load('game');
         $result = $this->gameSessionService->applyMove($gameSession, $user, $makeMoveRequest->move_data);
 
-        // For hidden-state games, replace full state with player-specific view
         $engine = $this->engineManager->resolve($gameSession->game->slug);
         $state = $engine->makeState($result['state']);
-
-        if ($state instanceof UnoState) {
-            $player = $gameSession->players->firstWhere('user_id', $user->id);
-            $result['state'] = $player
-                ? $state->stateForPlayer($player->player_number)
-                : $state->publicBroadcast();
-        }
+        $player = $gameSession->players->firstWhere('user_id', $user->id);
+        $result['state'] = $player
+            ? $state->stateForPlayer($player->player_number)
+            : $state->toBroadcastArray();
 
         return response()->json($result);
     }
@@ -164,18 +159,11 @@ final class GameSessionController extends Controller
 
         $engine = $this->engineManager->resolve($gameSession->game->slug);
         $state = $engine->makeState($gameSession->state);
-
-        if (! $state instanceof UnoState) {
-            return $gameSession->state;
-        }
-
         $player = $gameSession->players->firstWhere('user_id', $userId);
 
-        if ($player === null) {
-            return $state->publicBroadcast();
-        }
-
-        return $state->stateForPlayer($player->player_number);
+        return $player
+            ? $state->stateForPlayer($player->player_number)
+            : $state->toBroadcastArray();
     }
 
     public function leave(GameSession $gameSession, #[CurrentUser] User $user): RedirectResponse

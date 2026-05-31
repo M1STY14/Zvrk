@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use App\Data\GameState;
-use App\Data\UnoState;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -24,9 +23,7 @@ final class GameStarted implements ShouldBroadcast
     {
         $this->sessionId = $sessionId;
         $this->startingPlayerId = $startingPlayerId;
-        $this->state = $state instanceof UnoState
-            ? $state->publicBroadcast()
-            : $state->toArray();
+        $this->state = $state->toBroadcastArray();
     }
 
     public function broadcastOn(): PresenceChannel
