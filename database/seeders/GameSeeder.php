@@ -50,6 +50,15 @@ class GameSeeder extends Seeder
                 'max_players' => 2,
                 'is_active' => false, // TODO: need to implement game engine
             ],
+            [
+                'slug' => GameType::Bela->value,
+                'name' => 'Bela',
+                'description' => 'Classic trick-taking card game for 4 players in partnerships. Bid, play, and score to 1001!',
+                'image' => '/images/homepage_games_thumbnails/bela_right_side.svg',
+                'min_players' => 4,
+                'max_players' => 4,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($games as $game) {

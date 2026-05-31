@@ -1,7 +1,8 @@
 import LudoBoard, { LudoBoardProps } from './LudoBoard';
 import TicTacToeBoard, { TicTacToeBoardProps } from './TicTacToeBoard';
+import BelaBoard, { BelaBoardProps } from './BelaBoard';
 
-type BoardProps = TicTacToeBoardProps | LudoBoardProps;
+type BoardProps = TicTacToeBoardProps | LudoBoardProps | BelaBoardProps;
 
 type Props = {
     gameSlug: string;
@@ -10,6 +11,7 @@ type Props = {
 const BOARDS: Record<string, (props: BoardProps) => JSX.Element> = {
     'tic-tac-toe': TicTacToeBoard as (props: BoardProps) => JSX.Element,
     'ludo': LudoBoard as (props: BoardProps) => JSX.Element,
+    'bela': BelaBoard as (props: BoardProps) => JSX.Element,
 };
 
 export default function GameBoardWrapper({ gameSlug, ...boardProps }: Props) {

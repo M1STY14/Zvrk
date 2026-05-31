@@ -16,12 +16,14 @@ enum GameType: string
     case Ludo = 'ludo';
     case Checkers = 'checkers';
     case FourInARow = 'four-in-a-row';
+    case Bela = 'bela';
 
     /** In-game UI page. Custom layouts must wire `useGameChannel` (JS) for disconnect UI; default is `Game/Play`. */
     public static function getInertiaPageFrom(GameSession $gameSession): string
     {
         return match (GameType::from($gameSession->game->slug)) {
             GameType::Ludo => 'Game/LudoPlay',
+            GameType::Bela => 'Game/BelaPlay',
             default => 'Game/Play',
         };
     }

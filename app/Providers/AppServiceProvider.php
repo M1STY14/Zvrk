@@ -6,6 +6,7 @@ use App\Enums\GameType;
 use App\Games\Checkers\CheckersEngine;
 use App\Games\Ludo\LudoEngine;
 use App\Games\TicTacToeEngine;
+use App\Games\Bela\BelaEngine;
 use App\Services\GameEngineManager;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Vite;
@@ -34,5 +35,6 @@ class AppServiceProvider extends ServiceProvider
         $manager->register(GameType::TicTacToe->value, TicTacToeEngine::class);
         $manager->register(GameType::Ludo->value, LudoEngine::class);
         $manager->register(GameType::Checkers->value, CheckersEngine::class);
+        $manager->register(GameType::Bela->value, BelaEngine::class);
     }
 }
