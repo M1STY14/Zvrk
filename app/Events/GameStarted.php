@@ -23,7 +23,7 @@ final class GameStarted implements ShouldBroadcast
     {
         $this->sessionId = $sessionId;
         $this->startingPlayerId = $startingPlayerId;
-        $this->state = $state->toArray();
+        $this->state = $state->toBroadcastArray();
     }
 
     public function broadcastOn(): PresenceChannel

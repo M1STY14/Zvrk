@@ -207,4 +207,3 @@ final class ConnectFourEngine implements GameContract
         return true;
     }
 }
-

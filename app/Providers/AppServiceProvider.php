@@ -7,6 +7,7 @@ use App\Games\Checkers\CheckersEngine;
 use App\Games\ConnectFourEngine;
 use App\Games\Ludo\LudoEngine;
 use App\Games\TicTacToeEngine;
+use App\Games\Uno\UnoEngine;
 use App\Services\GameEngineManager;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Vite;
@@ -36,5 +37,6 @@ class AppServiceProvider extends ServiceProvider
         $manager->register(GameType::Ludo->value, LudoEngine::class);
         $manager->register(GameType::Checkers->value, CheckersEngine::class);
         $manager->register(GameType::FourInARow->value, ConnectFourEngine::class);
+        $manager->register(GameType::Uno->value, UnoEngine::class);
     }
 }

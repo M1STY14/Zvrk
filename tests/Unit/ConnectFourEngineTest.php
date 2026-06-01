@@ -5,7 +5,6 @@ namespace Tests\Unit;
 use App\Data\ConnectFourMoveData;
 use App\Data\ConnectFourState;
 use App\Data\GameState;
-use App\Data\MoveData;
 use App\Games\ConnectFourEngine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -215,4 +214,3 @@ class ConnectFourEngineTest extends TestCase
         $this->assertSame([1], $this->engine->activePlayerNumbers($next));
     }
 }
-
