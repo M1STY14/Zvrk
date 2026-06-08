@@ -1,15 +1,19 @@
 import InputError from '@/Components/InputError';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useState, FC } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
+import { useGLTF, Stage, OrbitControls, PrimitiveProps } from '@react-three/drei';
 import { Suspense } from 'react';
+import { Group } from 'three';
 
-function ZvrkModel() {
-    const { scene } = useGLTF('/models/login_zvrk.glb');
-    // @ts-ignore: temporary - react-three primitive typing shim
-    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
+interface ZvrkModelProps {
+    object?: Group;
 }
+
+const ZvrkModel: FC = () => {
+    const { scene } = useGLTF('/models/login_zvrk.glb');
+    return <primitive object={scene} scale={3} rotation={[0, 0, 0]} /> as JSX.Element;
+};
 
 const TYPING_LINES = ['Dobrodošao natrag.', 'Prijavi se i nastavi igrati.'];
 
@@ -223,7 +227,7 @@ export default function Login({
                                     id="remember"
                                     name="remember"
                                     checked={data.remember}
-                                    onChange={(e) => setData('remember', (e.target.checked || false) as false)}
+                                    onChange={(e) => setData('remember', e.target.checked)}
                                     className="w-4 h-4 rounded"
                                     style={{ accentColor: '#005bc2' }}
                                 />

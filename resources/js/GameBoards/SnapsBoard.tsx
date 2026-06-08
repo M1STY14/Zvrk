@@ -1,8 +1,10 @@
+import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 
 export type SnapsTrickItem = {
     player: number;
     card: string;
+    marriagePoints?: number;
 };
 
 export type SnapsState = {
@@ -65,9 +67,48 @@ export default function SnapsBoard({ state, currentPlayerNumber, isYourTurn, isF
     const isClosed = state.closed ?? false;
     const player1Name = playerNames[state.players['1']] ?? 'Igrač 1';
     const player2Name = playerNames[state.players['2']] ?? 'Igrač 2';
-    const currentPlayerName = playerNames[state.players[String(state.currentTurn)]] ?? `Igrač ${state.currentTurn}`;
     const opponentName = playerNames[state.players[String(opponentNumber)]] ?? `Igrač ${opponentNumber}`;
     const closedByLabel = state.closedBy ? playerNames[state.players[String(state.closedBy)]] ?? `Igrač ${state.closedBy}` : null;
+    const [optimisticTrick, setOptimisticTrick] = useState<SnapsTrickItem[] | null>(null);
+    const [heldTrick, setHeldTrick] = useState<SnapsTrickItem[] | null>(null);
+    const [delayOpponentCard, setDelayOpponentCard] = useState(false);
+    const [holdTimer, setHoldTimer] = useState<number | null>(null);
+    const previousTrickRef = useRef<SnapsTrickItem[]>(state.trick);
+    const trickDisplay = optimisticTrick ?? (state.trick.length > 0 ? state.trick : heldTrick ?? []);
+
+    useEffect(() => {
+        if (!optimisticTrick) {
+            return;
+        }
+
+        if (state.trick.length > 0) {
+            setOptimisticTrick(null);
+        }
+    }, [state.trick, optimisticTrick]);
+
+    useEffect(() => {
+        if (state.trick.length > 0) {
+            setHeldTrick(null);
+            if (holdTimer !== null) {
+                window.clearTimeout(holdTimer);
+                setHoldTimer(null);
+            }
+        } else if (
+            previousTrickRef.current.length > 0 &&
+            state.trick.length === 0 &&
+            !optimisticTrick &&
+            holdTimer === null
+        ) {
+            setHeldTrick(previousTrickRef.current);
+            const timerId = window.setTimeout(() => {
+                setHeldTrick(null);
+                setHoldTimer(null);
+            }, 2000);
+            setHoldTimer(timerId);
+        }
+
+        previousTrickRef.current = state.trick;
+    }, [state.trick, optimisticTrick, holdTimer]);
 
     const playerCanDraw =
         currentPlayerNumber !== null &&
@@ -78,11 +119,26 @@ export default function SnapsBoard({ state, currentPlayerNumber, isYourTurn, isF
         !isFinished &&
         !isClosed;
 
-    const winnerNumber = Object.keys(state.scores).find((k) => (state.scores as any)[k] >= 501) ?? null;
-
     const handlePlay = (card: string) => (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
-        if (!isYourTurn) return;
+        if (!isYourTurn || currentPlayerNumber === null) return;
+
+        const newTrick = [
+            ...state.trick,
+            { player: currentPlayerNumber, card, marriagePoints: 0 },
+        ];
+
+        setOptimisticTrick(newTrick);
+        setHeldTrick(newTrick);
+        setDelayOpponentCard(true);
+
+        const timerId = window.setTimeout(() => {
+            setDelayOpponentCard(false);
+            setHeldTrick(null);
+            setHoldTimer(null);
+        }, 2000);
+
+        setHoldTimer(timerId);
         onPlayCard(card);
     };
 
@@ -165,23 +221,34 @@ export default function SnapsBoard({ state, currentPlayerNumber, isYourTurn, isF
             <div className="mx-4 flex-1 rounded-3xl border-4 border-emerald-500/50 bg-gradient-to-b from-emerald-900/30 to-emerald-900/20 p-6 shadow-2xl backdrop-blur-sm">
                 <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">Trenutna Slag</div>
                 <div className="mt-6 flex min-h-[200px] items-center justify-center">
-                    {state.trick.length === 0 ? (
+                    {trickDisplay.length === 0 ? (
                         <div className="text-center">
                             <div className="text-2xl text-emerald-300/60">Stol je prazan</div>
                             <div className="mt-2 text-sm text-emerald-300/40">Čeka se prvi potez...</div>
                         </div>
                     ) : (
                         <div className="flex flex-wrap justify-center gap-6">
-                            {state.trick.map((item, idx) => {
+                            {trickDisplay.map((item, idx) => {
                                 const [suit] = item.card.split('-');
                                 const isRed = suit === 'H' || suit === 'D';
                                 const trickPlayerName = playerNames[state.players[String(item.player)]] ?? `Igrač ${item.player}`;
+                                const isOpponentCard = item.player === opponentNumber;
+                                const isCurrentPlayerLead = trickDisplay[0]?.player === currentPlayerNumber && trickDisplay.length > 1;
+
+                                if (delayOpponentCard && isCurrentPlayerLead && isOpponentCard) {
+                                    return (
+                                        <div key={`${item.player}-${item.card}-hidden`} className="h-40 w-28 rounded-2xl bg-slate-900/50 shadow-inner" />
+                                    );
+                                }
+
                                 return (
                                     <div
                                         key={`${item.player}-${item.card}`}
                                         className="transform transition-all hover:scale-110"
                                         style={{
-                                            animation: `slideIn 0.5s ease-out ${idx * 100}ms backwards`,
+                                            animation: isOpponentCard 
+                                                ? `slideInOpponent 0.6s ease-out ${idx * 100}ms backwards` 
+                                                : `slideIn 0.5s ease-out ${idx * 100}ms backwards`,
                                         }}
                                     >
                                         <div className="rounded-2xl border-2 bg-white p-4 text-center shadow-xl">
@@ -318,6 +385,17 @@ export default function SnapsBoard({ state, currentPlayerNumber, isYourTurn, isF
                     to {
                         opacity: 1;
                         transform: translateY(0) rotate(0);
+                    }
+                }
+                
+                @keyframes slideInOpponent {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-30px) rotate(8deg) scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) rotate(0) scale(1);
                     }
                 }
             `}</style>

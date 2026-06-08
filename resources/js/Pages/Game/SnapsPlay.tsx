@@ -225,12 +225,6 @@ export default function SnapsPlay({ auth, session }: Props) {
                             multiple={usePluralDisconnectMessage}
                         />
 
-                        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="rounded-3xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-                                Ti si: {auth.user.name}{' '}
-                                {currentUserNumber ? `(${currentUserNumber})` : ''}
-                            </div>
-                        </div>
 
                         {!snapsState ? (
                             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">

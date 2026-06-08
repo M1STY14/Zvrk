@@ -6,56 +6,66 @@ use App\Contracts\GameContract;
 use App\Data\GameResult;
 use App\Data\GameState;
 use App\Data\MoveData;
+use App\Data\SnapsCard;
 use App\Data\SnapsMoveData;
 use App\Data\SnapsState;
+use App\Enums\SnapsRank;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 class SnapsEngine implements GameContract
 {
-    private const SUITS = ['H', 'D', 'C', 'S'];
-    private const RANKS = ['A', '10', 'K', 'Q', 'J'];
-    private const RANK_ORDER = [
-        'A' => 5,
-        '10' => 4,
-        'K' => 3,
-        'Q' => 2,
-        'J' => 1,
-    ];
-    private const CARD_VALUES = [
-        'A' => 11,
-        '10' => 10,
-        'K' => 4,
-        'Q' => 3,
-        'J' => 2,
-    ];
+    // Game end conditions
+    private const WINNING_SCORE = 501;
+    private const DEAL_END_POINTS_THRESHOLD = 66;
+
+    // Card distribution
+    private const INITIAL_HAND_SIZE = 3;
+    private const ADDITIONAL_HAND_SIZE = 2;
+    private const CARDS_PER_INITIAL_DEAL = 5;
+
+    // Player identifiers
+    private const PLAYER_ONE = 1;
+    private const PLAYER_TWO = 2;
+
+    // Queue operations
+    private const QUEUE_REMOVE_COUNT = 1;
+
+    // Game constants
+    private const EXPECTED_PLAYER_COUNT = 2;
+    private const TRICK_FULL_CARD_COUNT = 2;
+    private const TRICK_FIRST_CARD_COUNT = 1;
+    private const MIN_STOCK_INDEX = 0;
 
     public function makeState(array $data): GameState
     {
-
         return new SnapsState(
             players: collect($data['players'] ?? [])->mapWithKeys(
                 fn ($userId, $playerNumber) => [(int) $playerNumber => $userId],
             ),
             currentTurn: (int) $data['currentTurn'],
-            hands: $data['hands'] ?? [],
-            stock: $data['stock'] ?? [],
-            trumpCard: $data['trumpCard'] ?? '',
-            trick: $data['trick'] ?? [],
-            capturedPoints: $data['capturedPoints'] ?? [1 => 0, 2 => 0],
-            scores: $data['scores'] ?? [1 => 0, 2 => 0],
+            hands: $this->deserializeHands($data['hands'] ?? []),
+            stock: collect($data['stock'] ?? [])->map(fn ($card) => SnapsCard::fromString($card)),
+            trumpCard: SnapsCard::fromString($data['trumpCard'] ?? 'H-A'),
+            trick: collect($data['trick'] ?? [])->map(fn ($item) => [
+                'player' => $item['player'],
+                'card' => SnapsCard::fromString($item['card']),
+                'marriagePoints' => $item['marriagePoints'],
+            ]),
+            capturedPoints: collect($data['capturedPoints'] ?? [self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
+            scores: collect($data['scores'] ?? [self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
             lastTrickWinner: $data['lastTrickWinner'] ?? null,
-            drawQueue: $data['drawQueue'] ?? [],
+            drawQueue: collect($data['drawQueue'] ?? []),
             closed: $data['closed'] ?? false,
             closedBy: $data['closedBy'] ?? null,
-            totalPointsAtClose: $data['totalPointsAtClose'] ?? [1 => 0, 2 => 0],
+            totalPointsAtClose: collect($data['totalPointsAtClose'] ?? [self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
         );
     }
 
     public function makeMoveData(array $data): MoveData
     {
         return new SnapsMoveData(
-            card: $data['card'] ?? null,
+            card: isset($data['card']) ? SnapsCard::fromString($data['card']) : null,
             draw: $data['draw'] ?? false,
             declareMarriage: $data['declare_marriage'] ?? false,
             close: $data['close'] ?? false,
@@ -65,286 +75,83 @@ class SnapsEngine implements GameContract
 
     public function initialState(Collection $players): GameState
     {
-        if ($players->count() !== 2) {
+        if ($players->count() !== self::EXPECTED_PLAYER_COUNT) {
             throw new InvalidArgumentException('Snaps requires exactly two players.');
         }
 
         return $this->dealNewHand(
-            collect([1 => $players->get(0), 2 => $players->get(1)]),
-            1,
-            [1 => 0, 2 => 0],
+            collect([self::PLAYER_ONE => $players->get(0), self::PLAYER_TWO => $players->get(1)]),
+            self::PLAYER_ONE,
+            collect([self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
         );
     }
 
     public function validateMove(GameState $state, int $playerNumber, MoveData $moveData): bool
     {
-        if (! $state instanceof SnapsState) {
-            throw new InvalidArgumentException('SnapsEngine expects SnapsState.');
-        }
-
-        if (! $moveData instanceof SnapsMoveData) {
-            throw new InvalidArgumentException('SnapsEngine expects SnapsMoveData.');
+        if (!$state instanceof SnapsState || !$moveData instanceof SnapsMoveData) {
+            throw new InvalidArgumentException('SnapsEngine expects SnapsState and SnapsMoveData.');
         }
 
         if ($playerNumber !== $state->currentTurn) {
             return false;
         }
 
+        // Handle draw action
         if ($moveData->draw) {
-            return ! empty($state->drawQueue)
-                && $state->drawQueue[0] === $playerNumber
-                && ! empty($state->stock);
+            return $this->validateDrawMove($state, $playerNumber);
         }
 
         // If there is a pending draw queue, non-draw actions are not allowed
-        if (! empty($state->drawQueue)) {
+        if ($state->drawQueue->isNotEmpty()) {
             return false;
         }
 
-        // Allow swapping the trump (jack) as a special action when conditions met
+        // Handle swap trump action
         if ($moveData->swapTrump) {
-            $hand = $state->hands[$playerNumber] ?? [];
-            $trumpSuit = $this->cardSuit($state->trumpCard);
-            $jack = sprintf('%s-J', $trumpSuit);
-
-            return in_array($jack, $hand, true) && ! empty($state->stock) && ! $state->closed;
+            return $this->validateSwapTrumpMove($state, $playerNumber);
         }
 
-        // Allow closing the talon as a special action when stock is available and game not already closed
+        // Handle close action
         if ($moveData->close) {
-            return ! empty($state->stock) && ! $state->closed;
+            return $state->stock->isNotEmpty() && !$state->closed;
         }
 
-        $hand = $state->hands[$playerNumber] ?? [];
-        if (! in_array($moveData->card, $hand, true)) {
-            return false;
-        }
-
-        if ($moveData->declareMarriage && ! $this->isMarriage($moveData->card, $hand)) {
-            return false;
-        }
-
-        if (count($state->trick) !== 1) {
-            return true;
-        }
-
-        $lead = $state->trick[0]['card'];
-        $leadSuit = $this->cardSuit($lead);
-        $cardSuit = $this->cardSuit($moveData->card);
-
-        if ($this->hasSuit($hand, $leadSuit)) {
-            if ($cardSuit !== $leadSuit) {
-                return false;
-            }
-
-            if ($this->hasHigherSameSuit($hand, $lead, $state->trumpCard) && ! $this->cardBeats($moveData->card, $lead, $state->trumpCard)) {
-                return false;
-            }
-
-            return true;
-        }
-
-        if ($this->hasSuit($hand, $this->cardSuit($state->trumpCard))) {
-            if (! $this->isTrump($moveData->card, $state->trumpCard)) {
-                return false;
-            }
-
-            if ($this->isTrump($lead, $state->trumpCard)
-                && $this->hasHigherSameSuit($hand, $lead, $state->trumpCard)
-                && ! $this->cardBeats($moveData->card, $lead, $state->trumpCard)) {
-                return false;
-            }
-        }
-
-        return true;
+        // Handle card play
+        return $this->validateCardPlay($state, $playerNumber, $moveData);
     }
 
     public function applyMove(GameState $state, int $playerNumber, MoveData $moveData): GameState
     {
-        if (! $state instanceof SnapsState) {
-            throw new InvalidArgumentException('SnapsEngine expects SnapsState.');
-        }
-
-        if (! $moveData instanceof SnapsMoveData) {
-            throw new InvalidArgumentException('SnapsEngine expects SnapsMoveData.');
+        if (!$state instanceof SnapsState || !$moveData instanceof SnapsMoveData) {
+            throw new InvalidArgumentException('SnapsEngine expects SnapsState and SnapsMoveData.');
         }
 
         if ($moveData->draw) {
-            $stock = $state->stock;
-
-            if (empty($stock)) {
-                throw new InvalidArgumentException('No cards left in stock.');
-            }
-
-            $drawIndex = random_int(0, count($stock) - 1);
-            $drawnCard = array_splice($stock, $drawIndex, 1)[0];
-
-            $hands = $state->hands;
-            $hands[$playerNumber][] = $drawnCard;
-
-            $drawQueue = $state->drawQueue;
-            array_shift($drawQueue);
-
-            if (empty($stock)) {
-                $drawQueue = [];
-                $currentTurn = $state->lastTrickWinner ?? $playerNumber;
-            } else {
-                $currentTurn = ! empty($drawQueue)
-                    ? $drawQueue[0]
-                    : $state->lastTrickWinner ?? $playerNumber;
-            }
-
-            return new SnapsState(
-                players: $state->players,
-                currentTurn: $currentTurn,
-                hands: $hands,
-                stock: $stock,
-                trumpCard: $state->trumpCard,
-                trick: $state->trick,
-                capturedPoints: $state->capturedPoints,
-                scores: $state->scores,
-                lastTrickWinner: $state->lastTrickWinner,
-                drawQueue: $drawQueue,
-            );
+            return $this->applyDrawMove($state, $playerNumber);
         }
 
-        // Handle special actions that don't play a card from hand
         if ($moveData->swapTrump) {
-            $trumpSuit = $this->cardSuit($state->trumpCard);
-            $jack = sprintf('%s-J', $trumpSuit);
-            $hand = $state->hands[$playerNumber] ?? [];
-
-            if (! in_array($jack, $hand, true)) {
-                throw new InvalidArgumentException('Cannot swap trump: jack not in hand.');
-            }
-
-            // remove jack from hand and give player the face-up trump, set new trump
-            $index = array_search($jack, $hand, true);
-            array_splice($hand, $index, 1);
-            $hand[] = $state->trumpCard;
-
-            $hands = $state->hands;
-            $hands[$playerNumber] = array_values($hand);
-
-            return new SnapsState(
-                players: $state->players,
-                currentTurn: $playerNumber,
-                hands: $hands,
-                stock: $state->stock,
-                trumpCard: $jack,
-                trick: $state->trick,
-                capturedPoints: $state->capturedPoints,
-                scores: $state->scores,
-                lastTrickWinner: $state->lastTrickWinner,
-                drawQueue: $state->drawQueue,
-                closed: $state->closed,
-                closedBy: $state->closedBy,
-                totalPointsAtClose: $state->totalPointsAtClose,
-            );
+            return $this->applySwapTrumpMove($state, $playerNumber);
         }
 
         if ($moveData->close) {
-            if (empty($state->stock) || $state->closed) {
-                throw new InvalidArgumentException('Cannot close: stock already empty or game already closed.');
-            }
-
-            // Freeze opponent points at the moment of closing
-            $totalPointsAtClose = [
-                1 => $this->getPlayerTotalPoints(1, $state),
-                2 => $this->getPlayerTotalPoints(2, $state),
-            ];
-
-            return new SnapsState(
-                players: $state->players,
-                currentTurn: $playerNumber,
-                hands: $state->hands,
-                stock: [], // behave as if talon exhausted
-                trumpCard: $state->trumpCard,
-                trick: $state->trick,
-                capturedPoints: $state->capturedPoints,
-                scores: $state->scores,
-                lastTrickWinner: $state->lastTrickWinner,
-                drawQueue: [],
-                closed: true,
-                closedBy: $playerNumber,
-                totalPointsAtClose: $totalPointsAtClose,
-            );
+            return $this->applyCloseMove($state, $playerNumber);
         }
 
-        $hands = $state->hands;
-        $hand = $hands[$playerNumber] ?? [];
-        $index = array_search($moveData->card, $hand, true);
-
-        if ($index === false) {
-            throw new InvalidArgumentException('Card not in hand.');
-        }
-
-        $marriagePoints = $moveData->declareMarriage && $this->isMarriage($moveData->card, $hand)
-            ? $this->marriagePoints($moveData->card, $state->trumpCard)
-            : 0;
-
-        array_splice($hand, $index, 1);
-        $hands[$playerNumber] = array_values($hand);
-
-        $trick = [...$state->trick, ['player' => $playerNumber, 'card' => $moveData->card, 'marriagePoints' => $marriagePoints]];
-        $currentTurn = $this->getOtherPlayer($playerNumber);
-        $capturedPoints = $state->capturedPoints;
-        $stock = $state->stock;
-        $drawQueue = [];
-
-        if (count($trick) === 2) {
-            $trickWinner = $this->resolveTrick($trick, $state->trumpCard);
-            $points = $this->cardValue($trick[0]['card']) + $this->cardValue($trick[1]['card']);
-            $points += $trick[0]['marriagePoints'] + $trick[1]['marriagePoints'];
-            $capturedPoints[$trickWinner] = ($capturedPoints[$trickWinner] ?? 0) + $points;
-
-            $loser = $this->getOtherPlayer($trickWinner);
-            $currentTurn = $trickWinner;
-            $trick = [];
-            $lastTrickWinner = $trickWinner;
-
-            if (! empty($stock)) {
-                $drawQueue = [$trickWinner, $loser];
-            }
-        } else {
-            $lastTrickWinner = $state->lastTrickWinner;
-        }
-
-        $newState = new SnapsState(
-            players: $state->players,
-            currentTurn: $currentTurn,
-            hands: $hands,
-            stock: $stock,
-            trumpCard: $state->trumpCard,
-            trick: $trick,
-            capturedPoints: $capturedPoints,
-            scores: $state->scores,
-            lastTrickWinner: $lastTrickWinner,
-            drawQueue: $drawQueue,
-        );
-
-        if ($this->shouldEndDeal($newState)) {
-            return $this->completeDeal($newState);
-        }
-
-        return $newState;
+        return $this->applyCardPlay($state, $playerNumber, $moveData);
     }
 
     public function checkGameOver(GameState $state): ?GameResult
     {
-        if (! $state instanceof SnapsState) {
+        if (!$state instanceof SnapsState) {
             throw new InvalidArgumentException('SnapsEngine expects SnapsState.');
         }
 
-        $winner = null;
-        $highest = 0;
-
-        foreach ($state->scores as $playerNumber => $score) {
-            if ($score >= 501 && $score > $highest) {
-                $highest = $score;
-                $winner = $playerNumber;
-            }
-        }
+        $winner = $state->scores
+            ->filter(fn ($score) => $score >= self::WINNING_SCORE)
+            ->keys()
+            ->sortByDesc(fn ($playerNumber) => $state->scores[$playerNumber])
+            ->first();
 
         if ($winner === null) {
             return null;
@@ -358,7 +165,7 @@ class SnapsEngine implements GameContract
 
     public function getCurrentTurn(GameState $state): int
     {
-        if (! $state instanceof SnapsState) {
+        if (!$state instanceof SnapsState) {
             throw new InvalidArgumentException('SnapsEngine expects SnapsState.');
         }
 
@@ -367,15 +174,13 @@ class SnapsEngine implements GameContract
 
     public function forfeitPlayer(GameState $state, int $playerNumber): GameState
     {
-        if (! $state instanceof SnapsState) {
+        if (!$state instanceof SnapsState) {
             throw new InvalidArgumentException('SnapsEngine expects SnapsState.');
         }
 
-        $currentTurn = $state->currentTurn;
-
-        if ($currentTurn === $playerNumber) {
-            $currentTurn = $this->getOtherPlayer($playerNumber);
-        }
+        $currentTurn = $state->currentTurn === $playerNumber
+            ? ($playerNumber === self::PLAYER_ONE ? self::PLAYER_TWO : self::PLAYER_ONE)
+            : $state->currentTurn;
 
         return new SnapsState(
             players: $state->players,
@@ -387,12 +192,16 @@ class SnapsEngine implements GameContract
             capturedPoints: $state->capturedPoints,
             scores: $state->scores,
             lastTrickWinner: $state->lastTrickWinner,
+            drawQueue: $state->drawQueue,
+            closed: $state->closed,
+            closedBy: $state->closedBy,
+            totalPointsAtClose: $state->totalPointsAtClose,
         );
     }
 
     public function activePlayerNumbers(GameState $state): array
     {
-        if (! $state instanceof SnapsState) {
+        if (!$state instanceof SnapsState) {
             throw new InvalidArgumentException('SnapsEngine expects SnapsState.');
         }
 
@@ -402,34 +211,222 @@ class SnapsEngine implements GameContract
             ->all();
     }
 
-    private function createDeck(): array
+    // Validation helpers
+    private function validateDrawMove(SnapsState $state, int $playerNumber): bool
     {
-        $deck = [];
+        return $state->drawQueue->isNotEmpty()
+            && $state->drawQueue->first() === $playerNumber
+            && $state->stock->isNotEmpty();
+    }
 
-        foreach (self::SUITS as $suit) {
-            foreach (self::RANKS as $rank) {
-                $deck[] = sprintf('%s-%s', $suit, $rank);
+    private function validateSwapTrumpMove(SnapsState $state, int $playerNumber): bool
+    {
+        $hand = $state->hands->get($playerNumber, collect());
+        $trumpJack = new SnapsCard($state->trumpCard->suit, SnapsRank::Jack);
+
+        return $hand->contains(fn ($card) => $card->suit === $trumpJack->suit && $card->rank === $trumpJack->rank)
+            && $state->stock->isNotEmpty()
+            && !$state->closed;
+    }
+
+    private function validateCardPlay(SnapsState $state, int $playerNumber, SnapsMoveData $moveData): bool
+    {
+        $hand = $state->hands->get($playerNumber, collect());
+
+        // Check if card is in hand
+        if (!$hand->contains(fn ($card) => $this->cardsEqual($card, $moveData->card))) {
+            return false;
+        }
+
+        // Check marriage declaration
+        if ($moveData->declareMarriage) {
+            $cardsArray = $hand->all();
+            if (!$moveData->card->isMarriage(...$cardsArray)) {
+                return false;
             }
         }
 
-        return $deck;
-    }
-
-    private function dealNewHand(Collection $players, int $startingTurn, array $scores): SnapsState
-    {
-        $deck = $this->createDeck();
-        shuffle($deck);
-
-        $hands = [];
-
-        foreach ($players as $playerNumber => $playerId) {
-            $hands[(int) $playerNumber] = array_splice($deck, 0, 3);
+        // If no trick yet or first to play, any card is valid
+        if ($state->trick->isEmpty() || $state->trick->count() === self::TRICK_FIRST_CARD_COUNT) {
+            return true;
         }
 
-        $trumpCard = array_shift($deck);
+        // No follow play validation
+        return true;
+    }
+
+    // Apply move helpers
+    private function applyDrawMove(SnapsState $state, int $playerNumber): GameState
+    {
+        if ($state->stock->isEmpty()) {
+            throw new InvalidArgumentException('No cards left in stock.');
+        }
+
+        $drawIndex = random_int(self::MIN_STOCK_INDEX, $state->stock->count() - 1);
+        $drawnCard = $state->stock[$drawIndex];
+
+        $newStock = $state->stock->reject(fn ($c, $idx) => $idx === $drawIndex);
+        $newHands = $state->hands->put($playerNumber, $state->hands->get($playerNumber, collect())->push($drawnCard));
+        $newDrawQueue = $state->drawQueue->slice(self::QUEUE_REMOVE_COUNT);
+
+        if ($newStock->isEmpty()) {
+            $newDrawQueue = collect();
+            $currentTurn = $state->lastTrickWinner ?? $playerNumber;
+        } else {
+            $currentTurn = $newDrawQueue->isNotEmpty()
+                ? $newDrawQueue->first()
+                : ($state->lastTrickWinner ?? $playerNumber);
+        }
+
+        return new SnapsState(
+            players: $state->players,
+            currentTurn: $currentTurn,
+            hands: $newHands,
+            stock: $newStock,
+            trumpCard: $state->trumpCard,
+            trick: $state->trick,
+            capturedPoints: $state->capturedPoints,
+            scores: $state->scores,
+            lastTrickWinner: $state->lastTrickWinner,
+            drawQueue: $newDrawQueue,
+            closed: $state->closed,
+            closedBy: $state->closedBy,
+            totalPointsAtClose: $state->totalPointsAtClose,
+        );
+    }
+
+    private function applySwapTrumpMove(SnapsState $state, int $playerNumber): GameState
+    {
+        $hand = $state->hands->get($playerNumber, collect());
+        $trumpJack = new SnapsCard($state->trumpCard->suit, SnapsRank::Jack);
+
+        $newHand = $hand
+            ->reject(fn ($card) => $card->suit === $trumpJack->suit && $card->rank === $trumpJack->rank)
+            ->push($state->trumpCard);
+
+        return new SnapsState(
+            players: $state->players,
+            currentTurn: $playerNumber,
+            hands: $state->hands->put($playerNumber, $newHand),
+            stock: $state->stock,
+            trumpCard: $trumpJack,
+            trick: $state->trick,
+            capturedPoints: $state->capturedPoints,
+            scores: $state->scores,
+            lastTrickWinner: $state->lastTrickWinner,
+            drawQueue: $state->drawQueue,
+            closed: $state->closed,
+            closedBy: $state->closedBy,
+            totalPointsAtClose: $state->totalPointsAtClose,
+        );
+    }
+
+    private function applyCloseMove(SnapsState $state, int $playerNumber): GameState
+    {
+        if ($state->stock->isEmpty() || $state->closed) {
+            throw new InvalidArgumentException('Cannot close: stock already empty or game already closed.');
+        }
+
+        $totalPointsAtClose = collect([
+            self::PLAYER_ONE => $this->getPlayerTotalPoints(self::PLAYER_ONE, $state),
+            self::PLAYER_TWO => $this->getPlayerTotalPoints(self::PLAYER_TWO, $state),
+        ]);
+
+        return new SnapsState(
+            players: $state->players,
+            currentTurn: $playerNumber,
+            hands: $state->hands,
+            stock: collect(),
+            trumpCard: $state->trumpCard,
+            trick: $state->trick,
+            capturedPoints: $state->capturedPoints,
+            scores: $state->scores,
+            lastTrickWinner: $state->lastTrickWinner,
+            drawQueue: collect(),
+            closed: true,
+            closedBy: $playerNumber,
+            totalPointsAtClose: $totalPointsAtClose,
+        );
+    }
+
+    private function applyCardPlay(SnapsState $state, int $playerNumber, SnapsMoveData $moveData): GameState
+    {
+        $hand = $state->hands->get($playerNumber, collect());
+        $newHand = $hand->reject(fn ($card) => $this->cardsEqual($card, $moveData->card));
+
+        $marriagePoints = ($moveData->declareMarriage && $moveData->card->isMarriage(...$hand->all()))
+            ? $moveData->card->marriagePoints($state->trumpCard)
+            : 0;
+
+        $newTrick = $state->trick->push([
+            'player' => $playerNumber,
+            'card' => $moveData->card,
+            'marriagePoints' => $marriagePoints,
+        ]);
+
+        $newHands = $state->hands->put($playerNumber, $newHand);
+        $currentTurn = $playerNumber === self::PLAYER_ONE ? self::PLAYER_TWO : self::PLAYER_ONE;
+        $newCapturedPoints = $state->capturedPoints->copy();
+        $newStock = $state->stock;
+        $newDrawQueue = collect();
+
+        if ($newTrick->count() === self::TRICK_FULL_CARD_COUNT) {
+            $trickWinner = $this->resolveTrick($newTrick, $state->trumpCard);
+            $points = $newTrick->sum(fn ($item) => $item['card']->value())
+                + $newTrick->sum(fn ($item) => $item['marriagePoints']);
+
+            $newCapturedPoints[$trickWinner] = ($newCapturedPoints[$trickWinner] ?? 0) + $points;
+
+            $currentTurn = $trickWinner;
+            $newTrick = collect();
+            $lastTrickWinner = $trickWinner;
+
+            if ($newStock->isNotEmpty()) {
+                $newDrawQueue = collect([$trickWinner, $trickWinner === self::PLAYER_ONE ? self::PLAYER_TWO : self::PLAYER_ONE]);
+            }
+        } else {
+            $lastTrickWinner = $state->lastTrickWinner;
+        }
+
+        $newState = new SnapsState(
+            players: $state->players,
+            currentTurn: $currentTurn,
+            hands: $newHands,
+            stock: $newStock,
+            trumpCard: $state->trumpCard,
+            trick: $newTrick,
+            capturedPoints: $newCapturedPoints,
+            scores: $state->scores,
+            lastTrickWinner: $lastTrickWinner,
+            drawQueue: $newDrawQueue,
+            closed: $state->closed,
+            closedBy: $state->closedBy,
+            totalPointsAtClose: $state->totalPointsAtClose,
+        );
+
+        if ($this->shouldEndDeal($newState)) {
+            return $this->completeDeal($newState);
+        }
+
+        return $newState;
+    }
+
+    // Private helpers
+    private function dealNewHand(Collection $players, int $startingTurn, Collection $scores): SnapsState
+    {
+        $deck = collect(SnapsCard::createDeck());
+        $deck = $deck->shuffle();
+
+        $hands = collect();
 
         foreach ($players as $playerNumber => $playerId) {
-            $hands[(int) $playerNumber] = array_merge($hands[(int) $playerNumber], array_splice($deck, 0, 2));
+            $hands[$playerNumber] = $deck->splice(0, self::INITIAL_HAND_SIZE);
+        }
+
+        $trumpCard = $deck->shift();
+
+        foreach ($players as $playerNumber => $playerId) {
+            $hands[$playerNumber] = $hands[$playerNumber]->merge($deck->splice(0, self::ADDITIONAL_HAND_SIZE));
         }
 
         return new SnapsState(
@@ -438,35 +435,32 @@ class SnapsEngine implements GameContract
             hands: $hands,
             stock: $deck,
             trumpCard: $trumpCard,
-            trick: [],
-            capturedPoints: [1 => 0, 2 => 0],
+            trick: collect(),
+            capturedPoints: collect([self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
             scores: $scores,
             lastTrickWinner: null,
-            drawQueue: [],
+            drawQueue: collect(),
         );
     }
 
-    private function resolveTrick(array $trick, string $trumpCard): int
+    private function resolveTrick(Collection $trick, SnapsCard $trumpCard): int
     {
-        $lead = $trick[0];
-        $follow = $trick[1];
+        $lead = $trick->get(0);
+        $follow = $trick->get(1);
 
         $leadCard = $lead['card'];
         $followCard = $follow['card'];
 
-        $leadIsTrump = $this->isTrump($leadCard, $trumpCard);
-        $followIsTrump = $this->isTrump($followCard, $trumpCard);
-
-        if ($leadIsTrump && ! $followIsTrump) {
+        if ($leadCard->isTrump($trumpCard) && !$followCard->isTrump($trumpCard)) {
             return $lead['player'];
         }
 
-        if (! $leadIsTrump && $followIsTrump) {
+        if (!$leadCard->isTrump($trumpCard) && $followCard->isTrump($trumpCard)) {
             return $follow['player'];
         }
 
-        if ($this->cardSuit($leadCard) === $this->cardSuit($followCard)) {
-            return $this->cardBeats($followCard, $leadCard, $trumpCard)
+        if ($leadCard->suit === $followCard->suit) {
+            return $followCard->beats($leadCard, $trumpCard)
                 ? $follow['player']
                 : $lead['player'];
         }
@@ -474,143 +468,66 @@ class SnapsEngine implements GameContract
         return $lead['player'];
     }
 
-    private function cardSuit(string $card): string
+    private function getHandPoints(Collection $hand): int
     {
-        return explode('-', $card, 2)[0];
-    }
-
-    private function cardRank(string $card): string
-    {
-        return explode('-', $card, 2)[1];
-    }
-
-    private function cardValue(string $card): int
-    {
-        return self::CARD_VALUES[$this->cardRank($card)] ?? 0;
-    }
-
-    private function cardOrder(string $card): int
-    {
-        return self::RANK_ORDER[$this->cardRank($card)] ?? 0;
-    }
-
-    private function isTrump(string $card, string $trumpCard): bool
-    {
-        return $this->cardSuit($card) === $this->cardSuit($trumpCard);
-    }
-
-    private function cardBeats(string $card, string $otherCard, string $trumpCard): bool
-    {
-        if ($this->isTrump($card, $trumpCard) && ! $this->isTrump($otherCard, $trumpCard)) {
-            return true;
-        }
-
-        if (! $this->isTrump($card, $trumpCard) && $this->isTrump($otherCard, $trumpCard)) {
-            return false;
-        }
-
-        if ($this->cardSuit($card) !== $this->cardSuit($otherCard)) {
-            return false;
-        }
-
-        return $this->cardOrder($card) > $this->cardOrder($otherCard);
-    }
-
-    private function hasSuit(array $hand, string $suit): bool
-    {
-        foreach ($hand as $card) {
-            if ($this->cardSuit($card) === $suit) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function hasHigherSameSuit(array $hand, string $card, string $trumpCard): bool
-    {
-        $suit = $this->cardSuit($card);
-
-        foreach ($hand as $otherCard) {
-            if ($this->cardSuit($otherCard) !== $suit) {
-                continue;
-            }
-
-            if ($this->cardOrder($otherCard) > $this->cardOrder($card)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function isMarriage(string $card, array $hand): bool
-    {
-        $rank = $this->cardRank($card);
-
-        if ($rank !== 'K' && $rank !== 'Q') {
-            return false;
-        }
-
-        $partner = $this->cardSuit($card) . '-' . ($rank === 'K' ? 'Q' : 'K');
-
-        return in_array($partner, $hand, true);
-    }
-
-    private function marriagePoints(string $card, string $trumpCard): int
-    {
-        return $this->isTrump($card, $trumpCard) ? 40 : 20;
-    }
-
-    private function getHandPoints(array $hand): int
-    {
-        return array_reduce($hand, fn (int $sum, string $card): int => $sum + $this->cardValue($card), 0);
+        return $hand->sum(fn ($card) => $card->value());
     }
 
     private function getPlayerTotalPoints(int $playerNumber, SnapsState $state): int
     {
-        return ($state->capturedPoints[$playerNumber] ?? 0) + $this->getHandPoints($state->hands[$playerNumber] ?? []);
+        $hand = $state->hands->get($playerNumber, collect());
+        $defaultPoints = 0;
+
+        return ($state->capturedPoints[$playerNumber] ?? $defaultPoints) + $this->getHandPoints($hand);
     }
 
     private function shouldEndDeal(SnapsState $state): bool
     {
-        if ($this->getPlayerTotalPoints(1, $state) >= 66 || $this->getPlayerTotalPoints(2, $state) >= 66) {
+        $player1Points = $this->getPlayerTotalPoints(self::PLAYER_ONE, $state);
+        $player2Points = $this->getPlayerTotalPoints(self::PLAYER_TWO, $state);
+
+        if ($player1Points >= self::DEAL_END_POINTS_THRESHOLD || $player2Points >= self::DEAL_END_POINTS_THRESHOLD) {
             return true;
         }
 
-        if (! empty($state->stock)) {
+        if ($state->stock->isNotEmpty()) {
             return false;
         }
 
-        return empty($state->hands[1] ?? []) && empty($state->hands[2] ?? []) && empty($state->trick);
+        $hand1Empty = $state->hands->get(self::PLAYER_ONE, collect())->isEmpty();
+        $hand2Empty = $state->hands->get(self::PLAYER_TWO, collect())->isEmpty();
+        $trickEmpty = $state->trick->isEmpty();
+
+        return $hand1Empty && $hand2Empty && $trickEmpty;
     }
 
     private function completeDeal(SnapsState $state): SnapsState
     {
         $winner = $this->getDealWinner($state);
 
-        $scores = $state->scores;
-        $scores[1] = ($scores[1] ?? 0) + ($state->capturedPoints[1] ?? 0);
-        $scores[2] = ($scores[2] ?? 0) + ($state->capturedPoints[2] ?? 0);
+        $newScores = $state->scores->copy();
+        $defaultPoints = 0;
+        $newScores[self::PLAYER_ONE] = ($newScores[self::PLAYER_ONE] ?? $defaultPoints) + ($state->capturedPoints[self::PLAYER_ONE] ?? $defaultPoints);
+        $newScores[self::PLAYER_TWO] = ($newScores[self::PLAYER_TWO] ?? $defaultPoints) + ($state->capturedPoints[self::PLAYER_TWO] ?? $defaultPoints);
 
-        if ($scores[1] >= 501 || $scores[2] >= 501) {
-            $scores[$winner] = ($scores[$winner] ?? 0) + 1;
+        if ($newScores[self::PLAYER_ONE] >= self::WINNING_SCORE || $newScores[self::PLAYER_TWO] >= self::WINNING_SCORE) {
+            $newScores[$winner] = ($newScores[$winner] ?? 0) + 1;
 
             return new SnapsState(
                 players: $state->players,
                 currentTurn: $winner,
-                hands: [],
-                stock: [],
+                hands: collect(),
+                stock: collect(),
                 trumpCard: $state->trumpCard,
-                trick: $state->trick,
+                trick: collect(),
                 capturedPoints: $state->capturedPoints,
-                scores: $scores,
+                scores: $newScores,
                 lastTrickWinner: $state->lastTrickWinner,
-                drawQueue: [],
+                drawQueue: collect(),
             );
         }
 
-        return $this->dealNewHand($state->players, $winner, $scores);
+        return $this->dealNewHand($state->players, $winner, $newScores);
     }
 
     private function getDealWinner(SnapsState $state): int
@@ -618,61 +535,55 @@ class SnapsEngine implements GameContract
         // If the deal was closed, the closer's total must be at least 66 otherwise they lose.
         if ($state->closed && $state->closedBy !== null) {
             $closer = $state->closedBy;
-            $other = $this->getOtherPlayer($closer);
+            $other = $closer === self::PLAYER_ONE ? self::PLAYER_TWO : self::PLAYER_ONE;
 
             $closerTotal = $this->getPlayerTotalPoints($closer, $state);
 
-            if ($closerTotal < 66) {
+            if ($closerTotal < self::DEAL_END_POINTS_THRESHOLD) {
                 return $other;
             }
 
-            // use frozen totals taken at the moment of closing for final comparison
-            $total1 = $state->totalPointsAtClose[1] ?? $this->getPlayerTotalPoints(1, $state);
-            $total2 = $state->totalPointsAtClose[2] ?? $this->getPlayerTotalPoints(2, $state);
+            $total1 = $state->totalPointsAtClose->get(self::PLAYER_ONE) ?? $this->getPlayerTotalPoints(self::PLAYER_ONE, $state);
+            $total2 = $state->totalPointsAtClose->get(self::PLAYER_TWO) ?? $this->getPlayerTotalPoints(self::PLAYER_TWO, $state);
 
             if ($total1 === $total2) {
-                return $state->lastTrickWinner ?? 1;
+                return $state->lastTrickWinner ?? self::PLAYER_ONE;
             }
 
-            return $total1 > $total2 ? 1 : 2;
+            return $total1 > $total2 ? self::PLAYER_ONE : self::PLAYER_TWO;
         }
 
-        $total1 = $this->getPlayerTotalPoints(1, $state);
-        $total2 = $this->getPlayerTotalPoints(2, $state);
+        $total1 = $this->getPlayerTotalPoints(self::PLAYER_ONE, $state);
+        $total2 = $this->getPlayerTotalPoints(self::PLAYER_TWO, $state);
+        $defaultPoints = 0;
 
-        if ($total1 >= 66 || $total2 >= 66) {
+        if ($total1 >= self::DEAL_END_POINTS_THRESHOLD || $total2 >= self::DEAL_END_POINTS_THRESHOLD) {
             if ($total1 === $total2) {
-                return $state->lastTrickWinner ?? 1;
+                return $state->lastTrickWinner ?? self::PLAYER_ONE;
             }
 
-            return $total1 > $total2 ? 1 : 2;
+            return $total1 > $total2 ? self::PLAYER_ONE : self::PLAYER_TWO;
         }
 
-        $captured1 = $state->capturedPoints[1] ?? 0;
-        $captured2 = $state->capturedPoints[2] ?? 0;
+        $captured1 = $state->capturedPoints->get(self::PLAYER_ONE) ?? $defaultPoints;
+        $captured2 = $state->capturedPoints->get(self::PLAYER_TWO) ?? $defaultPoints;
 
         if ($captured1 === $captured2) {
-            return $state->lastTrickWinner ?? 1;
+            return $state->lastTrickWinner ?? self::PLAYER_ONE;
         }
 
-        return $captured1 > $captured2 ? 1 : 2;
+        return $captured1 > $captured2 ? self::PLAYER_ONE : self::PLAYER_TWO;
     }
 
-    private function dealPenalty(int $loserPoints): int
+    private function cardsEqual(SnapsCard $card1, SnapsCard $card2): bool
     {
-        if ($loserPoints === 0) {
-            return 3;
-        }
-
-        if ($loserPoints < 33) {
-            return 2;
-        }
-
-        return 1;
+        return $card1->suit === $card2->suit && $card1->rank === $card2->rank;
     }
 
-    private function getOtherPlayer(int $playerNumber): int
+    private function deserializeHands(array $hands): Collection
     {
-        return $playerNumber === 1 ? 2 : 1;
+        return collect($hands)->mapWithKeys(function ($hand, $playerNumber) {
+            return [(int) $playerNumber => collect($hand)->map(fn ($card) => SnapsCard::fromString($card))];
+        });
     }
 }

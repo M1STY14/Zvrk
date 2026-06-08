@@ -205,10 +205,6 @@ export default function Play({ auth, session }: Props) {
                                 playerNames={playerNames}
                                 currentMark={currentMark}
                             />
-
-                            <div className="rounded-3xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-                                Ti si: {auth.user.name} {currentUserNumber ? MARKS[currentUserNumber] : ''}
-                            </div>
                         </div>
 
                         <GameBoardWrapper
