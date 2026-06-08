@@ -6,6 +6,7 @@ import { useLobbyGameChannel } from '@/hooks/useLobbyGameChannel';
 import type { GameSessionPlayer } from '@/types/gameSession';
 import { Head, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
+import { useEffect, useRef, useState } from 'react';
 
 interface Session {
     id: string;
@@ -30,8 +31,24 @@ export default function Show({ game, session }: Props) {
     const { auth } = usePage<Props>().props;
     const isHost = auth.user.id === session.host_user_id;
     const canStartGame = session.players.length >= game.min_players;
-    const canStartAi = isHost && session.players.length === 1;
+    const canStartAi = game.slug === 'tic-tac-toe' && isHost && session.players.length === 1;
     const canCloseRoom = isHost && session.players.length === 1;
+
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [muted, setMuted] = useState(false);
+
+    useEffect(() => {
+        const audio = new Audio('/audio/lobby_music.mp3');
+        audio.loop = true;
+        audio.volume = 0.35;
+        audioRef.current = audio;
+        audio.play().catch(() => {});
+        return () => { audio.pause(); audio.src = ''; };
+    }, []);
+
+    useEffect(() => {
+        if (audioRef.current) audioRef.current.muted = muted;
+    }, [muted]);
 
     const { isPlayerDisconnected, showDisconnectedBanner } = useLobbyGameChannel({
         gameSlug: game.slug,
@@ -62,6 +79,14 @@ export default function Show({ game, session }: Props) {
         >
             <Head title={`${game.name} — ${session.name}`} />
 
+            {/* Mute button */}
+            <button
+                onClick={() => setMuted(m => !m)}
+                className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-white/80 backdrop-blur px-4 py-2 text-sm font-semibold text-slate-700 shadow-md border border-slate-200 hover:bg-white transition"
+            >
+                {muted ? '🔇 Uključi glazbu' : '🔊 Isključi glazbu'}
+            </button>
+
             <div className="py-12">
                 <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden rounded-lg bg-white shadow-sm">
@@ -88,7 +113,7 @@ export default function Show({ game, session }: Props) {
                                     <PrimaryButton onClick={handleStart} disabled={!canStartGame}>
                                         Pokreni igru
                                     </PrimaryButton>
-                                    {game.slug === 'tic-tac-toe' && (
+                                    {canStartAi && (
                                         <PrimaryButton onClick={handleStartAi} disabled={!canStartAi}>
                                             Igraj protiv AI
                                         </PrimaryButton>

@@ -26,7 +26,7 @@ final class MoveMade implements ShouldBroadcast
         $this->sessionId = $sessionId;
         $this->playerId = $playerId;
         $this->nextPlayerId = $nextPlayerId;
-        $this->state = $state->toArray();
+        $this->state = $state->toBroadcastArray();
     }
 
     public function broadcastOn(): PresenceChannel

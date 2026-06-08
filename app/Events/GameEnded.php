@@ -34,7 +34,7 @@ final class GameEnded implements ShouldBroadcast
         $this->sessionId = $sessionId;
         $this->winner = $winner;
         $this->draw = $draw;
-        $this->state = $state->toArray();
+        $this->state = $state->toBroadcastArray();
         $this->reason = $reason;
     }
 

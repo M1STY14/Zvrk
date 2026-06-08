@@ -120,11 +120,6 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <div className="border-t border-gray-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-gray-700">👥 Players: 2v2</p>
                                 </div>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
-                                        COMING SOON
-                                    </span>
-                                </div>
                             </div>
 
                             {/* 4 in a Row */}
@@ -140,11 +135,22 @@ export default function Dashboard({ games, userStats }: Props) {
                                 <div className="border-t border-red-300 pt-3 mt-4">
                                     <p className="text-sm font-semibold text-red-800">👥 Players: 2v2</p>
                                 </div>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg">
-                                        COMING SOON
-                                    </span>
+                            </div>
+
+                            {/* UNO */}
+                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-purple-200 relative overflow-hidden opacity-70">
+                                {/* Card corner decoration */}
+                                <div className="absolute bottom-2 right-2 text-3xl">🔄</div>
+                                
+                                <h4 className="text-xl font-bold text-purple-900 mb-2">UNO</h4>
+                                <div className="h-1 w-12 bg-purple-400 rounded mb-3"></div>
+                                <p className="text-gray-700 text-sm mb-4 leading-relaxed">
+                                    Budi prvi koji će se riješiti svih svojih karata. Igraj pametno, koristi specijalne karte i pobijedi protivnike!
+                                </p>
+                                <div className="border-t border-purple-300 pt-3 mt-4">
+                                    <p className="text-sm font-semibold text-purple-800">👥 Players: 2v2</p>
                                 </div>
+                               
                             </div>
                         </div>
                     </div>

@@ -3,6 +3,7 @@ import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBa
 import PlayerInfo from '@/Components/Game/PlayerInfo';
 import TurnIndicator from '@/Components/Game/TurnIndicator';
 import GameBoardWrapper from '@/GameBoards/GameBoardWrapper';
+import { ConnectFourState } from '@/GameBoards/ConnectFourBoard';
 import { TicTacToeState } from '@/GameBoards/TicTacToeBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import { useGameState } from '@/hooks/useGameState';
@@ -12,10 +13,8 @@ import { PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
-const MARKS: Record<number, string> = { 1: '❌', 2: '⭕' };
-
 type SessionProp = GameSessionBase & {
-    state: TicTacToeState | null;
+    state: TicTacToeState | ConnectFourState | null;
 };
 
 type Props = PageProps<{ session: SessionProp }>;
@@ -27,11 +26,28 @@ function getCsrfToken(): string {
 
 /** Default in-game page for board games (tic-tac-toe, checkers, four-in-a-row, …). */
 export default function Play({ auth, session }: Props) {
-    const initialBoard = session.state?.board ?? [
-        [0, 0, 0],
-        [0, 0, 0],
-        [0, 0, 0],
-    ];
+    const isConnectFour = session.game.slug === 'four-in-a-row';
+    const marks = useMemo<Record<number, string>>(() => {
+    return isConnectFour
+        ? { 1: '🔴', 2: '🟡' }
+        : { 1: '❌', 2: '⭕' };
+    }, [isConnectFour]);
+    const initialBoard = session.state?.board ?? (
+        isConnectFour
+            ? [
+                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+            ]
+            : [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+            ]
+    );
 
     const playersByNumber: Record<string, string> = session.state?.players ?? {};
     const initialCurrentPlayerId = session.state ? playersByNumber[String(session.state.currentTurn)] ?? null : null;
@@ -44,6 +60,7 @@ export default function Play({ auth, session }: Props) {
     const {
         state,
         applyOptimisticMove,
+        applyOptimisticDrop,
         revertOptimisticMove,
         applyServerBoard,
         applyGameEnd,
@@ -72,7 +89,7 @@ export default function Play({ auth, session }: Props) {
         disconnectedUserIds,
         showOpponentDisconnectedBanner,
         usePluralDisconnectMessage,
-    } = useGameChannel<TicTacToeState>(
+    } = useGameChannel<TicTacToeState | ConnectFourState>(
         session.id,
         { players: session.players, currentUserId, gameOver: state.gameOver },
         {
@@ -98,22 +115,30 @@ export default function Play({ auth, session }: Props) {
                     id: p.user.id,
                     name: p.user.name,
                     player_number: p.player_number,
-                    mark: MARKS[p.player_number] ?? '',
+                    mark: marks[p.player_number] ?? '',
                     isConnected: isPlayerConnected(disconnectedUserIds, p.user.id),
                 })),
-        [session.players, disconnectedUserIds],
+        [session.players, disconnectedUserIds, marks],
     );
 
     const currentUserNumber = getPlayerNumber(currentUserId);
     const isYourTurn = !state.gameOver && state.currentPlayerId === currentUserId;
     const currentMark = state.currentPlayerId
-        ? MARKS[getPlayerNumber(state.currentPlayerId) ?? 0] ?? ''
+        ? marks[getPlayerNumber(state.currentPlayerId) ?? 0] ?? ''
         : '';
 
-    const handleMove = async (row: number, col: number) => {
+    const handleMove = async (rowOrCol: number, maybeCol?: number) => {
         if (!isYourTurn || currentUserNumber === null) return;
 
-        applyOptimisticMove(row, col, currentUserId);
+        const moveData = isConnectFour
+            ? { col: rowOrCol }
+            : { row: rowOrCol, col: maybeCol ?? 0 };
+
+        if (isConnectFour) {
+            applyOptimisticDrop(rowOrCol, currentUserId);
+        } else {
+            applyOptimisticMove(rowOrCol, maybeCol ?? 0, currentUserId);
+        }
 
         const socketId = window.Echo.socketId();
 
@@ -129,7 +154,7 @@ export default function Play({ auth, session }: Props) {
                     ...(socketId ? { 'X-Socket-ID': socketId } : {}),
                 },
                 body: JSON.stringify({
-                    move_data: { row, col },
+                    move_data: moveData,
                 }),
             });
 
@@ -139,7 +164,7 @@ export default function Play({ auth, session }: Props) {
             }
 
             const data: {
-                state: TicTacToeState;
+                state: TicTacToeState | ConnectFourState;
                 move_number: number;
                 game_over: boolean;
                 result: { winner: string | null; draw: boolean } | null;
@@ -207,7 +232,7 @@ export default function Play({ auth, session }: Props) {
                             />
 
                             <div className="rounded-3xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-                                Ti si: {auth.user.name} {currentUserNumber ? MARKS[currentUserNumber] : ''}
+                                Ti si: {auth.user.name} {currentUserNumber ? marks[currentUserNumber] : ''}
                             </div>
                         </div>
 
@@ -216,7 +241,7 @@ export default function Play({ auth, session }: Props) {
                             board={state.board}
                             isYourTurn={isYourTurn}
                             disabled={state.gameOver}
-                            onMove={handleMove}
+                            onMove={handleMove as (row: number, col?: number) => void}
                         />
 
                         <div className="mt-8">
