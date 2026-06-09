@@ -61,6 +61,15 @@ class GameSeeder extends Seeder
                 'max_players' => 4,
                 'is_active' => true,
             ],
+            [
+                'slug' => GameType::Battleship->value,
+                'name' => 'Battleship',
+                'description' => 'Place your fleet on a hidden grid, then take turns firing at your opponent. Sink every enemy ship to win!',
+                'image' => '/images/homepage_games_thumbnails/potapanje_brodova_right_side.svg',
+                'min_players' => 2,
+                'max_players' => 2,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($games as $game) {

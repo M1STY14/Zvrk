@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\GameType;
+use App\Games\Battleship\BattleshipEngine;
 use App\Games\Checkers\CheckersEngine;
 use App\Games\ConnectFourEngine;
 use App\Games\Ludo\LudoEngine;
@@ -38,5 +39,6 @@ class AppServiceProvider extends ServiceProvider
         $manager->register(GameType::Checkers->value, CheckersEngine::class);
         $manager->register(GameType::FourInARow->value, ConnectFourEngine::class);
         $manager->register(GameType::Uno->value, UnoEngine::class);
+        $manager->register(GameType::Battleship->value, BattleshipEngine::class);
     }
 }
