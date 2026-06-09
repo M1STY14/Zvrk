@@ -30,6 +30,7 @@ final class UpdatePlayerStatsTest extends TestCase
             winner: $winner->id,
             draw: false,
             state: $this->makeState(),
+            participants: [$winner->id, $loser->id],
         ));
 
         $this->assertDatabaseHas('player_stats', [
@@ -64,6 +65,7 @@ final class UpdatePlayerStatsTest extends TestCase
             winner: null,
             draw: true,
             state: $this->makeState(),
+            participants: [$playerOne->id, $playerTwo->id],
         ));
 
         foreach ([$playerOne, $playerTwo] as $player) {
@@ -91,6 +93,7 @@ final class UpdatePlayerStatsTest extends TestCase
             winner: $winner->id,
             draw: false,
             state: $this->makeState(),
+            participants: [$winner->id, $loser->id],
         ));
 
         $this->assertDatabaseCount('player_stats', 2);
@@ -112,6 +115,7 @@ final class UpdatePlayerStatsTest extends TestCase
                 winner: $winner->id,
                 draw: false,
                 state: $this->makeState(),
+                participants: [$winner->id, $loser->id],
             ));
         }
 
