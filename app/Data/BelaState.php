@@ -92,7 +92,7 @@ final class BelaState extends GameState
         $newHands = [];
 
         foreach ($this->players as $num => $playerId) {
-            if ((int)$num === $playerNumber) {
+            if ((int) $num === $playerNumber) {
                 $newHands[$num] = $visibleHand;
             } else {
                 $newHands[$num] = [];

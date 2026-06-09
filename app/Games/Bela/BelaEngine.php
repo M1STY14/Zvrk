@@ -9,8 +9,8 @@ use App\Data\GameResult;
 use App\Data\GameState;
 use App\Data\MoveData;
 use App\Enums\BelaConstants;
-use App\Enums\BelaPhase;
 use App\Enums\BelaMoveType;
+use App\Enums\BelaPhase;
 use App\Enums\BelaRank;
 use App\Enums\BidValue;
 use App\Enums\Card;
@@ -21,7 +21,6 @@ use InvalidArgumentException;
 
 final class BelaEngine implements GameContract
 {
-
     public function makeState(array $data): GameState
     {
         return new BelaState(
@@ -302,6 +301,7 @@ final class BelaEngine implements GameContract
 
         if (is_string($moveData->suit)) {
             $bids[$playerNumber] = $moveData->suit;
+
             return $this->startPlay($state->copyWith([
                 'bids' => $bids,
                 'declarationChoices' => $state->declarationChoices,
@@ -414,6 +414,7 @@ final class BelaEngine implements GameContract
     private function shuffleDeck(array $deck): array
     {
         shuffle($deck);
+
         return $deck;
     }
 
@@ -569,8 +570,13 @@ final class BelaEngine implements GameContract
         $callerTeam = $this->teamIndex($state->trumpCaller ?? $state->dealer);
         $opponentTeam = $callerTeam === 0 ? 1 : 0;
 
-        if ($roundPoints[$callerTeam] < BelaConstants::PENALTY_THRESHOLD) {
-            $roundPoints[$opponentTeam] = array_sum($roundPoints);
+        // "Pala bela": the calling team must score strictly more than half of all
+        // points available in the round (162 trick points + declarations). If they
+        // fail to (a tie counts as failing), the opposing team collects everything.
+        $totalRoundPoints = array_sum($roundPoints);
+
+        if ($roundPoints[$callerTeam] <= $totalRoundPoints - $roundPoints[$callerTeam]) {
+            $roundPoints[$opponentTeam] = $totalRoundPoints;
             $roundPoints[$callerTeam] = 0;
         }
 
@@ -676,6 +682,7 @@ final class BelaEngine implements GameContract
         foreach ($ranks as $hasRank) {
             if ($hasRank) {
                 $consecutive++;
+
                 continue;
             }
 

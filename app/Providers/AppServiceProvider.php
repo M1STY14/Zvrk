@@ -3,11 +3,11 @@
 namespace App\Providers;
 
 use App\Enums\GameType;
+use App\Games\Bela\BelaEngine;
 use App\Games\Checkers\CheckersEngine;
 use App\Games\ConnectFourEngine;
 use App\Games\Ludo\LudoEngine;
 use App\Games\TicTacToeEngine;
-use App\Games\Bela\BelaEngine;
 use App\Games\Uno\UnoEngine;
 use App\Services\GameEngineManager;
 use Illuminate\Contracts\Container\BindingResolutionException;

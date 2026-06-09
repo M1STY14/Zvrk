@@ -138,6 +138,9 @@ export default function BelaBoard({
     const myTeam: 0 | 1 = playerNumber ? teamOf(playerNumber) : 0;
     const theirTeam: 0 | 1 = myTeam === 0 ? 1 : 0;
     const declarations: [number, number] = [belaState.declarations.team1, belaState.declarations.team2];
+    // Only the team with the strictly higher declaration ("zvanje") scores it.
+    const declarationWinner: 0 | 1 | null =
+        declarations[0] > declarations[1] ? 0 : declarations[1] > declarations[0] ? 1 : null;
 
     const playerOrder = useMemo(() => {
         const fromState = Object.keys(belaState.players)
@@ -213,7 +216,7 @@ export default function BelaBoard({
                     <div className="text-sm font-semibold text-slate-500">Mi</div>
                     <div className="flex items-baseline justify-center gap-1">
                         <span className="text-3xl font-extrabold text-slate-900">{belaState.roundPoints[myTeam]}</span>
-                        {declarations[myTeam] > 0 && (
+                        {declarationWinner === myTeam && declarations[myTeam] > 0 && (
                             <span className="text-sm font-semibold text-emerald-600">+{declarations[myTeam]}</span>
                         )}
                     </div>
@@ -231,13 +234,18 @@ export default function BelaBoard({
                     <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
                         Runda {belaState.round}
                     </div>
+                    {belaState.trumpCaller !== null && (
+                        <div className="text-[11px] font-medium text-slate-400">
+                            Zvao: {getPlayerName(belaState.trumpCaller)}
+                        </div>
+                    )}
                 </div>
 
                 <div className="min-w-[88px] text-center">
                     <div className="text-sm font-semibold text-slate-500">Oni</div>
                     <div className="flex items-baseline justify-center gap-1">
                         <span className="text-3xl font-extrabold text-slate-900">{belaState.roundPoints[theirTeam]}</span>
-                        {declarations[theirTeam] > 0 && (
+                        {declarationWinner === theirTeam && declarations[theirTeam] > 0 && (
                             <span className="text-sm font-semibold text-emerald-600">+{declarations[theirTeam]}</span>
                         )}
                     </div>

@@ -8,7 +8,6 @@ use App\Games\Bela\BelaEngine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
-use InvalidArgumentException;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -24,7 +23,7 @@ class BelaEngineTest extends TestCase
     {
         parent::setUp();
 
-        $this->engine = new BelaEngine();
+        $this->engine = new BelaEngine;
         $this->players = collect([
             1 => User::factory()->create()->id,
             2 => User::factory()->create()->id,
@@ -42,10 +41,10 @@ class BelaEngineTest extends TestCase
         $this->assertNull($state->trumpCaller);
         $this->assertSame(1, $state->currentTurn);
         $this->assertSame(4, $state->dealer);
-        $this->assertCount(7, $state->hands[1]);
-        $this->assertCount(7, $state->hands[2]);
-        $this->assertCount(7, $state->hands[3]);
-        $this->assertCount(7, $state->hands[4]);
+        $this->assertCount(8, $state->hands[1]);
+        $this->assertCount(8, $state->hands[2]);
+        $this->assertCount(8, $state->hands[3]);
+        $this->assertCount(8, $state->hands[4]);
         $this->assertSame([0, 0], $state->teamScores);
         $this->assertIsArray($state->declarations);
     }
@@ -141,7 +140,7 @@ class BelaEngineTest extends TestCase
                 ['player' => 3, 'card' => '10_of_clubs'],
             ],
             'trickHistory' => [],
-            'trumpSuit' => 'hearts',
+            'trumpSuit' => 'spades',
             'trumpCaller' => 4,
             'teamScores' => [0, 0],
             'roundPoints' => [0, 0],
@@ -160,10 +159,12 @@ class BelaEngineTest extends TestCase
         $this->assertSame(4, $newState->currentTurn);
     }
 
-    public function test_round_scoring_applies_pala_bela_when_caller_under_82(): void
+    public function test_round_scoring_applies_pala_bela_when_caller_falls(): void
     {
+        // Final trick of the round: only player 4 still holds a card, the other
+        // three already played their hearts into the trick.
         $state = $this->engine->makeState([
-            'hands' => [1 => ['7_of_clubs'], 2 => ['8_of_diamonds'], 3 => ['9_of_clubs'], 4 => ['jack_of_spades']],
+            'hands' => [1 => [], 2 => [], 3 => [], 4 => ['jack_of_spades']],
             'trick' => [
                 ['player' => 1, 'card' => 'ace_of_hearts'],
                 ['player' => 2, 'card' => 'king_of_hearts'],
@@ -185,9 +186,14 @@ class BelaEngineTest extends TestCase
             'forfeited' => [],
         ]);
 
+        // Player 4 (team two) wins the last trick with the trump jack:
+        //   trick points 11 + 4 + 10 + 20 = 45, plus the 10-point last-trick bonus.
+        // Round points become team one 40, team two 65. The calling team (team one)
+        // has not scored more than half of the 105 points, so "pala bela" hands the
+        // entire round to team two.
         $newState = $this->engine->applyMove($state, 4, new BelaMoveData(type: 'play', card: 'jack_of_spades'));
 
-        $this->assertSame([0, 66], $newState->teamScores);
+        $this->assertSame([0, 105], $newState->teamScores);
     }
 
     public function test_detect_declarations_scores_sequences_and_fours(): void
@@ -206,7 +212,8 @@ class BelaEngineTest extends TestCase
 
         $this->assertArrayHasKey('team1', $declarations);
         $this->assertArrayHasKey('team2', $declarations);
-        $this->assertSame(20, $declarations['team1']);
+        // Team one is players 1 and 3; their sequences sum to 140.
+        $this->assertSame(140, $declarations['team1']);
     }
 
     public function test_check_game_over_returns_winner_when_team_reaches_1001(): void
@@ -266,13 +273,15 @@ class BelaEngineTest extends TestCase
 
         $view = $state->stateForPlayer(1);
 
-        $this->assertSame(6, count($view['ownHand']));
-        $this->assertSame(2, $view['ownHiddenCardCount']);
-        $this->assertSame(8, $view['hands'][1]);
-        $this->assertSame(8, $view['hands'][2]);
-        $this->assertSame(8, $view['hands'][3]);
-        $this->assertSame(8, $view['hands'][4]);
-        $this->assertSame([8, 8, 8], array_values($view['opponentHandSizes']));
+        $ownHand = $view['hands'][1];
+        $this->assertCount(8, $ownHand);
+        $this->assertCount(6, array_filter($ownHand, fn (string $card): bool => $card !== '__HIDDEN__'));
+        $this->assertCount(2, array_filter($ownHand, fn (string $card): bool => $card === '__HIDDEN__'));
+
+        // Opponents' cards are never revealed.
+        $this->assertSame([], $view['hands'][2]);
+        $this->assertSame([], $view['hands'][3]);
+        $this->assertSame([], $view['hands'][4]);
     }
 
     public function test_state_for_player_shows_all_cards_after_bid_phase(): void
@@ -303,7 +312,7 @@ class BelaEngineTest extends TestCase
 
         $view = $state->stateForPlayer(1);
 
-        $this->assertSame(8, count($view['ownHand']));
-        $this->assertSame(0, $view['ownHiddenCardCount']);
+        $this->assertCount(8, $view['hands'][1]);
+        $this->assertNotContains('__HIDDEN__', $view['hands'][1]);
     }
 }
