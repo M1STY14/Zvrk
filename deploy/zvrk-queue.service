@@ -1,0 +1,21 @@
+# Queue worker. Required for realtime: broadcast events are queued, so without
+# this no game updates reach clients. Also runs ForfeitDisconnectedPlayerJob.
+[Unit]
+Description=Zvrk queue worker (broadcasts + jobs)
+After=network.target redis-server.service
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/Zvrk
+ExecStart=/usr/bin/php artisan queue:work redis --queue=default --sleep=1 --tries=3 --max-time=3600 --max-jobs=1000
+Restart=always
+RestartSec=3
+
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
