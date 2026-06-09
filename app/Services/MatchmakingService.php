@@ -63,6 +63,7 @@ final readonly class MatchmakingService
             ->where('is_private', false)
             ->withCount('players')
             ->havingRaw('players_count < max_players')
+            ->whereRaw('(select count(*) from game_players where game_players.game_session_id = game_sessions.id) < game_sessions.max_players')
             ->oldest()
             ->lockForUpdate()
             ->first();
