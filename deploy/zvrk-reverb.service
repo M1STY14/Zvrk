@@ -1,0 +1,21 @@
+# Reverb WebSocket server. Binds localhost:8080; nginx proxies /app to it.
+[Unit]
+Description=Zvrk Reverb WebSocket server
+After=network.target redis-server.service
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/Zvrk
+ExecStart=/usr/bin/php artisan reverb:start --host=0.0.0.0 --port=8080
+Restart=always
+RestartSec=3
+
+# Bounded so a leak can't starve the shared box.
+MemoryMax=512M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

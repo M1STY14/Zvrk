@@ -1,0 +1,11 @@
+# One scheduler tick (fired every minute by zvrk-scheduler.timer).
+# Runs game:process-disconnections (see bootstrap/app.php).
+[Unit]
+Description=Zvrk Laravel scheduler (one tick)
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/Zvrk
+ExecStart=/usr/bin/php artisan schedule:run

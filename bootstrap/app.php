@@ -20,7 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // Behind nginx (TLS termination) in production: trust the proxy so
+        // Laravel reads X-Forwarded-Proto and treats requests as HTTPS.
+        // Without this, secure session cookies and generated URLs break.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

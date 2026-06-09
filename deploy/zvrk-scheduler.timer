@@ -1,0 +1,13 @@
+# Fires zvrk-scheduler.service every minute (the cron-less equivalent of
+# `* * * * * php artisan schedule:run`).
+
+[Unit]
+Description=Run Zvrk Laravel scheduler every minute
+
+[Timer]
+OnCalendar=minutely
+AccuracySec=1s
+Persistent=false
+
+[Install]
+WantedBy=timers.target
