@@ -10,6 +10,15 @@ PHP_FPM_SERVICE=php8.4-fpm
 
 cd "$APP_DIR"
 
+# Load nvm so node/npm are on PATH. The GitHub Actions SSH session is a
+# non-interactive shell, so ~/.bashrc (which inits nvm) returns early and
+# node/npm would otherwise be missing. Wrapped in set +u because nvm.sh
+# references unset vars.
+set +u
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+set -u
+
 echo "==> Pulling latest main"
 git fetch --prune origin
 git reset --hard origin/main
