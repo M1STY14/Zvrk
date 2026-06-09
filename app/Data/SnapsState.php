@@ -24,6 +24,11 @@ final class SnapsState extends GameState
          * for final scoring when a close occurs.
          */
         public Collection $totalPointsAtClose = new Collection(),
+        /**
+         * The cards of the most recently completed trick, kept so both clients can show the
+         * finished trick (and who won it) before the table is swept for the next lead.
+         */
+        public Collection $lastTrick = new Collection(),
     ) {}
 
     /**
@@ -47,6 +52,13 @@ final class SnapsState extends GameState
                     'player' => $item['player'],
                     'card' => $item['card']->toString(),
                     'marriagePoints' => $item['marriagePoints'],
+                ])
+                ->values()
+                ->all(),
+            'lastTrick' => $this->lastTrick
+                ->map(fn (array $item) => [
+                    'player' => $item['player'],
+                    'card' => $item['card']->toString(),
                 ])
                 ->values()
                 ->all(),

@@ -86,17 +86,24 @@ class SnapsEngineTest extends TestCase
 
     public function test_validate_move_rejects_card_not_in_hand(): void
     {
-        $state = $this->engine->initialState($this->players);
+        $state = new SnapsState(
+            players: collect([1 => $this->players->get(0), 2 => $this->players->get(1)]),
+            currentTurn: 1,
+            hands: collect([
+                1 => collect([new SnapsCard(SnapsSuit::Spades, SnapsRank::Ace)]),
+                2 => collect([new SnapsCard(SnapsSuit::Clubs, SnapsRank::King)]),
+            ]),
+            stock: collect([new SnapsCard(SnapsSuit::Clubs, SnapsRank::Queen)]),
+            trumpCard: new SnapsCard(SnapsSuit::Diamonds, SnapsRank::Jack),
+            trick: collect(),
+            capturedPoints: collect([1 => 0, 2 => 0]),
+            scores: collect([1 => 0, 2 => 0]),
+            lastTrickWinner: null,
+            drawQueue: collect(),
+        );
+
+        // Hearts-Ace is not in player 1's hand, so the move must be rejected.
         $move = new SnapsMoveData(card: new SnapsCard(SnapsSuit::Hearts, SnapsRank::Ace));
-
-        $hand1 = $state->hands->get(1);
-        $hand2 = $state->hands->get(2);
-        $isInAnyHand = $hand1->contains(fn ($c) => $c->suit === SnapsSuit::Hearts && $c->rank === SnapsRank::Ace)
-            || $hand2->contains(fn ($c) => $c->suit === SnapsSuit::Hearts && $c->rank === SnapsRank::Ace);
-
-        if ($isInAnyHand) {
-            $this->markTestSkipped('Deck order made the card part of a dealt hand.');
-        }
 
         $this->assertFalse($this->engine->validateMove($state, 1, $move));
     }
@@ -196,6 +203,40 @@ class SnapsEngineTest extends TestCase
         $ignoresSuit = new SnapsMoveData(card: new SnapsCard(SnapsSuit::Spades, SnapsRank::Ace));
 
         $this->assertTrue($this->engine->validateMove($state, 2, $ignoresSuit));
+    }
+
+    public function test_completed_trick_is_kept_in_last_trick_for_clients(): void
+    {
+        $state = new SnapsState(
+            players: collect([1 => $this->players->get(0), 2 => $this->players->get(1)]),
+            currentTurn: 2,
+            hands: collect([
+                1 => collect([new SnapsCard(SnapsSuit::Hearts, SnapsRank::Ten)]),
+                2 => collect([new SnapsCard(SnapsSuit::Hearts, SnapsRank::King)]),
+            ]),
+            stock: collect([
+                new SnapsCard(SnapsSuit::Clubs, SnapsRank::Queen),
+                new SnapsCard(SnapsSuit::Clubs, SnapsRank::Jack),
+            ]),
+            trumpCard: new SnapsCard(SnapsSuit::Diamonds, SnapsRank::Jack),
+            trick: collect([
+                ['player' => 1, 'card' => new SnapsCard(SnapsSuit::Hearts, SnapsRank::Ace), 'marriagePoints' => 0],
+            ]),
+            capturedPoints: collect([1 => 0, 2 => 0]),
+            scores: collect([1 => 0, 2 => 0]),
+            lastTrickWinner: null,
+            drawQueue: collect(),
+        );
+
+        $newState = $this->engine->applyMove($state, 2, new SnapsMoveData(card: new SnapsCard(SnapsSuit::Hearts, SnapsRank::King)));
+
+        // The live trick is swept, but both cards survive in lastTrick so the opponent can still see them.
+        $this->assertTrue($newState->trick->isEmpty());
+        $this->assertCount(2, $newState->lastTrick);
+
+        $cards = $newState->lastTrick->map(fn ($item) => $item['card']->toString())->all();
+        $this->assertContains('H-A', $cards);
+        $this->assertContains('H-K', $cards);
     }
 
     /**

@@ -52,6 +52,10 @@ class SnapsEngine implements GameContract
                 'card' => SnapsCard::fromString($item['card']),
                 'marriagePoints' => $item['marriagePoints'],
             ]),
+            lastTrick: collect($data['lastTrick'] ?? [])->map(fn ($item) => [
+                'player' => $item['player'],
+                'card' => SnapsCard::fromString($item['card']),
+            ]),
             capturedPoints: collect($data['capturedPoints'] ?? [self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
             scores: collect($data['scores'] ?? [self::PLAYER_ONE => 0, self::PLAYER_TWO => 0]),
             lastTrickWinner: $data['lastTrickWinner'] ?? null,
@@ -196,6 +200,7 @@ class SnapsEngine implements GameContract
             closed: $state->closed,
             closedBy: $state->closedBy,
             totalPointsAtClose: $state->totalPointsAtClose,
+            lastTrick: $state->lastTrick,
         );
     }
 
@@ -333,6 +338,7 @@ class SnapsEngine implements GameContract
             closed: $state->closed,
             closedBy: $state->closedBy,
             totalPointsAtClose: $state->totalPointsAtClose,
+            lastTrick: $state->lastTrick,
         );
     }
 
@@ -359,6 +365,7 @@ class SnapsEngine implements GameContract
             closed: $state->closed,
             closedBy: $state->closedBy,
             totalPointsAtClose: $state->totalPointsAtClose,
+            lastTrick: $state->lastTrick,
         );
     }
 
@@ -387,6 +394,7 @@ class SnapsEngine implements GameContract
             closed: true,
             closedBy: $playerNumber,
             totalPointsAtClose: $totalPointsAtClose,
+            lastTrick: $state->lastTrick,
         );
     }
 
@@ -410,6 +418,7 @@ class SnapsEngine implements GameContract
         $newCapturedPoints = $state->capturedPoints->collect();
         $newStock = $state->stock;
         $newDrawQueue = collect();
+        $lastTrick = $state->lastTrick;
 
         if ($newTrick->count() === self::TRICK_FULL_CARD_COUNT) {
             $trickWinner = $this->resolveTrick($newTrick, $state->trumpCard);
@@ -419,6 +428,8 @@ class SnapsEngine implements GameContract
             $newCapturedPoints[$trickWinner] = ($newCapturedPoints[$trickWinner] ?? 0) + $points;
 
             $currentTurn = $trickWinner;
+            // Keep the finished trick so clients can show it (and the winner) before it's swept.
+            $lastTrick = $newTrick->map(fn ($item) => ['player' => $item['player'], 'card' => $item['card']])->values();
             $newTrick = collect();
             $lastTrickWinner = $trickWinner;
 
@@ -443,6 +454,7 @@ class SnapsEngine implements GameContract
             closed: $state->closed,
             closedBy: $state->closedBy,
             totalPointsAtClose: $state->totalPointsAtClose,
+            lastTrick: $lastTrick,
         );
 
         if ($this->shouldEndDeal($newState)) {

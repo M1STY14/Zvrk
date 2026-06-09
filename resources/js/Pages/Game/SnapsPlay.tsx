@@ -4,7 +4,7 @@ import { useGameChannel } from '@/hooks/useGameChannel';
 import type { GameSessionBase } from '@/types/gameSession';
 import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import SnapsBoard, { SnapsState } from '@/GameBoards/SnapsBoard';
+import SnapsBoard, { SnapsState, SNAPS_TABLE_STYLE } from '@/GameBoards/SnapsBoard';
 
 type SessionProp = GameSessionBase & {
     state: SnapsState | null;
@@ -194,57 +194,52 @@ export default function SnapsPlay({ auth, session }: Props) {
         <>
             <Head title={`${session.game.name} — ${session.name}`} />
 
-            <div className="min-h-screen bg-slate-50 text-slate-900 px-6 py-8">
-                <div className="max-w-5xl mx-auto">
-                    <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
-                        <div>
-                            <h1 className="text-4xl font-extrabold tracking-tight">{session.game.name}</h1>
-                            <p className="mt-1 text-sm text-slate-500">{session.name}</p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
-                            >
-                                Natrag u predvorje
-                            </Link>
-                            <button
-                                type="button"
-                                onClick={handleLeave}
-                                className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
-                            >
-                                Napusti igru
-                            </button>
-                        </div>
+            <div className="relative min-h-screen w-full overflow-hidden text-white">
+                {!snapsState ? (
+                    <div
+                        className="flex min-h-screen items-center justify-center text-center text-amber-100/70"
+                        style={SNAPS_TABLE_STYLE}
+                    >
+                        Čekanje na početak šnapsa...
                     </div>
+                ) : (
+                    <SnapsBoard
+                        state={snapsState}
+                        currentPlayerNumber={currentUserNumber}
+                        isYourTurn={isYourTurn}
+                        isFinished={isFinished}
+                        playerNames={playerNames}
+                        onPlayCard={handlePlayCard}
+                        onDrawCard={handleDrawCard}
+                        onClose={handleCloseMove}
+                        onSwapTrump={handleSwapMove}
+                        onDeclareMarriage={handleDeclareMarriage}
+                    />
+                )}
 
-                    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                        <OpponentDisconnectedBanner
-                            show={showOpponentDisconnectedBanner}
-                            multiple={usePluralDisconnectMessage}
-                        />
+                {/* Floating top-right controls */}
+                <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
+                    <Link
+                        href={route('lobby.index', session.game.slug)}
+                        className="rounded-xl border border-white/20 bg-black/40 px-4 py-2 text-sm font-semibold text-amber-50 backdrop-blur-sm transition hover:bg-black/60"
+                    >
+                        ← Predvorje
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={handleLeave}
+                        className="rounded-xl border border-red-300/30 bg-red-900/55 px-4 py-2 text-sm font-semibold text-red-50 backdrop-blur-sm transition hover:bg-red-800/70"
+                    >
+                        Napusti igru
+                    </button>
+                </div>
 
-
-                        {!snapsState ? (
-                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-10 text-center text-slate-500">
-                                Čekanje na početak šnapsa...
-                            </div>
-                        ) : (
-                            <SnapsBoard
-                                state={snapsState}
-                                currentPlayerNumber={currentUserNumber}
-                                isYourTurn={isYourTurn}
-                                isFinished={isFinished}
-                                playerNames={playerNames}
-                                onPlayCard={handlePlayCard}
-                                onDrawCard={handleDrawCard}
-                                onClose={handleCloseMove}
-                                onSwapTrump={handleSwapMove}
-                                onDeclareMarriage={handleDeclareMarriage}
-                            />
-                        )}
-                    </div>
+                {/* Disconnected banner overlay */}
+                <div className="absolute left-1/2 top-4 z-30 -translate-x-1/2">
+                    <OpponentDisconnectedBanner
+                        show={showOpponentDisconnectedBanner}
+                        multiple={usePluralDisconnectMessage}
+                    />
                 </div>
             </div>
 
