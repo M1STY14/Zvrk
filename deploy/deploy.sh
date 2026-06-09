@@ -6,7 +6,7 @@ set -euo pipefail
 APP_DIR=/home/deploy/Zvrk
 # Match this to the box's PHP-FPM unit (`ls /run/php` / `systemctl list-units 'php*-fpm*'`)
 # and to the name allowed in /etc/sudoers.d/zvrk-deploy.
-PHP_FPM_SERVICE=php8.3-fpm
+PHP_FPM_SERVICE=php8.4-fpm
 
 cd "$APP_DIR"
 
