@@ -6,6 +6,7 @@ use App\Enums\GameType;
 use App\Games\Checkers\CheckersEngine;
 use App\Games\ConnectFourEngine;
 use App\Games\Ludo\LudoEngine;
+use App\Games\Snaps\SnapsEngine;
 use App\Games\TicTacToeEngine;
 use App\Games\Uno\UnoEngine;
 use App\Services\GameEngineManager;
@@ -38,5 +39,6 @@ class AppServiceProvider extends ServiceProvider
         $manager->register(GameType::Checkers->value, CheckersEngine::class);
         $manager->register(GameType::FourInARow->value, ConnectFourEngine::class);
         $manager->register(GameType::Uno->value, UnoEngine::class);
+        $manager->register(GameType::Snaps->value, SnapsEngine::class);
     }
 }

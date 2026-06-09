@@ -44,6 +44,15 @@ class GameSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'slug' => GameType::Snaps->value,
+                'name' => 'Snaps',
+                'description' => 'Classic Croatian trump-based card game with melds and deals. Win tricks, reach 66, and bring your score down to zero.',
+                'image' => '/images/homepage_games_thumbnails/snaps_left_side.svg',
+                'min_players' => 2,
+                'max_players' => 2,
+                'is_active' => true,
+            ],
+            [
                 'slug' => GameType::FourInARow->value,
                 'name' => '4 in a Row',
                 'description' => 'Drop your colored pieces into a vertical grid. Connect four in a row horizontally, vertically, or diagonally to win!',

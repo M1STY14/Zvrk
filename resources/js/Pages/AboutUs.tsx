@@ -7,6 +7,7 @@ import { Suspense } from 'react';
 function ZvrkModel() {
     const { scene } = useGLTF('/models/about_zvrk.glb');
 
+    // @ts-ignore: temporary - react-three primitive typing shim
     return <primitive object={scene} scale={3} position={[0, 0, 0]} rotation={[0, 0, 0]} />;
 }
 

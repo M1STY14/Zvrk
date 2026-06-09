@@ -15,6 +15,7 @@ enum GameType: string
     case TicTacToe = 'tic-tac-toe';
     case Ludo = 'ludo';
     case Checkers = 'checkers';
+    case Snaps = 'snaps';
     case FourInARow = 'four-in-a-row';
     case Uno = 'uno';
 
@@ -25,6 +26,7 @@ enum GameType: string
             GameType::Ludo => 'Game/LudoPlay',
             GameType::Checkers => 'Game/CheckersPlay',
             GameType::Uno => 'Game/UnoPlay',
+            GameType::Snaps => 'Game/SnapsPlay',
             default => 'Game/Play',
         };
     }
