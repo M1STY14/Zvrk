@@ -10,6 +10,7 @@ use App\Data\SnapsCard;
 use App\Data\SnapsMoveData;
 use App\Data\SnapsState;
 use App\Enums\SnapsRank;
+use App\Enums\SnapsSuit;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -22,7 +23,6 @@ class SnapsEngine implements GameContract
     // Card distribution
     private const INITIAL_HAND_SIZE = 3;
     private const ADDITIONAL_HAND_SIZE = 2;
-    private const CARDS_PER_INITIAL_DEAL = 5;
 
     // Player identifiers
     private const PLAYER_ONE = 1;
@@ -232,27 +232,68 @@ class SnapsEngine implements GameContract
     private function validateCardPlay(SnapsState $state, int $playerNumber, SnapsMoveData $moveData): bool
     {
         $hand = $state->hands->get($playerNumber, collect());
+        $card = $moveData->card;
 
         // Check if card is in hand
-        if (!$hand->contains(fn ($card) => $this->cardsEqual($card, $moveData->card))) {
+        if (!$hand->contains(fn (SnapsCard $handCard) => $this->cardsEqual($handCard, $card))) {
             return false;
         }
 
         // Check marriage declaration
-        if ($moveData->declareMarriage) {
-            $cardsArray = $hand->all();
-            if (!$moveData->card->isMarriage(...$cardsArray)) {
+        if ($moveData->declareMarriage && !$card->isMarriage(...$hand->all())) {
+            return false;
+        }
+
+        // Leading (no card to respond to) is always free.
+        if ($state->trick->count() !== self::TRICK_FIRST_CARD_COUNT) {
+            return true;
+        }
+
+        // First phase (talon open): no obligation to follow suit or head the trick.
+        if (!$state->closed && $state->stock->isNotEmpty()) {
+            return true;
+        }
+
+        return $this->isLegalFollow($hand, $state->trick->get(0)['card'], $card, $state->trumpCard);
+    }
+
+    /**
+     * Endgame follow rules: follow the led suit and head the trick when able; otherwise trump
+     * if able (and head an existing trump lead when able).
+     */
+    private function isLegalFollow(Collection $hand, SnapsCard $lead, SnapsCard $card, SnapsCard $trumpCard): bool
+    {
+        if ($this->handHasSuit($hand, $lead->suit)) {
+            if ($card->suit !== $lead->suit) {
+                return false;
+            }
+
+            return !$this->handHasHigherInSuit($hand, $lead) || $card->beats($lead, $trumpCard);
+        }
+
+        if ($this->handHasSuit($hand, $trumpCard->suit)) {
+            if (!$card->isTrump($trumpCard)) {
+                return false;
+            }
+
+            if ($lead->isTrump($trumpCard) && $this->handHasHigherInSuit($hand, $lead) && !$card->beats($lead, $trumpCard)) {
                 return false;
             }
         }
 
-        // If no trick yet or first to play, any card is valid
-        if ($state->trick->isEmpty() || $state->trick->count() === self::TRICK_FIRST_CARD_COUNT) {
-            return true;
-        }
-
-        // No follow play validation
         return true;
+    }
+
+    private function handHasSuit(Collection $hand, SnapsSuit $suit): bool
+    {
+        return $hand->contains(fn (SnapsCard $card) => $card->suit === $suit);
+    }
+
+    private function handHasHigherInSuit(Collection $hand, SnapsCard $card): bool
+    {
+        return $hand->contains(
+            fn (SnapsCard $other) => $other->suit === $card->suit && $other->rank->order() > $card->rank->order(),
+        );
     }
 
     // Apply move helpers
@@ -366,7 +407,7 @@ class SnapsEngine implements GameContract
 
         $newHands = $state->hands->put($playerNumber, $newHand);
         $currentTurn = $playerNumber === self::PLAYER_ONE ? self::PLAYER_TWO : self::PLAYER_ONE;
-        $newCapturedPoints = $state->capturedPoints->copy();
+        $newCapturedPoints = $state->capturedPoints->collect();
         $newStock = $state->stock;
         $newDrawQueue = collect();
 
@@ -505,7 +546,7 @@ class SnapsEngine implements GameContract
     {
         $winner = $this->getDealWinner($state);
 
-        $newScores = $state->scores->copy();
+        $newScores = $state->scores->collect();
         $defaultPoints = 0;
         $newScores[self::PLAYER_ONE] = ($newScores[self::PLAYER_ONE] ?? $defaultPoints) + ($state->capturedPoints[self::PLAYER_ONE] ?? $defaultPoints);
         $newScores[self::PLAYER_TWO] = ($newScores[self::PLAYER_TWO] ?? $defaultPoints) + ($state->capturedPoints[self::PLAYER_TWO] ?? $defaultPoints);

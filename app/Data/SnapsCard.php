@@ -27,6 +27,11 @@ final class SnapsCard
         );
     }
 
+    public function toString(): string
+    {
+        return "{$this->suit->value}-{$this->rank->value}";
+    }
+
     public function isMarriage(?SnapsCard ...$otherCards): bool
     {
         if (!($this->rank === SnapsRank::King || $this->rank === SnapsRank::Queen)) {

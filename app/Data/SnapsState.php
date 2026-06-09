@@ -25,4 +25,38 @@ final class SnapsState extends GameState
          */
         public Collection $totalPointsAtClose = new Collection(),
     ) {}
+
+    /**
+     * The card value objects held in state are serialized down to their "H-A" wire
+     * strings here, which is the shape the frontend and makeState() both expect.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'players' => $this->players->toArray(),
+            'currentTurn' => $this->currentTurn,
+            'hands' => $this->hands
+                ->map(fn (Collection $hand) => $hand->map(fn (SnapsCard $card) => $card->toString())->values()->all())
+                ->toArray(),
+            'stock' => $this->stock->map(fn (SnapsCard $card) => $card->toString())->values()->all(),
+            'trumpCard' => $this->trumpCard->toString(),
+            'trick' => $this->trick
+                ->map(fn (array $item) => [
+                    'player' => $item['player'],
+                    'card' => $item['card']->toString(),
+                    'marriagePoints' => $item['marriagePoints'],
+                ])
+                ->values()
+                ->all(),
+            'capturedPoints' => $this->capturedPoints->toArray(),
+            'scores' => $this->scores->toArray(),
+            'lastTrickWinner' => $this->lastTrickWinner,
+            'drawQueue' => $this->drawQueue->values()->all(),
+            'closed' => $this->closed,
+            'closedBy' => $this->closedBy,
+            'totalPointsAtClose' => $this->totalPointsAtClose->toArray(),
+        ];
+    }
 }

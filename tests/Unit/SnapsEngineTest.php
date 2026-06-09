@@ -144,7 +144,7 @@ class SnapsEngineTest extends TestCase
         $newState = $completeDeal($state);
 
         $this->assertSame(502, $newState->scores->get(1));
-        $this->assertTrue($newState->hands->get(1)->isEmpty());
+        $this->assertTrue($newState->hands->isEmpty());
         $this->assertTrue($newState->stock->isEmpty());
     }
 
@@ -158,5 +158,71 @@ class SnapsEngineTest extends TestCase
 
         $this->assertSame(2, $newState->currentTurn);
         $this->assertCount(4, $newState->hands->get(1));
+    }
+
+    public function test_state_serializes_cards_to_wire_strings_and_round_trips(): void
+    {
+        $state = $this->engine->initialState($this->players);
+
+        $array = $state->toArray();
+
+        // Cards must leave the backend as "H-A" strings, which is what the frontend and makeState() expect.
+        $this->assertIsString($array['trumpCard']);
+        $this->assertIsString($array['hands'][1][0]);
+        $this->assertIsString($array['stock'][0]);
+
+        $restored = $this->engine->makeState($array);
+
+        $this->assertInstanceOf(SnapsCard::class, $restored->trumpCard);
+        $this->assertSame($array['trumpCard'], $restored->trumpCard->toString());
+        $this->assertSame($array, $restored->toArray());
+    }
+
+    public function test_endgame_requires_following_the_led_suit(): void
+    {
+        $state = $this->endgameRespondingState();
+
+        $followsSuit = new SnapsMoveData(card: new SnapsCard(SnapsSuit::Hearts, SnapsRank::King));
+        $ignoresSuit = new SnapsMoveData(card: new SnapsCard(SnapsSuit::Spades, SnapsRank::Ace));
+
+        $this->assertTrue($this->engine->validateMove($state, 2, $followsSuit));
+        $this->assertFalse($this->engine->validateMove($state, 2, $ignoresSuit));
+    }
+
+    public function test_open_phase_allows_discarding_off_suit(): void
+    {
+        $state = $this->endgameRespondingState(stock: collect([new SnapsCard(SnapsSuit::Clubs, SnapsRank::Queen)]));
+
+        $ignoresSuit = new SnapsMoveData(card: new SnapsCard(SnapsSuit::Spades, SnapsRank::Ace));
+
+        $this->assertTrue($this->engine->validateMove($state, 2, $ignoresSuit));
+    }
+
+    /**
+     * Player 2 is responding to a Hearts lead with a Heart and an off-suit card in hand.
+     * Trump is Diamonds, so neither card is a trump. Pass a non-empty $stock to model the open phase.
+     */
+    private function endgameRespondingState(Collection $stock = new Collection()): SnapsState
+    {
+        return new SnapsState(
+            players: collect([1 => $this->players->get(0), 2 => $this->players->get(1)]),
+            currentTurn: 2,
+            hands: collect([
+                1 => collect([new SnapsCard(SnapsSuit::Spades, SnapsRank::Ten)]),
+                2 => collect([
+                    new SnapsCard(SnapsSuit::Hearts, SnapsRank::King),
+                    new SnapsCard(SnapsSuit::Spades, SnapsRank::Ace),
+                ]),
+            ]),
+            stock: $stock,
+            trumpCard: new SnapsCard(SnapsSuit::Diamonds, SnapsRank::Jack),
+            trick: collect([
+                ['player' => 1, 'card' => new SnapsCard(SnapsSuit::Hearts, SnapsRank::Ten), 'marriagePoints' => 0],
+            ]),
+            capturedPoints: collect([1 => 0, 2 => 0]),
+            scores: collect([1 => 0, 2 => 0]),
+            lastTrickWinner: 1,
+            drawQueue: collect(),
+        );
     }
 }
