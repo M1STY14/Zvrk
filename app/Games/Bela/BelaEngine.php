@@ -8,42 +8,19 @@ use App\Data\BelaState;
 use App\Data\GameResult;
 use App\Data\GameState;
 use App\Data\MoveData;
+use App\Enums\BelaConstants;
+use App\Enums\BelaPhase;
+use App\Enums\BelaMoveType;
+use App\Enums\BelaRank;
+use App\Enums\BidValue;
+use App\Enums\Card;
+use App\Enums\DeclarationTeam;
+use App\Enums\Suit;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 final class BelaEngine implements GameContract
 {
-    private const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'];
-
-    private const RANKS = ['7', '8', '9', 'jack', 'queen', 'king', '10', 'ace'];
-
-    private const TEAM_ONE = [1, 3];
-
-    private const TEAM_TWO = [2, 4];
-
-    private const TRUMP_POINTS = [
-        '7' => 0,
-        '8' => 0,
-        '9' => 14,
-        'jack' => 20,
-        'queen' => 3,
-        'king' => 4,
-        '10' => 10,
-        'ace' => 11,
-    ];
-
-    private const NON_TRUMP_POINTS = [
-        '7' => 0,
-        '8' => 0,
-        '9' => 0,
-        'jack' => 2,
-        'queen' => 3,
-        'king' => 4,
-        '10' => 10,
-        'ace' => 11,
-    ];
-
-    private const LAST_TRICK_BONUS = 10;
 
     public function makeState(array $data): GameState
     {
@@ -71,9 +48,8 @@ final class BelaEngine implements GameContract
     public function makeMoveData(array $data): MoveData
     {
         return new BelaMoveData(
-            type: $data['type'] ?? 'play',
+            type: $data['type'] ?? BelaMoveType::Play->value,
             card: $data['card'] ?? null,
-            accept: $data['accept'] ?? null,
             suit: $data['suit'] ?? null,
             pass: $data['pass'] ?? null,
             declare: $data['declare'] ?? null,
@@ -82,31 +58,17 @@ final class BelaEngine implements GameContract
 
     public function initialState(Collection $players): GameState
     {
-        if ($players->count() !== 4) {
+        if ($players->count() !== BelaConstants::PLAYER_COUNT) {
             throw new InvalidArgumentException('Bela requires exactly four players.');
         }
 
-        $playersByNumber = collect([
-            1 => $players->get(0),
-            2 => $players->get(1),
-            3 => $players->get(2),
-            4 => $players->get(3),
-        ]);
+        $playersByNumber = collect(BelaConstants::PLAYER_NUMBERS)
+            ->mapWithKeys(fn (int $playerNumber, int $index) => [
+                $playerNumber => $players->get($index),
+            ]);
 
-        $deck = $this->shuffleDeck($this->buildDeck());
-
-        $hands = [
-            1 => [],
-            2 => [],
-            3 => [],
-            4 => [],
-        ];
-
-        for ($index = 0; $index < 32; $index++) {
-            $playerNumber = ($index % 4) + 1;
-            $hands[$playerNumber][] = $deck[$index];
-        }
-
+        $deck = $this->shuffledDeck();
+        $hands = $this->dealHands($deck);
         $declarations = $this->detectDeclarations($hands);
 
         return new BelaState(
@@ -117,14 +79,14 @@ final class BelaEngine implements GameContract
             trumpCaller: null,
             teamScores: [0, 0],
             roundPoints: [0, 0],
-            phase: 'bid',
+            phase: BelaPhase::Bid->value,
             round: 1,
             declarations: $declarations,
             currentTurn: 1,
-            dealer: 4,
+            dealer: BelaConstants::INITIAL_DEALER,
             turnedUpCard: null,
             players: $playersByNumber,
-            declarationChoices: [1 => null, 2 => null, 3 => null, 4 => null],
+            declarationChoices: array_fill_keys(BelaConstants::PLAYER_NUMBERS, null),
             bids: [],
             forfeited: [],
         );
@@ -144,59 +106,15 @@ final class BelaEngine implements GameContract
             return false;
         }
 
-        if ($state->phase === 'bid') {
-            if ($moveData->type !== 'bid') {
-                return false;
-            }
+        if ($state->phase === BelaPhase::Bid->value) {
+            return $this->validateBid($state, $moveData, $playerNumber);
+        }
 
-            if (is_string($moveData->suit)) {
-                return in_array($moveData->suit, self::SUITS, true);
-            }
-
-            if ($moveData->pass === true) {
-                $passCount = count(array_filter($state->bids, fn ($bid) => $bid === 'pass'));
-                $mustChoose = $passCount >= 3 && $playerNumber === 4;
-
-                return ! $mustChoose;
-            }
-
+        if ($state->phase !== BelaPhase::Play->value) {
             return false;
         }
 
-        if ($state->phase !== 'play') {
-            return false;
-        }
-
-        if ($moveData->type !== 'play' || ! is_string($moveData->card)) {
-            return false;
-        }
-
-        $hand = $state->hands[$playerNumber] ?? [];
-
-        if (! in_array($moveData->card, $hand, true)) {
-            return false;
-        }
-
-        if (count($state->trick) === 0) {
-            return true;
-        }
-
-        $leadSuit = $this->cardSuit($state->trick[0]['card']);
-        $cardSuit = $this->cardSuit($moveData->card);
-
-        if ($cardSuit !== $leadSuit && $this->hasSuit($hand, $leadSuit)) {
-            return false;
-        }
-
-        if ($cardSuit !== $leadSuit
-            && $state->trumpSuit !== null
-            && $this->hasSuit($hand, $state->trumpSuit)
-            && $cardSuit !== $state->trumpSuit
-        ) {
-            return false;
-        }
-
-        return true;
+        return $this->validatePlay($state, $moveData);
     }
 
     public function applyMove(GameState $state, int $playerNumber, MoveData $moveData): GameState
@@ -209,155 +127,23 @@ final class BelaEngine implements GameContract
             throw new InvalidArgumentException('BelaEngine expects BelaMoveData.');
         }
 
-        if ($state->phase === 'bid') {
-            if ($moveData->type !== 'bid') {
-                throw new InvalidArgumentException('Invalid Bela bid move.');
-            }
-
-            $bids = $state->bids;
-
-            if (is_string($moveData->suit)) {
-                $bids[$playerNumber] = $moveData->suit;
-                return $this->startPlay($state, $playerNumber, $moveData->suit);
-            }
-
-            if ($moveData->pass !== true) {
-                throw new InvalidArgumentException('Invalid Bela bid move.');
-            }
-
-            $bids[$playerNumber] = 'pass';
-            $nextTurn = $this->nextActivePlayer($playerNumber, $this->activePlayerNumbers($state));
-
-            return new BelaState(
-                hands: $state->hands,
-                trick: $state->trick,
-                trickHistory: $state->trickHistory,
-                trumpSuit: $state->trumpSuit,
-                trumpCaller: $state->trumpCaller,
-                teamScores: $state->teamScores,
-                roundPoints: $state->roundPoints,
-                phase: 'bid',
-                round: $state->round,
-                declarations: $state->declarations,
-                currentTurn: $nextTurn,
-                dealer: $state->dealer,
-                turnedUpCard: $state->turnedUpCard,
-                players: $state->players,
-                declarationChoices: $state->declarationChoices,
-                bids: $bids,
-                forfeited: $state->forfeited,
-            );
+        if ($state->phase === BelaPhase::Bid->value) {
+            return $this->applyBid($state, $playerNumber, $moveData);
         }
 
-        if ($state->phase !== 'play') {
+        if ($state->phase !== BelaPhase::Play->value) {
             throw new InvalidArgumentException('BelaEngine cannot apply move in current phase.');
         }
 
-        if ($moveData->type === 'declare') {
-            if (! is_bool($moveData->declare) || ! array_key_exists($playerNumber, $state->declarationChoices)) {
-                throw new InvalidArgumentException('Invalid Bela declare move.');
-            }
-
-            $declarationChoices = $state->declarationChoices;
-            $declarationChoices[$playerNumber] = $moveData->declare;
-
-            return new BelaState(
-                hands: $state->hands,
-                trick: $state->trick,
-                trickHistory: $state->trickHistory,
-                trumpSuit: $state->trumpSuit,
-                trumpCaller: $state->trumpCaller,
-                teamScores: $state->teamScores,
-                roundPoints: $state->roundPoints,
-                phase: $state->phase,
-                round: $state->round,
-                declarations: $state->declarations,
-                currentTurn: $this->nextActivePlayer($playerNumber, $this->activePlayerNumbers($state)),
-                dealer: $state->dealer,
-                turnedUpCard: $state->turnedUpCard,
-                players: $state->players,
-                declarationChoices: $declarationChoices,
-                bids: $state->bids,
-                forfeited: $state->forfeited,
-            );
+        if ($moveData->type === BelaMoveType::Declare->value) {
+            return $this->applyDeclaration($state, $playerNumber, $moveData);
         }
 
-        if ($moveData->type !== 'play' || ! is_string($moveData->card)) {
+        if ($moveData->type !== BelaMoveType::Play->value || ! is_string($moveData->card)) {
             throw new InvalidArgumentException('Invalid Bela play move.');
         }
 
-        $hand = $state->hands[$playerNumber] ?? [];
-        $card = $moveData->card;
-
-        $newHand = array_values(array_filter(
-            $hand,
-            fn (string $handCard): bool => $handCard !== $card,
-        ));
-
-        $hands = $state->hands;
-        $hands[$playerNumber] = $newHand;
-
-        $trick = [...$state->trick, ['player' => $playerNumber, 'card' => $card]];
-        $activePlayers = $this->activePlayerNumbers($state);
-
-        if (count($trick) < count($activePlayers)) {
-            return new BelaState(
-                hands: $hands,
-                trick: $trick,
-                trickHistory: $state->trickHistory,
-                trumpSuit: $state->trumpSuit,
-                trumpCaller: $state->trumpCaller,
-                teamScores: $state->teamScores,
-                roundPoints: $state->roundPoints,
-                phase: 'play',
-                round: $state->round,
-                declarations: $state->declarations,
-                currentTurn: $this->nextActivePlayer($playerNumber, $activePlayers),
-                dealer: $state->dealer,
-                turnedUpCard: $state->turnedUpCard,
-                players: $state->players,
-                bids: [],
-                forfeited: $state->forfeited,
-            );
-        }
-
-        $trickWinner = $this->determineTrickWinner($trick, $state->trumpSuit);
-        $trickPoints = $this->calculateTrickPoints($trick, $state->trumpSuit);
-        $teamIndex = $this->teamIndex($trickWinner);
-
-        $roundPoints = $state->roundPoints;
-        $roundPoints[$teamIndex] += $trickPoints;
-
-        $trickHistory = [...$state->trickHistory, [
-            'plays' => $trick,
-            'winner' => $trickWinner,
-            'points' => $trickPoints,
-        ]];
-
-        $nextState = new BelaState(
-            hands: $hands,
-            trick: [],
-            trickHistory: $trickHistory,
-            trumpSuit: $state->trumpSuit,
-            trumpCaller: $state->trumpCaller,
-            teamScores: $state->teamScores,
-            roundPoints: $roundPoints,
-            phase: 'play',
-            round: $state->round,
-            declarations: $state->declarations,
-            currentTurn: $trickWinner,
-            dealer: $state->dealer,
-            turnedUpCard: $state->turnedUpCard,
-            players: $state->players,
-            bids: [],
-            forfeited: $state->forfeited,
-        );
-
-        if ($this->isRoundComplete($nextState)) {
-            return $this->completeRound($nextState, $trickWinner);
-        }
-
-        return $nextState;
+        return $this->applyPlay($state, $playerNumber, $moveData->card);
     }
 
     public function checkGameOver(GameState $state): ?GameResult
@@ -366,16 +152,32 @@ final class BelaEngine implements GameContract
             throw new InvalidArgumentException('BelaEngine expects BelaState.');
         }
 
-        if (max($state->teamScores) < 1001) {
+        $teamOneScore = $state->teamScores[0] ?? 0;
+        $teamTwoScore = $state->teamScores[1] ?? 0;
+
+        if ($teamOneScore < BelaConstants::WINNING_SCORE && $teamTwoScore < BelaConstants::WINNING_SCORE) {
             return null;
         }
 
-        $winningTeam = $state->teamScores[0] >= 1001 ? 1 : 2;
-        $playerNumber = $winningTeam === 1 ? 1 : 2;
+        if ($teamOneScore >= BelaConstants::WINNING_SCORE && $teamTwoScore >= BelaConstants::WINNING_SCORE) {
+            if ($teamOneScore === $teamTwoScore) {
+                return new GameResult(winner: null, draw: true);
+            }
+
+            $winningTeam = $teamOneScore > $teamTwoScore ? 1 : 2;
+        } else {
+            $winningTeam = $teamOneScore >= BelaConstants::WINNING_SCORE ? 1 : 2;
+        }
+
+        $winner = $state->players
+            ->filter(fn ($player, $number): bool => in_array((int) $number, $this->teamNumbers($winningTeam), true))
+            ->values()
+            ->last();
 
         return new GameResult(
-            winner: $state->players->get($playerNumber),
+            winner: $winner,
             draw: false,
+            winningTeam: $winningTeam,
         );
     }
 
@@ -405,7 +207,7 @@ final class BelaEngine implements GameContract
 
         $trick = array_values(array_filter(
             $state->trick,
-            fn (array $entry): bool => $entry['player'] !== $playerNumber,
+            fn (array $entry): bool => $entry[BelaConstants::TRICK_PLAYER] !== $playerNumber,
         ));
 
         $nextTurn = $state->currentTurn;
@@ -413,24 +215,13 @@ final class BelaEngine implements GameContract
             $nextTurn = $this->nextActivePlayer($playerNumber, $this->activePlayerNumbers($state));
         }
 
-        return new BelaState(
-            hands: $hands,
-            trick: $trick,
-            trickHistory: $state->trickHistory,
-            trumpSuit: $state->trumpSuit,
-            trumpCaller: $state->trumpCaller,
-            teamScores: $state->teamScores,
-            roundPoints: $state->roundPoints,
-            phase: $state->phase,
-            round: $state->round,
-            declarations: $state->declarations,
-            currentTurn: $nextTurn,
-            dealer: $state->dealer,
-            turnedUpCard: $state->turnedUpCard,
-            players: $state->players,
-            bids: $state->bids,
-            forfeited: $forfeited,
-        );
+        return $state->copyWith([
+            'hands' => $hands,
+            'trick' => $trick,
+            'currentTurn' => $nextTurn,
+            'forfeited' => $forfeited,
+            'declarationChoices' => $state->declarationChoices,
+        ]);
     }
 
     public function activePlayerNumbers(GameState $state): array
@@ -446,17 +237,178 @@ final class BelaEngine implements GameContract
             ->all();
     }
 
-    private function buildDeck(): array
+    private function validateBid(BelaState $state, BelaMoveData $moveData, int $playerNumber): bool
     {
-        $deck = [];
-
-        foreach (self::SUITS as $suit) {
-            foreach (self::RANKS as $rank) {
-                $deck[] = "{$rank}_of_{$suit}";
-            }
+        if ($moveData->type !== BelaMoveType::Bid->value) {
+            return false;
         }
 
-        return $deck;
+        if (is_string($moveData->suit)) {
+            return Suit::tryFrom($moveData->suit) !== null;
+        }
+
+        if ($moveData->pass === true) {
+            $passCount = count(array_filter($state->bids, fn ($bid) => $bid === BidValue::Pass->value));
+            $mustChoose = $passCount >= 3 && $playerNumber === $state->dealer;
+
+            return ! $mustChoose;
+        }
+
+        return false;
+    }
+
+    private function validatePlay(BelaState $state, BelaMoveData $moveData): bool
+    {
+        if ($moveData->type !== BelaMoveType::Play->value || ! is_string($moveData->card)) {
+            return false;
+        }
+
+        $hand = $state->hands[$state->currentTurn] ?? [];
+
+        if (! in_array($moveData->card, $hand, true)) {
+            return false;
+        }
+
+        if (count($state->trick) === 0) {
+            return true;
+        }
+
+        $leadCard = $this->trickEntryCard($state->trick[0]);
+        $card = Card::fromString($moveData->card);
+        $trumpSuit = $state->trumpSuit !== null ? Suit::fromString($state->trumpSuit) : null;
+
+        if ($card->suit !== $leadCard->suit && $this->hasSuit($hand, $leadCard->suit)) {
+            return false;
+        }
+
+        if ($card->suit !== $leadCard->suit
+            && $trumpSuit !== null
+            && $this->hasSuit($hand, $trumpSuit)
+            && $card->suit !== $trumpSuit
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function applyBid(BelaState $state, int $playerNumber, BelaMoveData $moveData): BelaState
+    {
+        if ($moveData->type !== BelaMoveType::Bid->value) {
+            throw new InvalidArgumentException('Invalid Bela bid move.');
+        }
+
+        $bids = $state->bids;
+
+        if (is_string($moveData->suit)) {
+            $bids[$playerNumber] = $moveData->suit;
+            return $this->startPlay($state->copyWith([
+                'bids' => $bids,
+                'declarationChoices' => $state->declarationChoices,
+            ]), $playerNumber, $moveData->suit);
+        }
+
+        if ($moveData->pass === true) {
+            $bids[$playerNumber] = BidValue::Pass->value;
+            $nextTurn = $this->nextActivePlayer($playerNumber, $this->activePlayerNumbers($state));
+
+            return $state->copyWith([
+                'bids' => $bids,
+                'currentTurn' => $nextTurn,
+                'declarationChoices' => $state->declarationChoices,
+            ]);
+        }
+
+        throw new InvalidArgumentException('Invalid Bela bid move.');
+    }
+
+    private function applyDeclaration(BelaState $state, int $playerNumber, BelaMoveData $moveData): BelaState
+    {
+        if (! is_bool($moveData->declare) || ! array_key_exists($playerNumber, $state->declarationChoices)) {
+            throw new InvalidArgumentException('Invalid Bela declare move.');
+        }
+
+        $declarationChoices = $state->declarationChoices;
+        $declarationChoices[$playerNumber] = $moveData->declare;
+        $nextTurn = $this->nextActivePlayer($playerNumber, $this->activePlayerNumbers($state));
+
+        return $state->copyWith([
+            'declarationChoices' => $declarationChoices,
+            'currentTurn' => $nextTurn,
+        ]);
+    }
+
+    private function applyPlay(BelaState $state, int $playerNumber, string $card): BelaState
+    {
+        $hand = $state->hands[$playerNumber] ?? [];
+        $newHand = array_values(array_filter(
+            $hand,
+            fn (string $handCard): bool => $handCard !== $card,
+        ));
+
+        $hands = $state->hands;
+        $hands[$playerNumber] = $newHand;
+
+        $trick = [...$state->trick, $this->createTrickEntry($playerNumber, Card::fromString($card))];
+
+        $updated = $state->copyWith([
+            'hands' => $hands,
+            'trick' => $trick,
+            'declarationChoices' => $state->declarationChoices,
+        ]);
+
+        $activePlayers = $this->activePlayerNumbers($state);
+
+        if (count($trick) < count($activePlayers)) {
+            return $updated->copyWith([
+                'currentTurn' => $this->nextActivePlayer($playerNumber, $activePlayers),
+                'declarationChoices' => $state->declarationChoices,
+            ]);
+        }
+
+        return $this->resolveTrick($updated);
+    }
+
+    private function resolveTrick(BelaState $state): BelaState
+    {
+        $trickWinner = $this->determineTrickWinner($state->trick, $state->trumpSuit);
+        $trickPoints = $this->calculateTrickPoints($state->trick, $state->trumpSuit);
+        $teamIndex = $this->teamIndex($trickWinner);
+
+        $roundPoints = $state->roundPoints;
+        $roundPoints[$teamIndex] += $trickPoints;
+
+        $trickHistory = [...$state->trickHistory, [
+            BelaConstants::TRICK_HISTORY_PLAYS => $state->trick,
+            BelaConstants::TRICK_HISTORY_WINNER => $trickWinner,
+            BelaConstants::TRICK_HISTORY_POINTS => $trickPoints,
+        ]];
+
+        $state = $state->copyWith([
+            'trick' => [],
+            'trickHistory' => $trickHistory,
+            'roundPoints' => $roundPoints,
+            'currentTurn' => $trickWinner,
+            'declarationChoices' => $state->declarationChoices,
+        ]);
+
+        if ($this->isRoundComplete($state)) {
+            return $this->completeRound($state, $trickWinner);
+        }
+
+        return $state;
+    }
+
+    private function dealHands(array $deck): array
+    {
+        $hands = array_fill_keys(BelaConstants::PLAYER_NUMBERS, []);
+
+        foreach ($deck as $index => $card) {
+            $playerNumber = ($index % BelaConstants::PLAYER_COUNT) + 1;
+            $hands[$playerNumber][] = $card;
+        }
+
+        return $hands;
     }
 
     private function shuffleDeck(array $deck): array
@@ -465,42 +417,33 @@ final class BelaEngine implements GameContract
         return $deck;
     }
 
-    private function cardSuit(string $card): string
+    private function shuffledDeck(): array
     {
-        return explode('_of_', $card)[1] ?? '';
+        return $this->shuffleDeck(array_map(fn (Card $card): string => $card->toString(), Card::deck()));
     }
 
-    private function cardRank(string $card): string
+    private function createTrickEntry(int $playerNumber, Card $card): array
     {
-        return explode('_of_', $card)[0] ?? '';
+        return [
+            BelaConstants::TRICK_PLAYER => $playerNumber,
+            BelaConstants::TRICK_CARD => $card->toString(),
+        ];
     }
 
-    private function hasSuit(array $hand, string $suit): bool
+    private function trickEntryCard(array $entry): Card
+    {
+        return Card::fromString($entry[BelaConstants::TRICK_CARD]);
+    }
+
+    private function trickEntryPlayer(array $entry): int
+    {
+        return (int) $entry[BelaConstants::TRICK_PLAYER];
+    }
+
+    private function hasSuit(array $hand, Suit $suit): bool
     {
         foreach ($hand as $card) {
-            if ($this->cardSuit($card) === $suit) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function hasHigherTrump(array $hand, string $card, ?string $trump): bool
-    {
-        if ($trump === null) {
-            return false;
-        }
-
-        $rank = $this->cardRank($card);
-        $value = $this->trumpRankValue($rank);
-
-        foreach ($hand as $handCard) {
-            if ($this->cardSuit($handCard) !== $trump) {
-                continue;
-            }
-
-            if ($this->trumpRankValue($this->cardRank($handCard)) > $value) {
+            if (Card::fromString($card)->suit === $suit) {
                 return true;
             }
         }
@@ -527,109 +470,64 @@ final class BelaEngine implements GameContract
 
     private function startPlay(BelaState $state, int $caller, string $trumpSuit): BelaState
     {
-        return new BelaState(
-            hands: $state->hands,
-            trick: [],
-            trickHistory: $state->trickHistory,
-            trumpSuit: $trumpSuit,
-            trumpCaller: $caller,
-            teamScores: $state->teamScores,
-            roundPoints: $state->roundPoints,
-            phase: 'play',
-            round: $state->round,
-            declarations: $state->declarations,
-            currentTurn: $caller,
-            dealer: $state->dealer,
-            turnedUpCard: null,
-            players: $state->players,
-            declarationChoices: $state->declarationChoices,
-            bids: $state->bids,
-            forfeited: $state->forfeited,
-        );
+        return $state->copyWith([
+            'trumpSuit' => $trumpSuit,
+            'trumpCaller' => $caller,
+            'phase' => BelaPhase::Play->value,
+            'currentTurn' => $caller,
+            'declarationChoices' => $state->declarationChoices,
+        ]);
     }
 
     private function determineTrickWinner(array $trick, ?string $trumpSuit): int
     {
-        $leadSuit = $this->cardSuit($trick[0]['card']);
+        $leadCard = $this->trickEntryCard($trick[0]);
+        $trump = $trumpSuit !== null ? Suit::fromString($trumpSuit) : null;
         $best = $trick[0];
+        $bestCard = $this->trickEntryCard($best);
 
         foreach ($trick as $play) {
-            if ($this->isBetterCard($play['card'], $best['card'], $leadSuit, $trumpSuit)) {
+            $candidateCard = $this->trickEntryCard($play);
+            if ($this->isBetterCard($candidateCard, $bestCard, $leadCard->suit, $trump)) {
                 $best = $play;
+                $bestCard = $candidateCard;
             }
         }
 
-        return $best['player'];
+        return $this->trickEntryPlayer($best);
     }
 
-    private function isBetterCard(string $candidate, string $current, string $leadSuit, ?string $trumpSuit): bool
+    private function isBetterCard(Card $candidateCard, Card $currentCard, Suit $leadSuit, ?Suit $trumpSuit): bool
     {
-        $candidateSuit = $this->cardSuit($candidate);
-        $currentSuit = $this->cardSuit($current);
-
-        if ($candidateSuit === $currentSuit) {
-            if ($candidateSuit === $trumpSuit) {
-                return $this->trumpRankValue($this->cardRank($candidate)) > $this->trumpRankValue($this->cardRank($current));
+        if ($candidateCard->suit === $currentCard->suit) {
+            if ($candidateCard->suit === $trumpSuit) {
+                return $candidateCard->rank->trumpRankValue() > $currentCard->rank->trumpRankValue();
             }
 
-            return $this->nonTrumpRankValue($this->cardRank($candidate)) > $this->nonTrumpRankValue($this->cardRank($current));
+            return $candidateCard->rank->nonTrumpRankValue() > $currentCard->rank->nonTrumpRankValue();
         }
 
-        if ($candidateSuit === $trumpSuit) {
+        if ($candidateCard->suit === $trumpSuit) {
             return true;
         }
 
-        if ($currentSuit === $trumpSuit) {
+        if ($currentCard->suit === $trumpSuit) {
             return false;
         }
 
-        return $candidateSuit === $leadSuit;
-    }
-
-    private function trumpRankValue(string $rank): int
-    {
-        return match ($rank) {
-            '7' => 0,
-            '8' => 1,
-            'queen' => 2,
-            'king' => 3,
-            '10' => 4,
-            'ace' => 5,
-            '9' => 6,
-            'jack' => 7,
-            default => 0,
-        };
-    }
-
-    private function nonTrumpRankValue(string $rank): int
-    {
-        return match ($rank) {
-            '7' => 0,
-            '8' => 1,
-            '9' => 2,
-            'jack' => 3,
-            'queen' => 4,
-            'king' => 5,
-            '10' => 6,
-            'ace' => 7,
-            default => 0,
-        };
+        return $candidateCard->suit === $leadSuit;
     }
 
     private function calculateTrickPoints(array $trick, ?string $trumpSuit): int
     {
         $points = 0;
+        $trump = $trumpSuit !== null ? Suit::fromString($trumpSuit) : null;
 
         foreach ($trick as $play) {
-            $rank = $this->cardRank($play['card']);
-            $suit = $this->cardSuit($play['card']);
-
-            if ($suit === $trumpSuit) {
-                $points += self::TRUMP_POINTS[$rank] ?? 0;
-                continue;
-            }
-
-            $points += self::NON_TRUMP_POINTS[$rank] ?? 0;
+            $card = $this->trickEntryCard($play);
+            $points += $card->isTrump($trump)
+                ? $card->rank->trumpPointValue()
+                : $card->rank->nonTrumpPointValue();
         }
 
         return $points;
@@ -637,7 +535,12 @@ final class BelaEngine implements GameContract
 
     private function teamIndex(int $playerNumber): int
     {
-        return in_array($playerNumber, self::TEAM_ONE, true) ? 0 : 1;
+        return in_array($playerNumber, BelaConstants::TEAM_ONE, true) ? 0 : 1;
+    }
+
+    private function teamNumbers(int $team): array
+    {
+        return $team === 1 ? BelaConstants::TEAM_ONE : BelaConstants::TEAM_TWO;
     }
 
     private function isRoundComplete(BelaState $state): bool
@@ -655,18 +558,18 @@ final class BelaEngine implements GameContract
     {
         $roundPoints = $state->roundPoints;
         $lastTeam = $this->teamIndex($lastTrickWinner);
-        $roundPoints[$lastTeam] += self::LAST_TRICK_BONUS;
+        $roundPoints[$lastTeam] += BelaConstants::LAST_TRICK_BONUS;
 
-        if ($state->declarations['team1'] > $state->declarations['team2']) {
-            $roundPoints[0] += $state->declarations['team1'];
-        } elseif ($state->declarations['team2'] > $state->declarations['team1']) {
-            $roundPoints[1] += $state->declarations['team2'];
+        if ($state->declarations[DeclarationTeam::TeamOne->value] > $state->declarations[DeclarationTeam::TeamTwo->value]) {
+            $roundPoints[0] += $state->declarations[DeclarationTeam::TeamOne->value];
+        } elseif ($state->declarations[DeclarationTeam::TeamTwo->value] > $state->declarations[DeclarationTeam::TeamOne->value]) {
+            $roundPoints[1] += $state->declarations[DeclarationTeam::TeamTwo->value];
         }
 
         $callerTeam = $this->teamIndex($state->trumpCaller ?? $state->dealer);
         $opponentTeam = $callerTeam === 0 ? 1 : 0;
 
-        if ($roundPoints[$callerTeam] < 82) {
+        if ($roundPoints[$callerTeam] < BelaConstants::PENALTY_THRESHOLD) {
             $roundPoints[$opponentTeam] = array_sum($roundPoints);
             $roundPoints[$callerTeam] = 0;
         }
@@ -676,25 +579,13 @@ final class BelaEngine implements GameContract
             $state->teamScores[1] + $roundPoints[1],
         ];
 
-        if (max($teamScores) >= 1001) {
-            return new BelaState(
-                hands: $state->hands,
-                trick: [],
-                trickHistory: $state->trickHistory,
-                trumpSuit: $state->trumpSuit,
-                trumpCaller: $state->trumpCaller,
-                teamScores: $teamScores,
-                roundPoints: $roundPoints,
-                phase: 'score',
-                round: $state->round,
-                declarations: $state->declarations,
-                currentTurn: $state->currentTurn,
-                dealer: $state->dealer,
-                turnedUpCard: $state->turnedUpCard,
-                players: $state->players,
-                bids: [],
-                forfeited: $state->forfeited,
-            );
+        if (max($teamScores) >= BelaConstants::WINNING_SCORE) {
+            return $state->copyWith([
+                'teamScores' => $teamScores,
+                'roundPoints' => $roundPoints,
+                'phase' => BelaPhase::Score->value,
+                'declarationChoices' => $state->declarationChoices,
+            ]);
         }
 
         return $this->startNextRound($state->players, $teamScores, $state->dealer, $state->round + 1);
@@ -702,23 +593,11 @@ final class BelaEngine implements GameContract
 
     private function startNextRound(Collection $players, array $teamScores, int $previousDealer, int $nextRound): BelaState
     {
-        $deck = $this->shuffleDeck($this->buildDeck());
-
-        $hands = [
-            1 => [],
-            2 => [],
-            3 => [],
-            4 => [],
-        ];
-
-        for ($index = 0; $index < 32; $index++) {
-            $playerNumber = ($index % 4) + 1;
-            $hands[$playerNumber][] = $deck[$index];
-        }
-
+        $deck = $this->shuffledDeck();
+        $hands = $this->dealHands($deck);
         $declarations = $this->detectDeclarations($hands);
-        $dealer = $this->nextActivePlayer($previousDealer, [1, 2, 3, 4]);
-        $currentTurn = $this->nextActivePlayer($dealer, [1, 2, 3, 4]);
+        $dealer = $this->nextActivePlayer($previousDealer, BelaConstants::PLAYER_NUMBERS);
+        $currentTurn = $this->nextActivePlayer($dealer, BelaConstants::PLAYER_NUMBERS);
 
         return new BelaState(
             hands: $hands,
@@ -728,14 +607,14 @@ final class BelaEngine implements GameContract
             trumpCaller: null,
             teamScores: $teamScores,
             roundPoints: [0, 0],
-            phase: 'bid',
+            phase: BelaPhase::Bid->value,
             round: $nextRound,
             declarations: $declarations,
             currentTurn: $currentTurn,
             dealer: $dealer,
             turnedUpCard: null,
             players: $players,
-            declarationChoices: [1 => null, 2 => null, 3 => null, 4 => null],
+            declarationChoices: array_fill_keys(BelaConstants::PLAYER_NUMBERS, null),
             bids: [],
             forfeited: [],
         );
@@ -744,54 +623,44 @@ final class BelaEngine implements GameContract
     private function detectDeclarations(array $hands): array
     {
         $declarations = [
-            'team1' => 0,
-            'team2' => 0,
-            'details' => [],
+            DeclarationTeam::TeamOne->value => 0,
+            DeclarationTeam::TeamTwo->value => 0,
+            BelaConstants::DECLARATION_DETAILS => [],
         ];
 
+        $rankCountsTemplate = array_fill_keys(
+            array_map(fn (BelaRank $rank): string => $rank->value, BelaRank::cases()),
+            0,
+        );
+
+        $suitTemplate = array_fill_keys(
+            array_map(fn (Suit $suit): string => $suit->value, Suit::cases()),
+            array_fill(0, count(BelaRank::cases()), false),
+        );
+
         foreach ($hands as $playerNumber => $hand) {
+            $suits = $suitTemplate;
+            $rankCounts = $rankCountsTemplate;
             $playerPoints = 0;
-            $handBySuit = [];
 
             foreach ($hand as $card) {
-                $suit = $this->cardSuit($card);
-                $handBySuit[$suit][] = $this->cardRank($card);
+                $cardObject = Card::fromString($card);
+                $suits[$cardObject->suit->value][$cardObject->rank->order()] = true;
+                $rankCounts[$cardObject->rank->value]++;
             }
 
-            foreach ($handBySuit as $suit => $ranks) {
-                $values = array_map(fn (string $rank): int => array_search($rank, self::RANKS, true), $ranks);
-                sort($values);
-
-                $consecutive = 1;
-                for ($i = 1; $i < count($values); $i++) {
-                    if ($values[$i] === $values[$i - 1] + 1) {
-                        $consecutive++;
-                    } else {
-                        $playerPoints += $this->declarationSequencePoints($consecutive);
-                        $consecutive = 1;
-                    }
-                }
-
-                $playerPoints += $this->declarationSequencePoints($consecutive);
+            foreach ($suits as $ranks) {
+                $playerPoints += $this->declarationPointsForSuit($ranks);
             }
 
-            // Check for 4 of a kind (all 8 ranks)
-            foreach (self::RANKS as $rank) {
-                $count = 0;
-
-                foreach ($hand as $card) {
-                    if ($this->cardRank($card) === $rank) {
-                        $count++;
-                    }
-                }
-
-                if ($count === 4) {
-                    $playerPoints += $this->declarationFourOfAKindPoints($rank);
+            foreach ($rankCounts as $rank => $count) {
+                if ($count === BelaConstants::CARDS_PER_RANK) {
+                    $playerPoints += $this->declarationFourOfAKindPoints(BelaRank::fromString($rank));
                 }
             }
 
             if ($playerPoints > 0) {
-                $teamKey = $this->teamIndex((int) $playerNumber) === 0 ? 'team1' : 'team2';
+                $teamKey = $this->teamIndex((int) $playerNumber) === 0 ? DeclarationTeam::TeamOne->value : DeclarationTeam::TeamTwo->value;
                 $declarations[$teamKey] += $playerPoints;
             }
         }
@@ -799,22 +668,36 @@ final class BelaEngine implements GameContract
         return $declarations;
     }
 
+    private function declarationPointsForSuit(array $ranks): int
+    {
+        $points = 0;
+        $consecutive = 0;
+
+        foreach ($ranks as $hasRank) {
+            if ($hasRank) {
+                $consecutive++;
+                continue;
+            }
+
+            $points += $this->declarationSequencePoints($consecutive);
+            $consecutive = 0;
+        }
+
+        return $points + $this->declarationSequencePoints($consecutive);
+    }
+
     private function declarationSequencePoints(int $length): int
     {
         return match ($length) {
-            3 => 20,
-            4 => 50,
-            5, 6, 7, 8 => 100,
+            BelaConstants::SEQUENCE_LENGTH_3 => BelaConstants::SEQUENCE_POINTS_3,
+            BelaConstants::SEQUENCE_LENGTH_4 => BelaConstants::SEQUENCE_POINTS_4,
+            5, 6, 7, 8 => BelaConstants::SEQUENCE_POINTS_5_TO_8,
             default => 0,
         };
     }
 
-    private function declarationFourOfAKindPoints(string $rank): int
+    private function declarationFourOfAKindPoints(BelaRank $rank): int
     {
-        return match ($rank) {
-            'jack' => 200,
-            '9' => 150,
-            default => 100,
-        };
+        return $rank->fourOfAKindDeclarationPoints();
     }
 }

@@ -93,18 +93,18 @@ export default function BelaBoard({
         const { team1, team2 } = belaState.declarations;
 
         if (team1 === 0 && team2 === 0) {
-            return 'Nema deklaracija.';
+            return 'Nema zvanja.';
         }
 
         if (team1 === team2) {
-            return `Deklaracije su izjednačene: ${team1} pts.`;
+            return `Zvanja su izjednačena: ${team1} pts.`;
         }
 
         if (team1 > team2) {
-            return `Tim 1 ima jaču deklaraciju: ${team1} pts.`;
+            return `Tim 1 ima jače zvanje: ${team1} pts.`;
         }
 
-        return `Tim 2 ima jaču deklaraciju: ${team2} pts.`;
+        return `Tim 2 ima jače zvanje: ${team2} pts.`;
     }, [belaState.declarations]);
 
     type PlayerPosition = 'south' | 'west' | 'north' | 'east';
@@ -163,35 +163,36 @@ export default function BelaBoard({
 
         const positionStyles: Record<Exclude<PlayerPosition, 'south'>, string> = {
             north: 'top-4 left-1/2 -translate-x-1/2 w-full max-w-[300px]',
-            west: 'left-4 top-1/2 -translate-y-1/2 w-[160px]',
-            east: 'right-4 top-1/2 -translate-y-1/2 w-[160px]',
+            west: 'left-4 top-1/2 -translate-y-1/2 w-[300px]',
+            east: 'right-4 top-1/2 -translate-y-1/2 w-[300px]',
         };
 
         const handCards = belaState.hands[String(player.number)] ?? [];
 
         return (
             <div key={player.number} className={`absolute ${positionStyles[player.position]}`}>
-                <div className="rounded-3xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-                    <div className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                        {player.team}
-                    </div>
-                    <div className="mt-2 text-sm font-semibold text-slate-900">
-                        {player.name}
-                    </div>
-                    <div className="mt-4 flex flex-col items-center justify-center gap-3">
-                        <div className="relative">
-                            <img
-                                src={CARD_BACK}
-                                alt="card back"
-                                className="h-20 w-14 rounded-none"
-                            />
-                            <span className="absolute inset-x-0 bottom-0 mx-auto mb-1 inline-flex h-6 min-w-[2rem] items-center justify-center rounded-full bg-slate-900 px-2 text-xs font-semibold text-white">
-                                {handCards.length}
-                            </span>
-                        </div>
+                <div className="px-5 py-2 rounded-full bg-black/40 backdrop-blur-sm text-white text-base font-semibold">
+                    {player.team}
+                </div>
+                <div className="mt-1 px-5 py-2 rounded-full bg-black/40 backdrop-blur-sm text-white text-2xl font-bold">
+                    {player.name}
+                </div>
+
+                <div className="mt-6 flex flex-col items-center justify-center gap-3">
+                    <div
+                        className={`relative ${
+                            belaState.currentTurn === player.number ? "turn-glow-strong" : ""
+                        }`}
+                    >
+                        <img
+                            src={CARD_BACK}
+                            alt="card back"
+                            className="h-28 w-20 rounded-none"  // bigger card
+                        />
                     </div>
                 </div>
-            </div>
+
+</div>
         );
     };
 
@@ -200,25 +201,45 @@ export default function BelaBoard({
             return null;
         }
 
-        const handCards = belaState.hands[String(playerNumber)] ?? [];
+        const handCards = belaState.hands[playerNumber];
+
+        console.log("FULL HANDS =", belaState.hands);
+        console.log("handCards =", handCards);
 
         return (
-            <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <div
+                className={`rounded-3xl border border-slate-200 bg-white p-6 ${
+                    isYourTurn ? "shadow-[0_0_22px_8px_rgba(255,215,0,0.75)]" : ""
+                }`}
+            >
                 <div className="mb-4 text-sm uppercase tracking-[0.24em] text-slate-500">Your hand</div>
                 <div className="grid grid-cols-8 gap-3 md:grid-cols-10">
-                    {handCards.map((card) => (
+                    {handCards.map((card, index) => (
                         <button
-                            key={card}
+                            key={index}
                             type="button"
-                            onClick={() => onPlay(card)}
-                            disabled={!isYourTurn || disabled || belaState.phase !== 'play'}
+                            onClick={() => card !== "__HIDDEN__" && onPlay(card)}
+                            disabled={
+                                card === "__HIDDEN__" ||
+                                !isYourTurn ||
+                                disabled ||
+                                belaState.phase !== 'play'
+                            }
                             className="transition disabled:cursor-not-allowed disabled:opacity-60 hover:scale-110 hover:shadow-lg"
                         >
-                            <img
-                                src={cardImagePath(card)}
-                                alt={card}
-                                className="h-32 w-24 rounded-none shadow-sm"
-                            />
+                            {card === "__HIDDEN__" ? (
+                                <img
+                                    src="/images/poker_cards/card_background.svg"
+                                    alt="Hidden card"
+                                    className="h-32 w-24 rounded-none shadow-sm opacity-80"
+                                />
+                            ) : (
+                                <img
+                                    src={cardImagePath(card)}
+                                    alt={card}
+                                    className="h-32 w-24 rounded-none shadow-sm"
+                                />
+                            )}
                         </button>
                     ))}
                 </div>
@@ -234,7 +255,7 @@ export default function BelaBoard({
                     <div className="mt-3 text-3xl font-semibold text-slate-900">
                         {belaState.trumpSuit ? getTrumpSymbol(belaState.trumpSuit) : 'N/A'}
                     </div>
-                    <p className="mt-2 text-sm text-slate-500">Poziv: {belaState.trumpCaller ? `Igrač ${belaState.trumpCaller}` : 'Još nije izabran'}</p>
+                    <p className="mt-2 text-sm text-slate-500">{belaState.trumpCaller ? `Igrač ${belaState.trumpCaller}` : 'Još nije izabran'}</p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -260,20 +281,6 @@ export default function BelaBoard({
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <div className="text-sm uppercase tracking-[0.24em] text-slate-500">Trenutni potez</div>
-                        <div className="mt-2 text-lg font-semibold text-slate-900">{currentPlayerName}</div>
-                    </div>
-                    <div className="rounded-3xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">
-                        {isBidding ? 'Faza licitiranja' : 'Faza igranja'}
-                    </div>
-                </div>
-
-
             </div>
 
             {isBidding && (
@@ -308,32 +315,33 @@ export default function BelaBoard({
             )}
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 pb-10">
-                <div className="min-h-[760px] flex flex-col items-center justify-start relative pt-24">
+                <div className="min-h-[760px] bg-green-300 flex flex-col items-center justify-start relative pt-24">
                     {playerSlots.map((player) => renderPlayerPanel(player))}
 
-                    <div className="w-full px-4 mt-16">
-                        <div className="mx-auto w-full max-w-[24rem] rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl backdrop-blur-sm">
-                            <div className="mb-6 text-center text-sm uppercase tracking-[0.24em] text-slate-500">Trenutno odigrane karte</div>
+                    <div className="w-full px-4" style={{ marginTop: "10rem" }}>
+                        <div className="mx-auto w-full max-w-[24rem] p-6">
                             <div className="relative h-[280px]">
-                                {belaState.trick.length > 0 ? belaState.trick.map((play) => {
-                                    const position = getTrickCardPosition(play.player);
-                                    return (
-                                        <div
-                                            key={`${play.player}-${play.card}`}
-                                            className={`absolute ${trickCardPositionStyles[position]} flex flex-col items-center justify-center`}
-                                            style={{ animation: 'bela-play-card 0.35s ease-out' }}
-                                        >
-                                            <img
-                                                src={cardImagePath(play.card)}
-                                                alt={play.card}
-                                                className="h-32 w-24 rounded-none shadow-md"
-                                            />
-                                            <p className="mt-3 text-center text-xs uppercase tracking-[0.24em] text-slate-500 font-semibold">P{play.player}</p>
-                                        </div>
-                                    );
-                                }) : (
-                                    <div className="absolute inset-0 rounded-3xl border border-dashed border-slate-300 bg-slate-100 p-12 text-center text-sm text-slate-500 flex items-center justify-center">
-                                        Čekanje igrača da odigra kartu...
+                                {belaState.trick.length > 0 && (
+                                    <div className="relative h-[280px]">
+                                        {belaState.trick.map((play) => {
+                                            const position = getTrickCardPosition(play.player);
+                                            return (
+                                                <div
+                                                    key={`${play.player}-${play.card}`}
+                                                    className={`absolute ${trickCardPositionStyles[position]} flex flex-col items-center justify-center`}
+                                                    style={{ animation: 'bela-play-card 0.35s ease-out' }}
+                                                >
+                                                    <img
+                                                        src={cardImagePath(play.card)}
+                                                        alt={play.card}
+                                                        className="h-32 w-24 rounded-none shadow-md"
+                                                    />
+                                                    <p className="mt-3 text-center text-xs uppercase tracking-[0.24em] text-slate-500 font-semibold">
+                                                        P{play.player}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

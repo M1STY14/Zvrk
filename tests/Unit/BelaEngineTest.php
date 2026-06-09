@@ -233,7 +233,77 @@ class BelaEngineTest extends TestCase
         $result = $this->engine->checkGameOver($state);
 
         $this->assertNotNull($result);
-        $this->assertSame($this->players->get(1), $result->winner);
+        $this->assertSame($this->players->get(3), $result->winner);
+        $this->assertSame(1, $result->winningTeam);
         $this->assertFalse($result->draw);
+    }
+
+    public function test_state_for_player_hides_two_cards_during_bid_phase(): void
+    {
+        $state = $this->engine->makeState([
+            'hands' => [
+                1 => ['7_of_clubs', '8_of_clubs', '9_of_clubs', '10_of_clubs', 'jack_of_clubs', 'queen_of_clubs', 'king_of_clubs', 'ace_of_clubs'],
+                2 => array_fill(0, 8, '7_of_diamonds'),
+                3 => array_fill(0, 8, '8_of_hearts'),
+                4 => array_fill(0, 8, '9_of_spades'),
+            ],
+            'trick' => [],
+            'trickHistory' => [],
+            'trumpSuit' => null,
+            'trumpCaller' => null,
+            'teamScores' => [0, 0],
+            'roundPoints' => [0, 0],
+            'phase' => 'bid',
+            'round' => 1,
+            'declarations' => ['team1' => 0, 'team2' => 0, 'details' => []],
+            'currentTurn' => 1,
+            'dealer' => 4,
+            'turnedUpCard' => null,
+            'players' => [1 => $this->players->get(1), 2 => $this->players->get(2), 3 => $this->players->get(3), 4 => $this->players->get(4)],
+            'bids' => [],
+            'forfeited' => [],
+        ]);
+
+        $view = $state->stateForPlayer(1);
+
+        $this->assertSame(6, count($view['ownHand']));
+        $this->assertSame(2, $view['ownHiddenCardCount']);
+        $this->assertSame(8, $view['hands'][1]);
+        $this->assertSame(8, $view['hands'][2]);
+        $this->assertSame(8, $view['hands'][3]);
+        $this->assertSame(8, $view['hands'][4]);
+        $this->assertSame([8, 8, 8], array_values($view['opponentHandSizes']));
+    }
+
+    public function test_state_for_player_shows_all_cards_after_bid_phase(): void
+    {
+        $state = $this->engine->makeState([
+            'hands' => [
+                1 => ['7_of_clubs', '8_of_clubs', '9_of_clubs', '10_of_clubs', 'jack_of_clubs', 'queen_of_clubs', 'king_of_clubs', 'ace_of_clubs'],
+                2 => array_fill(0, 8, '7_of_diamonds'),
+                3 => array_fill(0, 8, '8_of_hearts'),
+                4 => array_fill(0, 8, '9_of_spades'),
+            ],
+            'trick' => [],
+            'trickHistory' => [],
+            'trumpSuit' => 'spades',
+            'trumpCaller' => 1,
+            'teamScores' => [0, 0],
+            'roundPoints' => [0, 0],
+            'phase' => 'play',
+            'round' => 1,
+            'declarations' => ['team1' => 0, 'team2' => 0, 'details' => []],
+            'currentTurn' => 1,
+            'dealer' => 4,
+            'turnedUpCard' => null,
+            'players' => [1 => $this->players->get(1), 2 => $this->players->get(2), 3 => $this->players->get(3), 4 => $this->players->get(4)],
+            'bids' => [],
+            'forfeited' => [],
+        ]);
+
+        $view = $state->stateForPlayer(1);
+
+        $this->assertSame(8, count($view['ownHand']));
+        $this->assertSame(0, $view['ownHiddenCardCount']);
     }
 }

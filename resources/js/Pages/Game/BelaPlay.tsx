@@ -49,7 +49,7 @@ export default function BelaPlay({ auth, session }: Props) {
 
     const playerNames = useMemo(
         () =>
-            session.players.reduce<Record<number, string>>((acc, player) => {
+            session.players.reduce<Record<string, string>>((acc, player) => {
                 acc[player.player_number] = player.user.name;
                 return acc;
             }, {}),
@@ -213,16 +213,6 @@ export default function BelaPlay({ auth, session }: Props) {
                             show={showOpponentDisconnectedBanner}
                             multiple={usePluralDisconnectMessage}
                         />
-
-                        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="rounded-3xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
-                                {isYourTurn ? 'Tvoj potez' : 'Čekanje na potez'}
-                            </div>
-
-                            <div className="rounded-3xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-                                Ti si: {auth.user.name} {playerNumber ? ['♣', '♦', '♥', '♠'][playerNumber - 1] : ''}
-                            </div>
-                        </div>
 
                         <GameBoardWrapper
                             gameSlug="bela"
