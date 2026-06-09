@@ -15,17 +15,15 @@ final class UpdatePlayerStats implements ShouldQueue
 
     public function handle(GameEnded $event): void
     {
-        $session = GameSession::query()
-            ->with('players')
-            ->findOrFail($event->sessionId);
+        $session = GameSession::query()->findOrFail($event->sessionId);
 
         DB::transaction(function () use ($session, $event) {
-            foreach ($session->players as $player) {
-                $isWinner = ! $event->draw && $player->user_id === $event->winner;
+            foreach ($event->participants as $userId) {
+                $isWinner = ! $event->draw && $userId === $event->winner;
 
                 $stat = PlayerStat::query()->firstOrCreate(
                     [
-                        'user_id' => $player->user_id,
+                        'user_id' => $userId,
                         'game_id' => $session->game_id,
                     ],
                     [

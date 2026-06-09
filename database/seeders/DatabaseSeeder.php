@@ -16,33 +16,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::query()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => Hash::make('testUserPassword'),
-            'email_verified_at' => now(),
-        ]);
+        $users = [
+            ['name' => 'Leo', 'email' => 'leo@zvrk.hr'],
+            ['name' => 'Fran', 'email' => 'fran@zvrk.hr'],
+            ['name' => 'Nicole', 'email' => 'nicole@zvrk.hr'],
+            ['name' => 'Barbara', 'email' => 'barbara@zvrk.hr'],
+            ['name' => 'Filipovic', 'email' => 'filipovic@zvrk.hr'],
+            ['name' => 'Veselic', 'email' => 'veselic@zvrk.hr'],
+        ];
 
-        User::query()->create([
-            'name' => 'Test User 2',
-            'email' => 'test2@example.com',
-            'password' => Hash::make('testUserPassword'),
-            'email_verified_at' => now(),
-        ]);
-
-        User::query()->create([
-            'name' => 'Test User 3',
-            'email' => 'test3@example.com',
-            'password' => Hash::make('testUserPassword'),
-            'email_verified_at' => now(),
-        ]);
-
-        User::query()->create([
-            'name' => 'Test User 4',
-            'email' => 'test4@example.com',
-            'password' => Hash::make('testUserPassword'),
-            'email_verified_at' => now(),
-        ]);
+        foreach ($users as $user) {
+            User::query()->create([
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'password' => Hash::make('testUserPassword'),
+                'email_verified_at' => now(),
+            ]);
+        }
 
         $this->command->info('Test users created.');
 

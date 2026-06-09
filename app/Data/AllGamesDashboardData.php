@@ -43,8 +43,8 @@ final class AllGamesDashboardData extends Data
             min_players: $game->min_players,
             max_players: $game->max_players,
             active_players: $activePlayersCount,
-            user_games_played: $userStat->games_played,
-            user_wins: $userStat->wins,
+            user_games_played: $userStat?->games_played ?? 0,
+            user_wins: $userStat?->wins ?? 0,
         );
     }
 }

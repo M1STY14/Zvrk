@@ -24,18 +24,26 @@ final class GameEnded implements ShouldBroadcast
 
     public ?GameEndReason $reason;
 
+    /** @var list<string> User IDs of every player in the session when the game ended. */
+    public array $participants;
+
+    /**
+     * @param  list<string>  $participants
+     */
     public function __construct(
         string $sessionId,
         ?string $winner,
         bool $draw,
         GameState $state,
         ?GameEndReason $reason = null,
+        array $participants = [],
     ) {
         $this->sessionId = $sessionId;
         $this->winner = $winner;
         $this->draw = $draw;
         $this->state = $state->toBroadcastArray();
         $this->reason = $reason;
+        $this->participants = $participants;
     }
 
     public function broadcastOn(): PresenceChannel

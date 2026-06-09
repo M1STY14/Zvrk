@@ -408,7 +408,12 @@ final readonly class GameSessionService
             ]);
             $session->status()->transitionTo(GameStatus::Forfeited);
 
-            return ['ended' => true, 'state' => $newState, 'winnerUserId' => $winnerUserId];
+            return [
+                'ended' => true,
+                'state' => $newState,
+                'winnerUserId' => $winnerUserId,
+                'participants' => $session->players->pluck('user_id')->all(),
+            ];
         });
 
         if ($outcome === null) {
@@ -416,12 +421,13 @@ final readonly class GameSessionService
         }
 
         if ($outcome['ended']) {
-            broadcast(new GameEnded(
+            event(new GameEnded(
                 sessionId: $session->id,
                 winner: $outcome['winnerUserId'],
                 draw: false,
                 state: $outcome['state'],
                 reason: $reason,
+                participants: $outcome['participants'],
             ));
 
             return;
@@ -472,11 +478,12 @@ final readonly class GameSessionService
         ))->toOthers();
 
         if ($gameResult !== null) {
-            broadcast(new GameEnded(
+            event(new GameEnded(
                 sessionId: $session->id,
                 winner: $gameResult->winner,
                 draw: $gameResult->draw,
                 state: $state,
+                participants: $session->loadMissing('players')->players->pluck('user_id')->all(),
             ));
         }
     }
