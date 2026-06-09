@@ -1,13 +1,12 @@
 import GameOverModal from '@/Components/Game/GameOverModal';
 import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBanner';
-import PlayerInfo from '@/Components/Game/PlayerInfo';
 import GameBoardWrapper from '@/GameBoards/GameBoardWrapper';
 import { BelaState } from '@/GameBoards/BelaBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import type { GameSessionBase } from '@/types/gameSession';
 import { PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type SessionProp = GameSessionBase & {
     state: BelaState | null;
@@ -47,6 +46,17 @@ export default function BelaPlay({ auth, session }: Props) {
     const [gameOver, setGameOver] = useState(isFinished);
     const [showGameOver, setShowGameOver] = useState(isFinished);
 
+    // When Inertia reloads the session (after an opponent's move / game start),
+    // sync the freshly fetched per-player state into local state.
+    // setState runs in a timeout callback to avoid the set-state-in-effect lint.
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setBelaState(session.state);
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [session.state]);
+
     const playerNames = useMemo(
         () =>
             session.players.reduce<Record<string, string>>((acc, player) => {
@@ -71,15 +81,20 @@ export default function BelaPlay({ auth, session }: Props) {
         return teamScores[0] > teamScores[1] ? 'Tim 1' : 'Tim 2';
     };
 
-    const { disconnectedUserIds, showOpponentDisconnectedBanner, usePluralDisconnectMessage } =
+    const { showOpponentDisconnectedBanner, usePluralDisconnectMessage } =
         useGameChannel<BelaState>(
             session.id,
             { players: session.players, currentUserId: auth.user.id, gameOver },
             {
-                onMoveMade: (event) => {
-                    setBelaState(event.state);
+                onMoveMade: () => {
+                    // Broadcast is sent with ->toOthers(), so this only fires for an
+                    // opponent's move. Its `hands` are integer counts, not cards, so we
+                    // refetch the per-player state instead of trusting the broadcast.
+                    router.reload({ only: ['session'] });
                 },
                 onGameEnded: (event) => {
+                    // teamScores is safe to read from the broadcast; the board state
+                    // (with our real hand) is refreshed via reload.
                     const winnerName = event.state?.teamScores
                         ? getWinningTeamName(event.state.teamScores)
                         : event.winner
@@ -88,27 +103,13 @@ export default function BelaPlay({ auth, session }: Props) {
                     setWinner(winnerName);
                     setGameOver(true);
                     setShowGameOver(true);
-                    setBelaState(event.state);
+                    router.reload({ only: ['session'] });
                 },
-                onGameStarted: (event) => {
-                    setBelaState(event.state);
+                onGameStarted: () => {
+                    router.reload({ only: ['session'] });
                 },
             },
         );
-
-    const displayPlayers = useMemo(
-        () =>
-            [...session.players]
-                .sort((a, b) => a.player_number - b.player_number)
-                .map((player) => ({
-                    id: player.user.id,
-                    name: player.user.name,
-                    player_number: player.player_number,
-                    mark: ['♣', '♦', '♥', '♠'][player.player_number - 1] ?? '',
-                    isConnected: !disconnectedUserIds.has(player.user.id),
-                })),
-        [disconnectedUserIds, session.players],
-    );
 
     const handleBid = async (suit?: string, pass?: boolean) => {
         if (!isYourTurn || belaState === null) {
@@ -208,7 +209,7 @@ export default function BelaPlay({ auth, session }: Props) {
                         </div>
                     </div>
 
-                    <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <div className="pt-2">
                         <OpponentDisconnectedBanner
                             show={showOpponentDisconnectedBanner}
                             multiple={usePluralDisconnectMessage}
@@ -224,13 +225,6 @@ export default function BelaPlay({ auth, session }: Props) {
                             onPlay={handlePlay}
                             playerNames={playerNames}
                         />
-
-                        <div className="mt-8">
-                            <PlayerInfo
-                                players={displayPlayers}
-                                currentPlayerId={belaState?.players[String(belaState.currentTurn)] ?? null}
-                            />
-                        </div>
                     </div>
                 </div>
             </div>
