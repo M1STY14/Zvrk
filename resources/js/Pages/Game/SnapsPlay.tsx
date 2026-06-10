@@ -2,7 +2,7 @@ import GameOverModal from '@/Components/Game/GameOverModal';
 import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBanner';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import type { GameSessionBase } from '@/types/gameSession';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import SnapsBoard, { SnapsState, SNAPS_TABLE_STYLE } from '@/GameBoards/SnapsBoard';
 
@@ -71,7 +71,7 @@ export default function SnapsPlay({ auth, session }: Props) {
                 onMoveMade: (event) => {
                     setSnapsState(event.state);
                     if (!gameOver && event.state && Object.values(event.state.scores ?? {}).some((s) => s >= 501)) {
-                        const winnerNum = Object.keys(event.state.scores).find((k) => (event.state.scores as any)[k] >= 501) ?? null;
+                        const winnerNum = Object.keys(event.state.scores).find((k) => event.state.scores[k] >= 501) ?? null;
                         const winner = winnerNum ? playerNames[event.state.players[winnerNum]] ?? null : null;
                         setWinnerName(winner);
                         setGameOver(true);
@@ -112,7 +112,7 @@ export default function SnapsPlay({ auth, session }: Props) {
         setSnapsState(data.state);
 
         if (!gameOver && data.state && Object.values(data.state.scores ?? {}).some((s) => s >= 501)) {
-            const winnerNum = Object.keys(data.state.scores).find((k) => (data.state.scores as any)[k] >= 501) ?? null;
+            const winnerNum = Object.keys(data.state.scores).find((k) => data.state.scores[k] >= 501) ?? null;
             const winner = winnerNum ? playerNames[data.state.players[winnerNum]] ?? null : null;
             setWinnerName(winner);
             setGameOver(true);
@@ -145,7 +145,7 @@ export default function SnapsPlay({ auth, session }: Props) {
 
         setSnapsState(data.state);
         if (!gameOver && data.state && Object.values(data.state.scores ?? {}).some((s) => s >= 501)) {
-            const winnerNum = Object.keys(data.state.scores).find((k) => (data.state.scores as any)[k] >= 501) ?? null;
+            const winnerNum = Object.keys(data.state.scores).find((k) => data.state.scores[k] >= 501) ?? null;
             const winner = winnerNum ? playerNames[data.state.players[winnerNum]] ?? null : null;
             setWinnerName(winner);
             setGameOver(true);
@@ -219,12 +219,6 @@ export default function SnapsPlay({ auth, session }: Props) {
 
                 {/* Floating top-right controls */}
                 <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
-                    <Link
-                        href={route('lobby.index', session.game.slug)}
-                        className="rounded-xl border border-white/20 bg-black/40 px-4 py-2 text-sm font-semibold text-amber-50 backdrop-blur-sm transition hover:bg-black/60"
-                    >
-                        ← Predvorje
-                    </Link>
                     <button
                         type="button"
                         onClick={handleLeave}

@@ -510,7 +510,7 @@ class GameSessionServiceTest extends TestCase
         });
     }
 
-    public function test_remove_player_from_finished_session_deletes_all_players(): void
+    public function test_remove_player_from_finished_session_deletes_only_the_leaving_player(): void
     {
         [$session, $host, $player2] = $this->createTwoPlayerSession();
 
@@ -526,6 +526,13 @@ class GameSessionServiceTest extends TestCase
             'game_session_id' => $session->id,
             'user_id' => $player2->id,
         ]);
+        $this->assertDatabaseHas('game_players', [
+            'game_session_id' => $session->id,
+            'user_id' => $host->id,
+        ]);
+
+        $this->service->removePlayer($session, $host);
+
         $this->assertDatabaseMissing('game_players', [
             'game_session_id' => $session->id,
             'user_id' => $host->id,

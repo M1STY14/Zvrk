@@ -24,6 +24,8 @@ enum GameType: string
     public static function getInertiaPageFrom(GameSession $gameSession): string
     {
         return match (GameType::from($gameSession->game->slug)) {
+            GameType::TicTacToe => 'Game/TicTacToePlay',
+            GameType::FourInARow => 'Game/ConnectFourPlay',
             GameType::Ludo => 'Game/LudoPlay',
             GameType::Bela => 'Game/BelaPlay',
             GameType::Checkers => 'Game/CheckersPlay',

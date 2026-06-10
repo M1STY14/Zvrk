@@ -1,4 +1,5 @@
 import { PageProps } from '@/types';
+import ZvrkLoadingScreen from '@/Components/ZvrkLoadingScreen';
 import { Head, Link } from '@inertiajs/react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
@@ -34,28 +35,12 @@ const steps = [
 
 function ZvrkModel() {
     const { scene } = useGLTF('/models/welcome_zvrk.glb');
-    // @ts-ignore: temporary - react-three primitive typing shim
     return <primitive object={scene} scale={3} rotation={[0, 0, 0]} />;
 }
 
 export default function Welcome({ auth }: PageProps) {
 
     const [loading, setLoading] = useState(true);
-    const [progress, setProgress] = useState(0);
-
-    useEffect(() => {
-        let p = 0;
-        const iv = setInterval(() => {
-            p += Math.random() * 18;
-            if (p >= 100) {
-                p = 100;
-                clearInterval(iv);
-                setTimeout(() => setLoading(false), 300);
-            }
-            setProgress(Math.min(p, 100));
-        }, 80);
-        return () => clearInterval(iv);
-    }, []);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -104,30 +89,7 @@ export default function Welcome({ auth }: PageProps) {
             <Head title="Početna" />
 
             {/* Loading screen */}
-            {loading && (
-                <div className="loading-hue" style={{
-                    position: 'fixed', inset: 0, zIndex: 9999,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: '1.5rem',
-                    transition: 'opacity 0.4s',
-                    opacity: progress >= 100 ? 0 : 1,
-                }}>
-                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '6rem', color: '#2f3336', lineHeight: 1, position: 'relative', display: 'inline-block' }}>
-                        <span className="zvrk-spin" style={{ position: 'relative', display: 'inline-block' }}>
-                            <span style={{ position: 'absolute', top: '-0.1em', left: '50%', transform: 'translateX(-50%)', fontSize: '0.5em', lineHeight: 1.1, color: '#2f3336' }}>|</span>
-                            v
-                        </span>
-                    </span>
-                    <div style={{ width: 240, height: 3, backgroundColor: '#eceef1', borderRadius: 99, overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%', width: `${progress}%`,
-                            background: `linear-gradient(90deg, #005bc2 ${progress < 40 ? 0 : progress - 40}%, #FA532F ${progress < 60 ? 50 : progress - 10}%, #72D660 100%)`,
-                            transition: 'width 0.08s linear',
-                            borderRadius: 99,
-                        }} />
-                    </div>
-                </div>
-            )}
+            <ZvrkLoadingScreen show={loading} onComplete={() => setLoading(false)} />
 
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap');

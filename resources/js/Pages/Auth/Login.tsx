@@ -2,13 +2,8 @@ import InputError from '@/Components/InputError';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState, FC } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, Stage, OrbitControls, PrimitiveProps } from '@react-three/drei';
+import { useGLTF, Stage, OrbitControls } from '@react-three/drei';
 import { Suspense } from 'react';
-import { Group } from 'three';
-
-interface ZvrkModelProps {
-    object?: Group;
-}
 
 const ZvrkModel: FC = () => {
     const { scene } = useGLTF('/models/login_zvrk.glb');

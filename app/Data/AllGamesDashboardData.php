@@ -29,7 +29,7 @@ final class AllGamesDashboardData extends Data
 
         $activePlayersCount = $game->gameSessions()
             ->whereIn('status', [GameStatus::Pending->value, GameStatus::Playing->value])
-            ->withCount('players')
+            ->withCount(['players' => fn ($query) => $query->where('is_connected', true)])
             ->get()
             ->sum('players_count');
 

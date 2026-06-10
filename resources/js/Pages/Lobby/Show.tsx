@@ -1,4 +1,5 @@
 import GameLayout from '@/Components/Layout/GameLayout';
+import ZvrkLoadingScreen from '@/Components/ZvrkLoadingScreen';
 import SessionPlayersList from '@/Components/Game/SessionPlayersList';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
@@ -36,6 +37,15 @@ export default function Show({ game, session }: Props) {
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [muted, setMuted] = useState(false);
+    const [starting, setStarting] = useState(false);
+    // The pending navigation runs once the loader's bar finishes filling.
+    const navigateRef = useRef<() => void>(() => {});
+
+    const beginTransition = (navigate: () => void) => {
+        if (starting) return;
+        navigateRef.current = navigate;
+        setStarting(true);
+    };
 
     useEffect(() => {
         const audio = new Audio('/audio/lobby_music.mp3');
@@ -55,14 +65,15 @@ export default function Show({ game, session }: Props) {
         sessionId: session.id,
         players: session.players,
         currentUserId: auth.user.id,
+        onGameStarted: () => beginTransition(() => router.visit(route('game.show', session.id))),
     });
 
     const handleStart = () => {
-        router.post(route('game.start', session.id));
+        beginTransition(() => router.post(route('game.start', session.id)));
     };
 
     const handleStartAi = () => {
-        router.post(route('game.start-vs-ai', session.id));
+        beginTransition(() => router.post(route('game.start-vs-ai', session.id)));
     };
 
     const handleCloseRoom = () => {
@@ -78,6 +89,8 @@ export default function Show({ game, session }: Props) {
             }
         >
             <Head title={`${game.name} — ${session.name}`} />
+
+            <ZvrkLoadingScreen show={starting} fadeOnComplete={false} onComplete={() => navigateRef.current()} />
 
             {/* Mute button */}
             <button
