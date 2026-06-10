@@ -17,6 +17,7 @@ enum GameType: string
     case Checkers = 'checkers';
     case Snaps = 'snaps';
     case FourInARow = 'four-in-a-row';
+    case Bela = 'bela';
     case Uno = 'uno';
 
     /** In-game UI page. Custom layouts must wire `useGameChannel` (JS) for disconnect UI; default is `Game/Play`. */
@@ -24,6 +25,7 @@ enum GameType: string
     {
         return match (GameType::from($gameSession->game->slug)) {
             GameType::Ludo => 'Game/LudoPlay',
+            GameType::Bela => 'Game/BelaPlay',
             GameType::Checkers => 'Game/CheckersPlay',
             GameType::Uno => 'Game/UnoPlay',
             GameType::Snaps => 'Game/SnapsPlay',

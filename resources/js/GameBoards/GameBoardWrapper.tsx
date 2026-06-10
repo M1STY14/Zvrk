@@ -3,8 +3,9 @@ import ConnectFourBoard, { ConnectFourBoardProps } from './ConnectFourBoard';
 import LudoBoard, { LudoBoardProps } from './LudoBoard';
 import SnapsBoard, { SnapsBoardProps } from './SnapsBoard';
 import TicTacToeBoard, { TicTacToeBoardProps } from './TicTacToeBoard';
+import BelaBoard, { BelaBoardProps } from './BelaBoard';
 
-type BoardProps = TicTacToeBoardProps | LudoBoardProps | CheckersBoardProps | ConnectFourBoardProps | SnapsBoardProps;
+type BoardProps = TicTacToeBoardProps | LudoBoardProps | CheckersBoardProps | ConnectFourBoardProps | SnapsBoardProps | BelaBoardProps;
 
 type Props = {
     gameSlug: string;
@@ -13,6 +14,7 @@ type Props = {
 const BOARDS: Record<string, (props: BoardProps) => JSX.Element> = {
     'tic-tac-toe': TicTacToeBoard as (props: BoardProps) => JSX.Element,
     'ludo': LudoBoard as (props: BoardProps) => JSX.Element,
+    'bela': BelaBoard as (props: BoardProps) => JSX.Element,
     'checkers': CheckersBoard as (props: BoardProps) => JSX.Element,
     'four-in-a-row': ConnectFourBoard as (props: BoardProps) => JSX.Element,
     'snaps': SnapsBoard as (props: BoardProps) => JSX.Element,

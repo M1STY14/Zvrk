@@ -92,6 +92,21 @@ export default function Dashboard({ games, userStats }: Props) {
                                  
                             </div>
 
+                            {/* Bela (Belot) */}
+                            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-slate-200 relative overflow-hidden">
+                                {/* Card corner decoration */}
+                                <div className="absolute bottom-2 right-2 text-3xl">🃏</div>
+                                
+                                <h4 className="text-xl font-bold text-slate-900 mb-2">Bela (Belot)</h4>
+                                <div className="h-1 w-12 bg-slate-400 rounded mb-3"></div>
+                                <p className="text-gray-700 text-sm mb-4 leading-relaxed">
+                                    Klasična kartaška igra s trikovima. Igraj u paru, osvajaj bodove i budi prvi do 1001!
+                                </p>
+                                <div className="border-t border-indigo-300 pt-3 mt-4">
+                                    <p className="text-sm font-semibold text-indigo-800">👥 Players: 2v2</p>
+                                </div>
+                            </div>
+
                             {/* Checkers */}
                             <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-300 relative overflow-hidden opacity-70">
                                 {/* Card corner decoration */}
