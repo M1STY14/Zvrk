@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { PlayingCard, CardBack, type CardSize } from './PlayingCard';
 
 export type BelaTrickPlay = {
     player: number;
@@ -53,8 +54,6 @@ type PlayerSlot = {
     team: 0 | 1;
 };
 
-const IMAGE_BASE = '/images/poker_cards';
-const CARD_BACK = '/images/poker_cards/card_background.svg';
 const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'] as const;
 const SUIT_SYMBOLS: Record<string, string> = {
     clubs: '♣',
@@ -68,13 +67,21 @@ const SUIT_NAMES_HR: Record<string, string> = {
     hearts: 'Herc',
     spades: 'Pik',
 };
-
-function cardImagePath(card: string): string {
-    return `${IMAGE_BASE}/${card}.svg`;
-}
+const RANK_LABELS: Record<string, string> = {
+    jack: 'J',
+    queen: 'Q',
+    king: 'K',
+    ace: 'A',
+};
 
 function isRedSuit(suit: string | null): boolean {
     return suit === 'hearts' || suit === 'diamonds';
+}
+
+/** Bela cards are encoded as `${rank}_of_${suit}`, e.g. "jack_of_spades", "10_of_hearts". */
+function BelaCard({ card, size = 'lg' }: { card: string; size?: CardSize }) {
+    const [rankRaw, suit] = card.split('_of_');
+    return <PlayingCard suit={suit} rank={RANK_LABELS[rankRaw] ?? rankRaw} size={size} />;
 }
 
 function initials(name: string): string {
@@ -281,11 +288,7 @@ export default function BelaBoard({
                                             animation: `bela-fly-${position} 0.45s cubic-bezier(0.22, 1, 0.36, 1) both`,
                                         }}
                                     >
-                                        <img
-                                            src={cardImagePath(play.card)}
-                                            alt={play.card}
-                                            className="h-28 w-20 rounded-md shadow-md"
-                                        />
+                                        <BelaCard card={play.card} size="lg" />
                                     </div>
                                 </div>
                             );
@@ -363,15 +366,11 @@ export default function BelaBoard({
                                     type="button"
                                     onClick={() => playable && onPlay(card)}
                                     disabled={!playable}
-                                    className="transition enabled:hover:-translate-y-3 enabled:hover:shadow-xl disabled:cursor-default"
+                                    className={`rounded-lg transition enabled:hover:-translate-y-3 enabled:hover:shadow-xl disabled:cursor-default ${
+                                        playable ? '' : 'opacity-95'
+                                    }`}
                                 >
-                                    <img
-                                        src={hidden ? CARD_BACK : cardImagePath(card)}
-                                        alt={hidden ? 'Skrivena karta' : card}
-                                        className={`h-32 w-[5.75rem] rounded-md shadow-sm ${
-                                            hidden ? 'opacity-80' : ''
-                                        } ${playable ? '' : 'opacity-95'}`}
-                                    />
+                                    {hidden ? <CardBack size="xl" /> : <BelaCard card={card} size="xl" />}
                                 </button>
                             );
                         })}

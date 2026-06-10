@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
+import { PlayingCard as BasePlayingCard, CardBack, type CardSize } from './PlayingCard';
 
 export type SnapsTrickItem = {
     player: number;
@@ -37,67 +38,10 @@ export type SnapsBoardProps = {
     onDeclareMarriage?: (card: string) => void;
 };
 
-const SUIT_SYMBOLS: Record<string, string> = {
-    H: '♥',
-    D: '♦',
-    C: '♣',
-    S: '♠',
-};
-
-const RED_SUITS = ['H', 'D'];
-
-type CardSize = 'sm' | 'md' | 'lg';
-
-const CARD_DIMENSIONS: Record<CardSize, string> = {
-    sm: 'h-14 w-10',
-    md: 'h-24 w-16',
-    lg: 'h-28 w-20',
-};
-
-/**
- * Placeholder card face: a plain white rectangle with rank + suit. This is the single
- * point to swap once the illustrated Bela deck from the other branch is merged — every
- * card on the table renders through here.
- */
+/** Snaps cards are encoded as `${suit}-${rank}`, e.g. "H-J"; the face itself is drawn by the shared renderer. */
 function PlayingCard({ card, size = 'md' }: { card: string; size?: CardSize }) {
     const [suit, rank] = card.split('-');
-    const symbol = SUIT_SYMBOLS[suit] ?? suit;
-    const isRed = RED_SUITS.includes(suit);
-    const color = isRed ? 'text-red-600' : 'text-slate-900';
-    const pip = size === 'lg' ? 'text-5xl' : size === 'sm' ? 'text-xl' : 'text-4xl';
-    const index = size === 'sm' ? 'text-[10px]' : 'text-sm';
-
-    return (
-        <div
-            className={`relative rounded-lg border border-slate-300 bg-white shadow-md ${CARD_DIMENSIONS[size]} ${color}`}
-        >
-            <span className={`absolute left-1 top-0.5 flex flex-col items-center font-bold leading-none ${index}`}>
-                <span>{rank}</span>
-                <span>{symbol}</span>
-            </span>
-            <span className={`absolute inset-0 flex items-center justify-center ${pip}`}>{symbol}</span>
-            <span
-                className={`absolute bottom-0.5 right-1 flex rotate-180 flex-col items-center font-bold leading-none ${index}`}
-            >
-                <span>{rank}</span>
-                <span>{symbol}</span>
-            </span>
-        </div>
-    );
-}
-
-function CardBack({ size = 'md', className = '', style }: { size?: CardSize; className?: string; style?: CSSProperties }) {
-    return (
-        <div
-            className={`rounded-lg border-2 border-amber-100/30 shadow-md ${CARD_DIMENSIONS[size]} ${className}`}
-            style={{
-                backgroundColor: '#9b2c2c',
-                backgroundImage:
-                    'repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 6px, transparent 6px 12px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.18) 0 6px, transparent 6px 12px)',
-                ...style,
-            }}
-        />
-    );
+    return <BasePlayingCard suit={suit} rank={rank} size={size} />;
 }
 
 function PlayerBadge({
