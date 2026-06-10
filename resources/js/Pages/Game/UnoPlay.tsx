@@ -2,7 +2,7 @@ import GameOverModal from '@/Components/Game/GameOverModal';
 import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBanner';
 import UnoBoard, { UnoState } from '@/GameBoards/UnoBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const RULES = [
@@ -354,13 +354,6 @@ export default function UnoPlay({ auth, session }: Props) {
                             >
                                 ?
                             </button>
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border px-5 py-2 text-sm font-semibold transition"
-                                style={{ color: '#cbd5e1', borderColor: 'rgba(203,213,225,0.55)', background: 'rgba(15,23,42,0.22)' }}
-                            >
-                                Natrag u predvorje
-                            </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}

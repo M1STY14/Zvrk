@@ -10,7 +10,7 @@ const RULES = [
 ];
 import CheckersBoard, { CheckersState } from '@/GameBoards/CheckersBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type SessionPlayer = {
@@ -214,12 +214,6 @@ export default function CheckersPlay({ auth, session }: Props) {
                             >
                                 ?
                             </button>
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
-                            >
-                                Natrag u predvorje
-                            </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}

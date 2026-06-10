@@ -2,7 +2,7 @@ import GameOverModal from '@/Components/Game/GameOverModal';
 import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBanner';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import type { GameSessionBase } from '@/types/gameSession';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import SnapsBoard, { SnapsState, SNAPS_TABLE_STYLE } from '@/GameBoards/SnapsBoard';
 
@@ -219,12 +219,6 @@ export default function SnapsPlay({ auth, session }: Props) {
 
                 {/* Floating top-right controls */}
                 <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
-                    <Link
-                        href={route('lobby.index', session.game.slug)}
-                        className="rounded-xl border border-white/20 bg-black/40 px-4 py-2 text-sm font-semibold text-amber-50 backdrop-blur-sm transition hover:bg-black/60"
-                    >
-                        ← Predvorje
-                    </Link>
                     <button
                         type="button"
                         onClick={handleLeave}

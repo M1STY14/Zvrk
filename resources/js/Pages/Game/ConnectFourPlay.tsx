@@ -5,7 +5,7 @@ import { useGameChannel } from '@/hooks/useGameChannel';
 import { useGameState } from '@/hooks/useGameState';
 import type { GameSessionBase } from '@/types/gameSession';
 import { PageProps } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 type SessionProp = GameSessionBase & {
@@ -188,12 +188,6 @@ export default function ConnectFourPlay({ auth, session }: Props) {
                             >
                                 ?
                             </button>
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300/40 bg-slate-900/30 px-5 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-900/50"
-                            >
-                                Natrag u predvorje
-                            </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}

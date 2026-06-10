@@ -3,7 +3,7 @@ import OpponentDisconnectedBanner from '@/Components/Game/OpponentDisconnectedBa
 import GameBoardWrapper from '@/GameBoards/GameBoardWrapper';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import type { GameSessionBase } from '@/types/gameSession';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { LudoState } from '@/GameBoards/LudoBoard';
 
@@ -204,16 +204,6 @@ export default function LudoPlay({ auth, session }: Props) {
                             >
                                 ?
                             </button>
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                style={{
-                                    borderRadius: 100, border: '1.5px solid #cbd5e1', padding: '8px 18px',
-                                    fontSize: 13, fontWeight: 600, color: '#475569', textDecoration: 'none',
-                                    background: 'white', transition: 'background 0.15s',
-                                }}
-                            >
-                                Natrag u predvorje
-                            </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}

@@ -5,7 +5,7 @@ import { BelaState } from '@/GameBoards/BelaBoard';
 import { useGameChannel } from '@/hooks/useGameChannel';
 import type { GameSessionBase } from '@/types/gameSession';
 import { PageProps } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 
 type SessionProp = GameSessionBase & {
@@ -193,12 +193,6 @@ export default function BelaPlay({ auth, session }: Props) {
                         </div>
 
                         <div className="flex flex-wrap gap-3">
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
-                            >
-                                Natrag u predvorje
-                            </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}

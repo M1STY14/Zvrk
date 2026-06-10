@@ -10,7 +10,7 @@ import { useGameState } from '@/hooks/useGameState';
 import { isPlayerConnected } from '@/lib/playerConnection';
 import type { GameSessionBase } from '@/types/gameSession';
 import { PageProps } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 type SessionProp = GameSessionBase & {
@@ -201,12 +201,6 @@ export default function Play({ auth, session }: Props) {
                         </div>
 
                         <div className="flex flex-wrap gap-3">
-                            <Link
-                                href={route('lobby.index', session.game.slug)}
-                                className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
-                            >
-                                Natrag u predvorje
-                            </Link>
                             <button
                                 type="button"
                                 onClick={handleLeave}
