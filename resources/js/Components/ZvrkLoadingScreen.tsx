@@ -17,7 +17,6 @@ export default function ZvrkLoadingScreen({
 
     useEffect(() => {
         if (!show) return;
-        setProgress(0);
         let p = 0;
         const iv = setInterval(() => {
             p += Math.random() * 18;

@@ -71,7 +71,7 @@ export default function SnapsPlay({ auth, session }: Props) {
                 onMoveMade: (event) => {
                     setSnapsState(event.state);
                     if (!gameOver && event.state && Object.values(event.state.scores ?? {}).some((s) => s >= 501)) {
-                        const winnerNum = Object.keys(event.state.scores).find((k) => (event.state.scores as any)[k] >= 501) ?? null;
+                        const winnerNum = Object.keys(event.state.scores).find((k) => event.state.scores[k] >= 501) ?? null;
                         const winner = winnerNum ? playerNames[event.state.players[winnerNum]] ?? null : null;
                         setWinnerName(winner);
                         setGameOver(true);
@@ -112,7 +112,7 @@ export default function SnapsPlay({ auth, session }: Props) {
         setSnapsState(data.state);
 
         if (!gameOver && data.state && Object.values(data.state.scores ?? {}).some((s) => s >= 501)) {
-            const winnerNum = Object.keys(data.state.scores).find((k) => (data.state.scores as any)[k] >= 501) ?? null;
+            const winnerNum = Object.keys(data.state.scores).find((k) => data.state.scores[k] >= 501) ?? null;
             const winner = winnerNum ? playerNames[data.state.players[winnerNum]] ?? null : null;
             setWinnerName(winner);
             setGameOver(true);
@@ -145,7 +145,7 @@ export default function SnapsPlay({ auth, session }: Props) {
 
         setSnapsState(data.state);
         if (!gameOver && data.state && Object.values(data.state.scores ?? {}).some((s) => s >= 501)) {
-            const winnerNum = Object.keys(data.state.scores).find((k) => (data.state.scores as any)[k] >= 501) ?? null;
+            const winnerNum = Object.keys(data.state.scores).find((k) => data.state.scores[k] >= 501) ?? null;
             const winner = winnerNum ? playerNames[data.state.players[winnerNum]] ?? null : null;
             setWinnerName(winner);
             setGameOver(true);

@@ -178,6 +178,9 @@ export default function SnapsBoard({
     const shownKeyRef = useRef<string>('');
 
     useEffect(() => {
+        // Syncs the trick-result animation flags (burst/sweep) to the live trick changing —
+        // an intentional state sync in an effect, so the rule is scoped off here.
+        /* eslint-disable react-hooks/set-state-in-effect */
         if (state.trick.length > 0) {
             shownKeyRef.current = '';
             setResultVisible(false);
@@ -197,6 +200,7 @@ export default function SnapsBoard({
                 window.clearTimeout(sweepTimer);
             };
         }
+        /* eslint-enable react-hooks/set-state-in-effect */
     }, [state.trick.length, lastTrickKey]);
 
     const showingResult = state.trick.length === 0 && resultVisible && lastTrick.length > 0;
