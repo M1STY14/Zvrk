@@ -3,17 +3,23 @@ import { useDisconnectedPlayers } from '@/hooks/useDisconnectedPlayers';
 import { isPlayerConnected, shouldShowOpponentDisconnectedBanner } from '@/lib/playerConnection';
 import type { GameSessionPlayer } from '@/types/gameSession';
 import { router } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 type Options = {
     gameSlug: string;
     sessionId: string;
     players: GameSessionPlayer[];
     currentUserId: string;
+    onGameStarted?: () => void;
 };
 
 /** Presence + disconnect UI for any game waiting room (lobby). */
-export function useLobbyGameChannel({ gameSlug, sessionId, players, currentUserId }: Options) {
+export function useLobbyGameChannel({ gameSlug, sessionId, players, currentUserId, onGameStarted }: Options) {
+    const onGameStartedRef = useRef(onGameStarted);
+    useEffect(() => {
+        onGameStartedRef.current = onGameStarted;
+    });
+
     const { disconnectedUserIds, onPlayerConnectionChanged } = useDisconnectedPlayers(players);
 
     const isPlayerDisconnected = (userId: string) => !isPlayerConnected(disconnectedUserIds, userId);
@@ -49,7 +55,12 @@ export function useLobbyGameChannel({ gameSlug, sessionId, players, currentUserI
                 onPlayerConnectionChanged(event.userId, event.isConnected);
             })
             .listen('.game.started', () => {
-                router.visit(route('game.show', sessionId));
+                const handler = onGameStartedRef.current;
+                if (handler) {
+                    handler();
+                } else {
+                    router.visit(route('game.show', sessionId));
+                }
             })
             .listen('.lobby.room.closed', (event: { gameSlug: string }) => {
                 router.visit(route('lobby.index', event.gameSlug));
